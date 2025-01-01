@@ -21,6 +21,13 @@
 #include <linux/bsearch.h>
 #include <linux/sort.h>
 
+/* sysctl */
+#ifdef CONFIG_USER_NS_UNPRIVILEGED
+int unprivileged_userns_clone = 1;
+#else
+int unprivileged_userns_clone;
+#endif
+
 static struct kmem_cache *user_ns_cachep __read_mostly;
 static DEFINE_MUTEX(userns_state_mutex);
 
@@ -1339,6 +1346,9 @@ static int userns_install(struct nsset *nsset, struct ns_common *ns)
 
 	put_user_ns(cred->user_ns);
 	set_cred_user_ns(cred, get_user_ns(user_ns));
+
+	if (set_cred_ucounts(cred) < 0)
+		return -EINVAL;
 
 	return 0;
 }
