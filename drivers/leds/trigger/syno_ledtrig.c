@@ -12,10 +12,10 @@
 #include <linux/device.h>
 #include <linux/slab.h>
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/of.h>
 #include <linux/syno_fdt.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 
@@ -34,11 +34,11 @@ EXPORT_SYMBOL(syno_led_trigger_name);
 
 static int num_of_led_trigger = 0;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define SYNO_MAX_LED 255
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 #define SYNO_MAX_LED 16
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 int *gpGreenLedMap, *gpOrangeLedMap = NULL; //mapping disk index to disk led; must be initialized before used
 EXPORT_SYMBOL(gpGreenLedMap);
@@ -113,13 +113,13 @@ static int __init syno_ledtrig_init(void)
 	int err = 0;
 	SYNO_LED_TRIGGER_TIMER *pTriggerTimer = NULL;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (of_root) {
 		if (of_find_property(of_root, "number_of_led_trigger", NULL)) {
 			of_property_read_u32_index(of_root, "number_of_led_trigger", 0, &num_of_led_trigger);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (0 == num_of_led_trigger) {
 		num_of_led_trigger = SYNO_MAX_LED;

@@ -107,18 +107,14 @@ int GetModel(void)
 		model = MODEL_RS2423rpp;
 	} else if ( !strcmp(gszSynoHWVersion, HW_DS1823xsp) ) {
 		model = MODEL_DS1823xsp;
-	} else if ( !strcmp(gszSynoHWVersion, HW_RS1624xsp) ) {
-		model = MODEL_RS1624xsp;
-	} else if ( !strcmp(gszSynoHWVersion, HW_DS1624p) ) {
-		model = MODEL_DS1624p;
-	} else if ( !strcmp(gszSynoHWVersion, HW_DS1824p) ) {
-		model = MODEL_DS1824p;
+	} else if ( !strcmp(gszSynoHWVersion, HW_RS1623xsp) ) {
+		model = MODEL_RS1623xsp;
+	} else if ( !strcmp(gszSynoHWVersion, HW_DS1623p) ) {
+		model = MODEL_DS1623p;
+	} else if ( !strcmp(gszSynoHWVersion, HW_DS1823p) ) {
+		model = MODEL_DS1823p;
 	} else if ( !strcmp(gszSynoHWVersion, HW_SC2500) ) {
 		model = MODEL_SC2500;
-	} else if ( !strcmp(gszSynoHWVersion, HW_RS1224p) ) {
-		model = MODEL_RS1224p;
-	} else if ( !strcmp(gszSynoHWVersion, HW_RS1224rpp) ) {
-		model = MODEL_RS1224rpp;
 	}
 
 	return model;
@@ -129,16 +125,14 @@ int GetMaxInternalDiskNum(void)
 	int iInternalDiskNum = -1;
 	switch(GetModel()) {
 		case MODEL_DS1621p:
-		case MODEL_DS1624p:
+		case MODEL_DS1623p:
 			iInternalDiskNum = 6;
 			break;
 		case MODEL_RS1221p:
 		case MODEL_RS1221rpp:
 		case MODEL_DS1821p:
 		case MODEL_DS1823xsp:
-		case MODEL_DS1824p:
-		case MODEL_RS1224p:
-		case MODEL_RS1224rpp:
+		case MODEL_DS1823p:
 			iInternalDiskNum = 8;
 			break;
 		case MODEL_DS2422p:
@@ -156,7 +150,7 @@ int GetMaxInternalDiskNum(void)
 			break;
 		case MODEL_RS822p:
 		case MODEL_RS822rpp:
-		case MODEL_RS1624xsp:
+		case MODEL_RS1623xsp:
 			iInternalDiskNum = 4;
 			break;
 		default:
@@ -1049,15 +1043,15 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 #endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
 			break;
 
-		case MODEL_RS1624xsp:
-			model_ops = &rs1624xsp_ops;
+		case MODEL_RS1623xsp:
+			model_ops = &rs1623xsp_ops;
 
 			I2cBusChange(0);
 
 			if ( model_ops->x86_gpio_init ) {
 				model_ops->x86_gpio_init();
 			}
-			hwmon_sensor_list = &rs1624xsp_sensor_list;
+			hwmon_sensor_list = &rs1623xsp_sensor_list;
 #ifdef CONFIG_SYNO_ADT7490_FEATURES
 			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
 			synobios_ops.hwmon_get_sys_voltage = HWMONGetVoltageSensorFromADT;
@@ -1081,13 +1075,13 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 #endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
 			break;
 
-		case MODEL_DS1624p:
-			model_ops = &ds1624p_ops;
+		case MODEL_DS1623p:
+			model_ops = &ds1623p_ops;
 
 			if ( model_ops->x86_gpio_init ) {
 				model_ops->x86_gpio_init();
 			}
-			hwmon_sensor_list = &ds1624p_sensor_list;
+			hwmon_sensor_list = &ds1623p_sensor_list;
 #ifdef CONFIG_SYNO_ADT7490_FEATURES
 			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
 			synobios_ops.hwmon_get_sys_voltage = HWMONGetVoltageSensorFromADT;
@@ -1115,13 +1109,13 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 #endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
 			break;
 
-		case MODEL_DS1824p:
-			model_ops = &ds1824p_ops;
+		case MODEL_DS1823p:
+			model_ops = &ds1823p_ops;
 
 			if ( model_ops->x86_gpio_init ) {
 				model_ops->x86_gpio_init();
 			}
-			hwmon_sensor_list = &ds1824p_sensor_list;
+			hwmon_sensor_list = &ds1823p_sensor_list;
 #ifdef CONFIG_SYNO_ADT7490_FEATURES
 			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
 			synobios_ops.hwmon_get_sys_voltage = HWMONGetVoltageSensorFromADT;
@@ -1182,76 +1176,6 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 			for (i = 1; i <= 12; i++) {
 				syno_ahci_disk_led_enable_by_port(i, 1);
 			}
-#endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
-			break;
-		case MODEL_RS1224p:
-			model_ops = &rs1224p_ops;
-
-			if ( model_ops->x86_gpio_init ) {
-				model_ops->x86_gpio_init();
-			}
-			hwmon_sensor_list = &rs1224p_sensor_list;
-#ifdef CONFIG_SYNO_ADT7490_FEATURES
-			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
-			synobios_ops.hwmon_get_sys_voltage = HWMONGetVoltageSensorFromADT;
-			synobios_ops.hwmon_get_sys_thermal = HWMONGetThermalSensorFromADT;
-#endif /* CONFIG_SYNO_ADT7490_FEATURES */
-#if defined(CONFIG_SYNO_SMBUS_HDD_POWERCTL) || defined(CONFIG_SYNO_SATA_PWR_CTRL_SMBUS)
-			synobios_ops.hwmon_get_backplane_status = HWMONGetHDDBackPlaneStatusBySMBUS;
-#endif /* CONFIG_SYNO_SMBUS_HDD_POWERCTL || CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
-			synobios_ops.set_hdd_led = SetHddActLedBoth;
-			synobios_ops.set_power_led = SetPowerLedStatus;
-#ifdef CONFIG_SYNO_LEDS_TRIGGER
-			synobios_ops.set_disk_led = SetDiskLedStatusByLedTrigger;
-			SetupDiskLedMap();
-#if defined(MY_DEF_HERE) || defined(CONFIG_SYNO_SATA_DISK_LED_CONTROL)
-			funcSYNOSATADiskLedCtrl = SYNOSetDiskLedStatusByLedTrigger;
-#endif // MY_DEF_HERE || CONFIG_SYNO_SATA_DISK_LED_CONTROL
-#endif // CONFIG_SYNO_LEDS_TRIGGER
-#ifdef CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY
-			syno_ahci_disk_led_enable_by_port(1, 1);
-			syno_ahci_disk_led_enable_by_port(2, 1);
-			syno_ahci_disk_led_enable_by_port(3, 1);
-			syno_ahci_disk_led_enable_by_port(4, 1);
-			syno_ahci_disk_led_enable_by_port(5, 1);
-			syno_ahci_disk_led_enable_by_port(6, 1);
-			syno_ahci_disk_led_enable_by_port(7, 1);
-			syno_ahci_disk_led_enable_by_port(8, 1);
-#endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
-			break;
-		case MODEL_RS1224rpp:
-			model_ops = &rs1224rpp_ops;
-
-			if ( model_ops->x86_gpio_init ) {
-				model_ops->x86_gpio_init();
-			}
-			hwmon_sensor_list = &rs1224rpp_sensor_list;
-#ifdef CONFIG_SYNO_ADT7490_FEATURES
-			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
-			synobios_ops.hwmon_get_sys_voltage = HWMONGetVoltageSensorFromADT;
-			synobios_ops.hwmon_get_sys_thermal = HWMONGetThermalSensorFromADT;
-#endif /* CONFIG_SYNO_ADT7490_FEATURES */
-#if defined(CONFIG_SYNO_SMBUS_HDD_POWERCTL) || defined(CONFIG_SYNO_SATA_PWR_CTRL_SMBUS)
-			synobios_ops.hwmon_get_backplane_status = HWMONGetHDDBackPlaneStatusBySMBUS;
-#endif /* CONFIG_SYNO_SMBUS_HDD_POWERCTL || CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
-			synobios_ops.set_hdd_led = SetHddActLedBoth;
-			synobios_ops.set_power_led = SetPowerLedStatus;
-#ifdef CONFIG_SYNO_LEDS_TRIGGER
-			synobios_ops.set_disk_led = SetDiskLedStatusByLedTrigger;
-			SetupDiskLedMap();
-#if defined(MY_DEF_HERE) || defined(CONFIG_SYNO_SATA_DISK_LED_CONTROL)
-			funcSYNOSATADiskLedCtrl = SYNOSetDiskLedStatusByLedTrigger;
-#endif // MY_DEF_HERE || CONFIG_SYNO_SATA_DISK_LED_CONTROL
-#endif // CONFIG_SYNO_LEDS_TRIGGER
-#ifdef CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY
-			syno_ahci_disk_led_enable_by_port(1, 1);
-			syno_ahci_disk_led_enable_by_port(2, 1);
-			syno_ahci_disk_led_enable_by_port(3, 1);
-			syno_ahci_disk_led_enable_by_port(4, 1);
-			syno_ahci_disk_led_enable_by_port(5, 1);
-			syno_ahci_disk_led_enable_by_port(6, 1);
-			syno_ahci_disk_led_enable_by_port(7, 1);
-			syno_ahci_disk_led_enable_by_port(8, 1);
 #endif /* CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY */
 			break;
 

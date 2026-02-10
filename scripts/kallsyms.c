@@ -269,7 +269,7 @@ static int symbol_valid(const struct sym_entry *s)
 {
 	const char *name = sym_name(s);
 
-#if defined(MY_ABC_HERE) || defined(CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK)
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
 	int i = 0;
 	static const char* const hidden_prefixes[] = {
 		/* libhydrogen */
@@ -296,7 +296,7 @@ static int symbol_valid(const struct sym_entry *s)
 			return 0;
 		}
 	}
-#endif /* MY_ABC_HERE || CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE || MY_DEF_HERE */
 
 	/* if --all-symbols is not specified, then symbols outside the text
 	 * and inittext sections are discarded */

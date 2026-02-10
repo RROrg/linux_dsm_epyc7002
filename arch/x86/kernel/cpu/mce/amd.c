@@ -58,9 +58,9 @@
 /* Threshold LVT offset is at MSR0xC0000410[15:12] */
 #define SMCA_THR_LVT_OFF	0xF000
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int (*funcSYNOECCNotification)(unsigned int type, unsigned int syndrome, u64 memAddr);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static bool thresholding_irq_en;
 
@@ -436,7 +436,7 @@ static void threshold_restart_bank(void *_tr)
 	hi |= MASK_COUNT_EN_HI;
 	wrmsr(tr->b->address, lo, hi);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	rdmsr(tr->b->address, lo, hi);
 	if ((hi & MASK_OVERFLOW_HI) && 1 == tr->reset) {
 		hi = (hi & ~(MASK_ERR_COUNT_HI | MASK_OVERFLOW_HI)) |
@@ -444,7 +444,7 @@ static void threshold_restart_bank(void *_tr)
 		wrmsr_safe(tr->b->address, lo, hi);
 	}
 	tr->reset = 0;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 
 static void mce_threshold_block_init(struct threshold_block *b, int offset)
@@ -456,9 +456,9 @@ static void mce_threshold_block_init(struct threshold_block *b, int offset)
 	};
 
 	b->threshold_limit		= THRESHOLD_MAX;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	tr.reset = 1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	threshold_restart_bank(&tr);
 };
 
@@ -909,9 +909,9 @@ bool amd_mce_is_memory_error(struct mce *m)
 static void __log_error(unsigned int bank, u64 status, u64 addr, u64 misc)
 {
 	struct mce m;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u64 eccsyndrome,eccstatus;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	mce_setup(&m);
 
@@ -941,14 +941,14 @@ static void __log_error(unsigned int bank, u64 status, u64 addr, u64 misc)
 			rdmsrl(MSR_AMD64_SMCA_MCx_SYND(bank), m.synd);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	eccstatus = ((m.status & SYNO_MCI_STATUS_ECC) >> SYNO_MCI_STATUS_UECC_SHIFT);
 	eccsyndrome = ((m.status & SYNO_MCI_STATUS_ECC_SYNDROME) >> SYNO_MCI_STATUS_ECC_SYNDROME_SHIFT);
 	if (funcSYNOECCNotification && (m.status & SYNO_MCI_STATUS_ECC)) {
 		funcSYNOECCNotification(((unsigned int *)(void *)&eccstatus)[0],
 				((unsigned int *)(void *)&eccsyndrome)[0], m.addr);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	mce_log(&m);
 }
@@ -1529,10 +1529,10 @@ int mce_threshold_create_device(unsigned int cpu)
 	unsigned int numbanks, bank;
 	struct threshold_bank **bp;
 	int err;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	struct threshold_block *first_block = NULL, *block = NULL, *tmp = NULL;
 	u32 hi, lo;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (!mce_flags.amd_threshold)
 		return 0;
@@ -1555,7 +1555,7 @@ int mce_threshold_create_device(unsigned int cpu)
 	}
 	this_cpu_write(threshold_banks, bp);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	for (bank = 0; bank < numbanks; ++bank) {
 		if (!(per_cpu(bank_map, cpu) & (1 << bank)))
 			continue;
@@ -1574,7 +1574,7 @@ int mce_threshold_create_device(unsigned int cpu)
 			err = wrmsr_safe(block->address, lo, hi);
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (thresholding_irq_en)
 		mce_threshold_vector = amd_threshold_interrupt;

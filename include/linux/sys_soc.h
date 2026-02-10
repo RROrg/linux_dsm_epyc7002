@@ -21,14 +21,14 @@ struct soc_device_attribute {
 	const struct attribute_group *custom_attr_group;
 };
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 struct soc_device {
 	struct device dev;
 	struct soc_device_attribute *attr;
 	int soc_dev_num;
 };
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /**
  * soc_device_register - register SoC as a device
  * @soc_plat_dev_attr: Attributes passed from platform to be attributed to a SoC

@@ -12,10 +12,6 @@
 #include <linux/synolib.h>
 #endif /* CONFIG_SYNO_SMBUS_HDD_POWERCTL || CONFIG_SYNO_SATA_PWR_CTRL_SMBUS */
 
-#if defined(CONFIG_SYNO_K10TEMP) || defined(CONFIG_SYNO_HWMON_AMD_K10TEMP)
-extern int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp);
-#endif /* CONFIG_SYNO_K10TEMP || CONFIG_SYNO_HWMON_AMD_K10TEMP */
-
 #define I2C_BUS_NO 0
 extern void RS4024xspSMBusSwitchInit(void);
 extern void SMBusSwitchRegWrite(u8 command, u8 length, u8 *data);
@@ -48,8 +44,8 @@ extern int syno_cpu_temperature(struct _SynoCpuTemp *pCpuTemp);
 extern int syno_sys_temperature(struct _SynoThermalTemp *pThermalTemp);
 #endif /*MY_DEF_HERE*/
 
-#define RYZEN5K_BUZZER_OFF_PIN    6
-#define RYZEN5K_BUZZER_CTRL_PIN   91
+#define RYZEN5K_BUZZER_OFF_PIN    53
+#define RYZEN5K_BUZZER_CTRL_PIN   52
 #define RYZEN5K_DISK_LED_ACTIVATE_PIN 45
 
 #define SZ_UART_CMD_PREFIX         "-"

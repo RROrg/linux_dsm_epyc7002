@@ -587,7 +587,7 @@ END:
 	return pUsbSlotNode;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 /**
  * syno_hub_node_get - return hub slot index by usb 2 or 3 bus and port
  * @hdev [IN]: usb device
@@ -607,7 +607,7 @@ END:
 	return pDeviceNode;
 }
 EXPORT_SYMBOL(syno_hub_node_get);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /**
  * syno_usb_hub_node_get - return usb or hub slot index by usb 2 or 3 bus and port

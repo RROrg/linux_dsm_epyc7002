@@ -709,12 +709,12 @@ static inline int mtd_is_bitflip_or_eccerr(int err) {
 
 unsigned mtd_mmap_capabilities(struct mtd_info *mtd);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /* written in synopart.c */
 int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned long length);
 
 /* written in redboot.c */
 int SYNOMTDModifyFisInfo(struct mtd_info *mtd, struct SYNO_MTD_FIS_INFO SynoMtdFisInfo);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #endif /* __MTD_MTD_H__ */

@@ -396,7 +396,7 @@ static void k10temp_get_ccd_support(struct pci_dev *pdev,
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synobios.h>
 int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 {
@@ -411,11 +411,11 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 
 #if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M10H_DF_F3, NULL);
-#elif defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
+#elif defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M30H_DF_F3, NULL);
 #elif defined(MY_DEF_HERE)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_19H_DF_F3, NULL);
-#endif /* MY_DEF_HERE || MY_DEF_HERE || MY_ABC_HERE || MY_DEF_HERE */
+#endif /* MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE || MY_DEF_HERE */
 
 	if (!pdev)
 		return -ENODEV;
@@ -432,7 +432,7 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 	return 0;
 }
 EXPORT_SYMBOL(syno_k10cpu_temperature);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static int k10temp_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 {

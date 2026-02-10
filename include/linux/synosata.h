@@ -13,7 +13,7 @@
 extern int gSynoInternalHddNumber;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int gSynoHddPowerupSeq;
 extern long g_syno_hdd_powerup_seq;
 extern long syno_boot_hd_count;
@@ -27,9 +27,9 @@ extern int giSynoDSleepCurrentPoweronDisks;
 extern void DBG_SpinupGroupListGpio(void);
 extern int SynoHaveRPDetectPin(void);
 extern int SynoAllRedundantPowerDetected(void);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/mutex.h>
 static struct mutex mutex_spin;
 static DEFINE_MUTEX(mutex_spin);
@@ -121,7 +121,7 @@ static inline unsigned long SynoWakeInterval(void)
 	}
 	return uiSynoWakeInterval;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 static inline unsigned char

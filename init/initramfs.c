@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0
 #include <linux/init.h>
 #include <linux/fs.h>
@@ -14,10 +17,10 @@
 #include <linux/namei.h>
 #include <linux/init_syscalls.h>
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 #include <crypto/hydrogen.h>
 bool ramdisk_check_failed;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 static ssize_t __init xwrite(struct file *file, const char *p, size_t count,
 		loff_t *pos)
@@ -505,12 +508,12 @@ static char * __init unpack_to_rootfs(char *buf, unsigned long len)
 		if (state != Reset)
 			error("junk at the end of compressed archive");
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 		if (my_inptr == 0) {
 			printk(KERN_INFO "decompress cpio completed and skip redundant lzma\n");
 			break;
 		}
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 		this_header = saved_offset + my_inptr;
 		buf += my_inptr;
@@ -617,7 +620,7 @@ static void __init populate_initrd_image(char *err)
 
 static int __init populate_rootfs(void)
 {
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 	const char *ctx = "synology";
 	size_t rd_len = initrd_end - initrd_start - hydro_sign_BYTES;
 	uint8_t sig[hydro_sign_BYTES];
@@ -625,14 +628,14 @@ static int __init populate_rootfs(void)
 	uint8_t pk[] = {
 		__RAMDISK_SIGN_PUBLIC_KEY__
 	};
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 	/* Load the built in initramfs */
 	char *err = unpack_to_rootfs(__initramfs_start, __initramfs_size);
 	if (err)
 		panic("%s", err); /* Failed to decompress INTERNAL initramfs */
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 	memcpy(sig, (const void *) (initrd_start + rd_len), hydro_sign_BYTES);
 
 	if (hydro_sign_verify(sig, (const void *) initrd_start, rd_len, ctx, pk)) {
@@ -642,7 +645,7 @@ static int __init populate_rootfs(void)
 		ramdisk_check_failed = false;
 		initrd_end -= hydro_sign_BYTES;
 	}
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 	if (!initrd_start || IS_ENABLED(CONFIG_INITRAMFS_FORCE))
 		goto done;

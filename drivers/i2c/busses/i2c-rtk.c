@@ -432,13 +432,13 @@ static void rtk_i2c_handle_tx_abort(struct rtk_i2c_dev *priv)
 
 	if (abort_source & TX_ABRT_NOACK) {
 		for_each_set_bit(i, &abort_source, ARRAY_SIZE(abort_sources))
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			dev_dbg(priv->dev,
 				"%s: %s\n", __func__, abort_sources[i]);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			dev_err(priv->dev,
 				"%s: %s\n", __func__, abort_sources[i]);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		return;
 	}
 
@@ -637,12 +637,12 @@ fail:
 	if (priv->adap.bus_recovery_info)
 		i2c_recover_bus(&priv->adap);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (priv->abort_source & TX_ABRT_NOACK)
 		dev_dbg(priv->dev, "transmit error %d 0x%x 0x%x 0x%x with %x\n",
 			priv->msg_err, addr, priv->msg_w_idx, num, priv->abort_source);
 	else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	dev_err(priv->dev, "transmit error %d 0x%x 0x%x 0x%x\n",
 		priv->msg_err, addr, priv->msg_w_idx, num);
 

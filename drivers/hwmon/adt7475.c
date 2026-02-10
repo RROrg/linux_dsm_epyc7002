@@ -24,9 +24,9 @@
 #include <linux/jiffies.h>
 #include <linux/of.h>
 #include <linux/util_macros.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* Indexes for the sysfs hooks */
 
@@ -96,7 +96,7 @@
 
 #define REG_TEMP_OFFSET_BASE	0x70
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define REG_CONFIG1				0x40	/* ADT7490 only */
 #define REG_PECI0				0x33	/* ADT7490 only */
 #define REG_PECI1_BASE			0x1A	/* ADT7490 only */
@@ -106,7 +106,7 @@
 #define REG_PECI_OFFSET_BASE	0x94	/* ADT7490 only */
 #define REG_PECI_LOW_LIMIT		0x34	/* ADT7490 only */
 #define REG_PECI_HIGH_LIMIT		0x35	/* ADT7490 only */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #define REG_CONFIG2		0x73
 
@@ -145,10 +145,10 @@
 #define ADT7475_TACH_COUNT	4
 #define ADT7475_PWM_COUNT	3
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define ADT7490_PECI_COUNT	4	/*ADT7490 only*/
 #define SYNO_IS_ADT7490(client) !strcmp(client->name, "adt7490")
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* Macro to read the registers */
 
@@ -168,10 +168,10 @@
 #define VOLTAGE_MIN_REG(idx) (REG_VOLTAGE_MIN_BASE + ((idx) * 2))
 #define VOLTAGE_MAX_REG(idx) (REG_VOLTAGE_MAX_BASE + ((idx) * 2))
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define PECI_REG(idx) (idx == 0 ? REG_PECI0:REG_PECI1_BASE + (idx-1))	/* ADT7490 only */
 #define PECI_OFFSET_REG(idx) (REG_PECI_OFFSET_BASE + (idx))
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #define TEMP_REG(idx) (REG_TEMP_BASE + (idx))
 #define TEMP_MIN_REG(idx) (REG_TEMP_MIN_BASE + ((idx) * 2))
@@ -244,11 +244,11 @@ struct adt7475_data {
 	u8 vrm;
 	const struct attribute_group *groups[9];
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u8 pwmsynoctl[4];
 	u16 peci[7][4];	/* ADT7490 only */
 	u8 peci_range[4];
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 static struct i2c_driver adt7475_driver;
@@ -519,7 +519,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 		val = clamp_val(val, temp - 15000, temp);
 		val = (temp - val) / 1000;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (sattr->index != 1) {
 			data->temp[HYSTERSIS][sattr->index] &= 0x0F;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF) << 4;
@@ -527,7 +527,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 			data->temp[HYSTERSIS][sattr->index] &= 0xF0;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF);
 		}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		if (sattr->index != 1) {
 			data->temp[HYSTERSIS][sattr->index] &= 0xF0;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF) << 4;
@@ -535,7 +535,7 @@ static ssize_t temp_store(struct device *dev, struct device_attribute *attr,
 			data->temp[HYSTERSIS][sattr->index] &= 0x0F;
 			data->temp[HYSTERSIS][sattr->index] |= (val & 0xF);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 		out = data->temp[HYSTERSIS][sattr->index];
 		break;
@@ -1091,7 +1091,7 @@ static ssize_t pwm_use_point2_pwm_at_crit_store(struct device *dev,
 }
 
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 
 /* set peci */
 static ssize_t set_peci(struct device *dev, struct device_attribute *attr,
@@ -1587,7 +1587,7 @@ static ssize_t set_pwm_syno_control(struct device *dev, struct device_attribute 
 
 	return count;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static ssize_t vrm_show(struct device *dev, struct device_attribute *devattr,
 			char *buf)
@@ -1711,7 +1711,7 @@ static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_channels_temp, pwmchan, INPUT, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_point1_pwm, pwm, MIN, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_auto_point2_pwm, pwm, MAX, 2);
 static SENSOR_DEVICE_ATTR_2_RW(pwm3_stall_disable, stall_disable, 0, 2);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static SENSOR_DEVICE_ATTR_2(peci0_input, S_IRUGO, show_peci, NULL, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2(peci0_auto_point1_temp, S_IRUGO | S_IWUSR,
 			    show_peci, set_peci, AUTOMIN, 0);
@@ -1791,7 +1791,7 @@ static SENSOR_DEVICE_ATTR_2(full_duty_cycle, S_IRUGO | S_IWUSR, show_adt_full_du
 static SENSOR_DEVICE_ATTR_2(peci_error, S_IRUGO, show_peci_error, NULL, INPUT, 0);
 static SENSOR_DEVICE_ATTR_2(enhanced_acoustic_register, S_IWUSR | S_IRUGO, show_enh_acou_reg,
 				set_enh_acou_reg, INPUT, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* Non-standard name, might need revisiting */
 static DEVICE_ATTR_RW(pwm_use_point2_pwm_at_crit);
@@ -1863,7 +1863,7 @@ static struct attribute *adt7475_attrs[] = {
 	&sensor_dev_attr_pwm3_auto_point1_pwm.dev_attr.attr,
 	&sensor_dev_attr_pwm3_auto_point2_pwm.dev_attr.attr,
 	&sensor_dev_attr_pwm3_stall_disable.dev_attr.attr,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	&sensor_dev_attr_peci0_input.dev_attr.attr,
 	&sensor_dev_attr_peci0_auto_point1_temp.dev_attr.attr,
 	&sensor_dev_attr_peci0_auto_point2_temp.dev_attr.attr,
@@ -1910,7 +1910,7 @@ static struct attribute *adt7475_attrs[] = {
 	&sensor_dev_attr_full_duty_cycle.dev_attr.attr,
 	&sensor_dev_attr_peci_error.dev_attr.attr,
 	&sensor_dev_attr_enhanced_acoustic_register.dev_attr.attr,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	&dev_attr_pwm_use_point2_pwm_at_crit.attr,
 	NULL,
 };
@@ -2211,7 +2211,7 @@ static int adt7475_set_pwm_polarity(struct i2c_client *client)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int (*funcSYNOReadAdtFanSpeedRpm)(struct _SYNO_HWMON_SENSOR_TYPE *);
 extern int (*funcSYNOReadAdtVoltageSensor)(struct _SYNO_HWMON_SENSOR_TYPE *);
 extern int (*funcSYNOReadAdtThermalSensor)(struct _SYNO_HWMON_SENSOR_TYPE *);
@@ -2345,7 +2345,7 @@ static int syno_parse_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE 
 	return 0;
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 extern u8 syno_cpu_tjmax(int, int*);
@@ -2359,9 +2359,9 @@ static int adt7475_probe(struct i2c_client *client)
 		[adt7476] = "ADT7476",
 		[adt7490] = "ADT7490",
 	};
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u8 config1, configPECI;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	struct adt7475_data *data;
 	struct device *hwmon_dev;
@@ -2402,7 +2402,7 @@ static int adt7475_probe(struct i2c_client *client)
 		revision = adt7475_read(REG_DEVID2) & 0x07;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (SYNO_IS_ADT7490(client)) {
 		config1 = adt7475_read(REG_CONFIG1);
 		// which means adt7490 is not been told to start
@@ -2437,7 +2437,7 @@ static int adt7475_probe(struct i2c_client *client)
 		}
 #endif /* MY_DEF_HERE */
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	config3 = adt7475_read(REG_CONFIG3);
 	/* Pin PWM2 may alternatively be used for ALERT output */
@@ -2595,15 +2595,15 @@ static void adt7475_read_hystersis(struct i2c_client *client)
 	data->temp[HYSTERSIS][0] = (u16) adt7475_read(REG_REMOTE1_HYSTERSIS);
 	data->temp[HYSTERSIS][1] = data->temp[HYSTERSIS][0];
 	data->temp[HYSTERSIS][2] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	data->peci[HYSTERSIS][0] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][1] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][2] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
 	data->peci[HYSTERSIS][3] = (u16) adt7475_read(REG_REMOTE2_HYSTERSIS);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static unsigned int adt7490_pwmctl_read(const unsigned int pwmReg)
 {
 	unsigned int valt = pwmReg & 0x8;
@@ -2664,7 +2664,7 @@ static unsigned int adt7490_pwmctl_read(const unsigned int pwmReg)
 	}
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static void adt7475_read_pwm(struct i2c_client *client, int index)
 {
@@ -2678,9 +2678,9 @@ static void adt7475_read_pwm(struct i2c_client *client, int index)
 	 * based on the current settings
 	 */
 	v = (data->pwm[CONTROL][index] >> 5) & 7;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	data->pwmsynoctl[index] = adt7490_pwmctl_read(data->pwm[CONTROL][index]);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (v == 3)
 		data->pwmctl[index] = 0;
@@ -2794,7 +2794,7 @@ static int adt7475_update_measure(struct device *dev)
 			((ext >> 4) & 3);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (SYNO_IS_ADT7490(client)) {
 			for (i = 0; i < ADT7490_PECI_COUNT; i++) {
 				/* Adjust values so they match the input precision */
@@ -2807,7 +2807,7 @@ static int adt7475_update_measure(struct device *dev)
 				data->peci_range[i] = adt7475_read(REG_PECI_RANGE);
 			}
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	for (i = 0; i < ADT7475_TACH_COUNT; i++) {
 		if (i == 3 && !data->has_fan4)

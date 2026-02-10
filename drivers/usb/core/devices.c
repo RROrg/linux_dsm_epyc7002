@@ -50,10 +50,10 @@
 
 #include "usb.h"
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/synolib.h>
 #include <uapi/linux/syno.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /* Define ALLOW_SERIAL_NUMBER if you want to see the serial number of devices */
 #define ALLOW_SERIAL_NUMBER
@@ -450,7 +450,7 @@ static char *usb_dump_string(char *start, char *end,
  * 1 : the usbdev is a usb copy port
  * -ENODEV : error no of_root or no usbdev
  */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static int usb_copy_support(struct usb_device *usbdev)
 {
 	int ret = -ENODEV;
@@ -500,7 +500,7 @@ END:
 	}
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*****************************************************************/
 
@@ -559,7 +559,7 @@ static ssize_t usb_device_dump(char __user **buffer, size_t *nbytes,
 		speed = "??";
 	}
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if(0 < usb_copy_support(usbdev))
 		// Port=99 in /sys/kernel/debug/usb/devices
 		data_end = pages_start + sprintf(pages_start, format_topo,
@@ -567,7 +567,7 @@ static ssize_t usb_device_dump(char __user **buffer, size_t *nbytes,
 				USBCOPY_PORT_LOCATION, count, usbdev->devnum,
 				speed, usbdev->maxchild);
 	else
-#endif /* defined(MY_DEF_HERE) */
+#endif /* defined(MY_ABC_HERE) */
 	data_end = pages_start + sprintf(pages_start, format_topo,
 			bus->busnum, level, parent_devnum,
 			index, count, usbdev->devnum,

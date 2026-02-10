@@ -23,9 +23,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/regmap.h>
 #include <linux/reset.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #include "i2c-designware-core.h"
 
@@ -76,7 +76,7 @@ static int i2c_dw_set_timings_master(struct dw_i2c_dev *dev)
 					scl_falling_time,
 					0);	/* No offset */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		/* FIXME: Don't use these model customize code
 		 *        They should be customized in dts or acpi
 		 */
@@ -93,7 +93,7 @@ static int i2c_dw_set_timings_master(struct dw_i2c_dev *dev)
 						scl_falling_time,
 						0);	/* No offset */
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	}
 	dev_dbg(dev->dev, "Standard Mode HCNT:LCNT = %d:%d\n",
 		dev->ss_hcnt, dev->ss_lcnt);

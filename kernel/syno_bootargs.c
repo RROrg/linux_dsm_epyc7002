@@ -10,12 +10,12 @@
 #include <linux/synolib.h>
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int setup_early_printk(char *);
 extern char gszSynoTtyS0[50];
 extern char gszSynoTtyS1[50];
 extern char gszSynoTtyS2[50];
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 extern long g_internal_netif_num;
 #endif /* MY_ABC_HERE*/
@@ -28,9 +28,9 @@ extern char gszSynoHWVersion[];
 extern char gszSynoHWRevision[];
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern long g_smbus_hdd_powerctl;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 extern unsigned char grgbLanMac[SYNO_MAC_MAX_NUMBER][16];
@@ -56,17 +56,17 @@ char gSynoSASHBAAddr[CONFIG_SYNO_SAS_MAX_HBA_SLOT][13] = {{0}};
 EXPORT_SYMBOL(gSynoSASHBAAddr);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern char gszPciAddrList[PCI_ADDR_NUM_MAX][PCI_ADDR_LEN_MAX];
 extern int gPciAddrNum;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 extern char gSynoCastratedXhcAddr[CONFIG_SYNO_USB_NUM_CASTRATED_XHC][32];
 extern unsigned int gSynoCastratedXhcPortBitmap[CONFIG_SYNO_USB_NUM_CASTRATED_XHC];
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int giSynoSpinupGroupDebug;
 static int __init early_syno_spinup_group_debug(char *p)
 {
@@ -75,7 +75,7 @@ static int __init early_syno_spinup_group_debug(char *p)
 	return 1;
 }
 __setup("syno_spinup_group_debug=", early_syno_spinup_group_debug);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 static int __init early_hw_version(char *p)
@@ -231,7 +231,7 @@ static int __init early_SASmodel(char *p)
 __setup("SASmodel=", early_SASmodel);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int __init early_syno_set_ttyS0(char *p)
 {
 	snprintf(gszSynoTtyS0, strlen(p) + 1, "%s", p);
@@ -254,7 +254,7 @@ static int __init early_syno_set_ttyS2(char *p)
 }
 __setup("syno_ttyS2=", early_syno_set_ttyS2);
 
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 static int __init early_sas_hba_idx(char *p)
@@ -279,7 +279,7 @@ static int __init early_sas_hba_idx(char *p)
 __setup("sas_hba_idx_addr=", early_sas_hba_idx);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int __init early_opt_pci_slot(char *p)
 {
 	int index = 0;
@@ -310,9 +310,9 @@ FMT_ERR:
 	return 0;
 }
 __setup("opt_pci_slot=", early_opt_pci_slot);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int __init early_smbus_hdd_powerctl(char *p)
 {
 	g_smbus_hdd_powerctl = simple_strtol(p, NULL, 10);
@@ -324,7 +324,7 @@ static int __init early_smbus_hdd_powerctl(char *p)
 	return 1;
 }
 __setup("SMBusHddDynamicPower=", early_smbus_hdd_powerctl);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 static int __init early_castrated_xhc(char *p)

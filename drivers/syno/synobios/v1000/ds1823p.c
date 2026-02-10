@@ -1,4 +1,4 @@
-// Copyright (c) 2000-2019 Synology Inc. All rights reserved.
+// Copyright (c) 2000-2020 Synology Inc. All rights reserved.
 
 #include <linux/kernel.h> /* printk() */
 #include <linux/errno.h>  /* error codes */
@@ -6,7 +6,7 @@
 #include <linux/synobios.h>
 #include "v1000_common.h"
 
-PWM_FAN_SPEED_MAPPING gRS1224pSpeedMapping[] = {
+PWM_FAN_SPEED_MAPPING gDS1823pSpeedMapping[] = {
 	{ .fanSpeed = FAN_SPEED_STOP,       .iDutyCycle = 0  },
 	{ .fanSpeed = FAN_SPEED_ULTRA_LOW,  .iDutyCycle = 15 },
 	{ .fanSpeed = FAN_SPEED_VERY_LOW,   .iDutyCycle = 20 },
@@ -18,7 +18,7 @@ PWM_FAN_SPEED_MAPPING gRS1224pSpeedMapping[] = {
 	{ .fanSpeed = FAN_SPEED_FULL,       .iDutyCycle = 99 },
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1224p_thermal_sensor = {
+SYNO_HWMON_SENSOR_TYPE DS1823p_thermal_sensor = {
 	.type_name = HWMON_SYS_THERMAL_NAME,
 	.sensor_num = 3,
 	.sensor[0] = {
@@ -32,7 +32,7 @@ SYNO_HWMON_SENSOR_TYPE RS1224p_thermal_sensor = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1224p_voltage_sensor = {
+SYNO_HWMON_SENSOR_TYPE DS1823p_voltage_sensor = {
 	.type_name = HWMON_SYS_VOLTAGE_NAME,
 	.sensor_num = 5,
 	.sensor[0] = {
@@ -52,7 +52,7 @@ SYNO_HWMON_SENSOR_TYPE RS1224p_voltage_sensor = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1224p_fan_speed_rpm = {
+SYNO_HWMON_SENSOR_TYPE DS1823p_fan_speed_rpm = {
 	.type_name = HWMON_SYS_FAN_RPM_NAME,
 	.sensor_num = 2,
 	.sensor[0] = {
@@ -63,7 +63,7 @@ SYNO_HWMON_SENSOR_TYPE RS1224p_fan_speed_rpm = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1224p_hdd_backplane_status = {
+SYNO_HWMON_SENSOR_TYPE DS1823p_hdd_backplane_status = {
 	.type_name = HWMON_HDD_BP_STATUS_NAME,
 	.sensor_num = 2,
 	.sensor[0] = {
@@ -73,11 +73,6 @@ SYNO_HWMON_SENSOR_TYPE RS1224p_hdd_backplane_status = {
 		.sensor_name = HWMON_HDD_BP_ENABLE,
 	},
 };
-
-int RS1224pGetBuzzerCleared(unsigned char *buzzer_cleared)
-{
-    return SYNO_BUZZER_BUTTON_GPIO_GET(buzzer_cleared);
-}
 
 // GPIO_86
 static SYNO_GPIO_INFO disk_led_ctrl = {
@@ -92,48 +87,39 @@ static SYNO_GPIO_INFO alarm_led = {
         .gpio_polarity  = ACTIVE_HIGH,
 };
 
-// GPIO_69
-static SYNO_GPIO_INFO mute_button_detect = {
-        .nr_gpio                = 1,
-        .gpio_port              = {69},
-        .gpio_polarity  = ACTIVE_LOW,
-};
-
 static
-void RS1224pGpioInit(void)
+void DS1823pGpioInit(void)
 {
 	syno_gpio.disk_led_ctrl         = &disk_led_ctrl;
 	syno_gpio.alarm_led		= &alarm_led;
-	syno_gpio.mute_button_detect		= &mute_button_detect;
 }
 
 static
-void RS1224pGpioCleanup(void)
+void DS1823pGpioCleanup(void)
 {
 	syno_gpio.disk_led_ctrl         = NULL;
 	syno_gpio.alarm_led		= NULL;
-	syno_gpio.mute_button_detect		=NULL;
 }
 
 static
-int RS1224pInitModuleType(struct synobios_ops *ops)
+int DS1823pInitModuleType(struct synobios_ops *ops)
 {
-	module_t type_rs1224p = MODULE_T_RS1224p;
-	module_t *pType = &type_rs1224p;
+	module_t type_1823p = MODULE_T_DS1823p;
+	module_t *pType = &type_1823p;
 
 	module_type_set(pType);
 	return 0;
 }
 
 static
-int RS1224pFanSpeedMapping(FAN_SPEED speed)
+int DS1823pFanSpeedMapping(FAN_SPEED speed)
 {
 	int iDutyCycle = -1;
 	size_t i;
 
-	for( i = 0; i < sizeof(gRS1224pSpeedMapping)/sizeof(PWM_FAN_SPEED_MAPPING); ++i ) {
-		if( gRS1224pSpeedMapping[i].fanSpeed == speed ) {
-			iDutyCycle = gRS1224pSpeedMapping[i].iDutyCycle;
+	for( i = 0; i < sizeof(gDS1823pSpeedMapping)/sizeof(PWM_FAN_SPEED_MAPPING); ++i ) {
+		if( gDS1823pSpeedMapping[i].fanSpeed == speed ) {
+			iDutyCycle = gDS1823pSpeedMapping[i].iDutyCycle;
 			break;
 		}
 	}
@@ -141,21 +127,21 @@ int RS1224pFanSpeedMapping(FAN_SPEED speed)
 	return iDutyCycle;
 }
 
-struct model_ops rs1224p_ops = {
-	.x86_init_module_type = RS1224pInitModuleType,
-	.x86_fan_speed_mapping = RS1224pFanSpeedMapping,
+struct model_ops ds1823p_ops = {
+	.x86_init_module_type = DS1823pInitModuleType,
+	.x86_fan_speed_mapping = DS1823pFanSpeedMapping,
 	.x86_set_esata_led_status = NULL, /* no esata led */
 	.x86_cpufan_speed_mapping = NULL, /* no cpu fan */
-	.x86_get_buzzer_cleared = RS1224pGetBuzzerCleared, 
-	.x86_gpio_init = RS1224pGpioInit,
-	.x86_gpio_cleanup = RS1224pGpioCleanup,
+	.x86_get_buzzer_cleared = NULL, /* no mute button */
+	.x86_gpio_init = DS1823pGpioInit,
+	.x86_gpio_cleanup = DS1823pGpioCleanup,
 };
 
-struct hwmon_sensor_list rs1224p_sensor_list = {
-	.thermal_sensor = &RS1224p_thermal_sensor,
-	.voltage_sensor = &RS1224p_voltage_sensor,
-	.fan_speed_rpm = &RS1224p_fan_speed_rpm,
+struct hwmon_sensor_list ds1823p_sensor_list = {
+	.thermal_sensor = &DS1823p_thermal_sensor,
+	.voltage_sensor = &DS1823p_voltage_sensor,
+	.fan_speed_rpm = &DS1823p_fan_speed_rpm,
 	.psu_status = NULL,
-	.hdd_backplane = &RS1224p_hdd_backplane_status,
+	.hdd_backplane = &DS1823p_hdd_backplane_status,
 };
 

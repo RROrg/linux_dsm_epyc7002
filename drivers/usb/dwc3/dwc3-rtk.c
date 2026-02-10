@@ -386,13 +386,13 @@ static int dwc3_rtk_remove_role_switch(struct dwc3_rtk *rtk)
 	return 0;
 }
 #else
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #define dwc3_rtk_setup_role_switch(x)
 #define dwc3_rtk_remove_role_switch(x)
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 #define dwc3_rtk_setup_role_switch(x) 0
 #define dwc3_rtk_remove_role_switch(x) 0
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #endif
 
 static int dwc3_rtk_init(struct dwc3_rtk *rtk)
@@ -713,10 +713,10 @@ static int dwc3_rtk_remove(struct platform_device *pdev)
 
 static void dwc3_rtk_shutdown(struct platform_device *pdev)
 {
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 	struct dwc3_rtk	*rtk = platform_get_drvdata(pdev);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	struct device		*dev = &pdev->dev;
 
 	dev_info(dev, "%s start ...\n", __func__);

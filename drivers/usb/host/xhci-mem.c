@@ -1060,7 +1060,7 @@ void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,
 	virt_dev = xhci->devs[udev->slot_id];
 	ep0_ctx = xhci_get_ep_ctx(xhci, virt_dev->in_ctx, 0);
 	ep_ring = virt_dev->eps[0].ring;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #if 1
@@ -1126,7 +1126,7 @@ void xhci_copy_ep0_dequeue_into_input_ctx(struct xhci_hcd *xhci,
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	/*
 	 * FIXME we don't keep track of the dequeue pointer very well after a
 	 * Set TR dequeue pointer, so we're setting the dequeue pointer of the

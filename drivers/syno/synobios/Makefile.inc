@@ -36,21 +36,6 @@ endif
 ifeq ($(SYNO_PLATFORM),ALPINE)
 export SUBDIR := alpine
 endif
-ifeq ($(SYNO_PLATFORM),BROADCOM_NORTHSTARPLUS)
-export SUBDIR := northstarplus
-endif
-ifeq ($(SYNO_PLATFORM),QUALCOMM_IPQ806X)
-export SUBDIR := ipq806x
-endif
-ifeq ($(SYNO_PLATFORM),QUALCOMM_DAKOTA)
-export SUBDIR := dakota
-endif
-ifeq ($(SYNO_PLATFORM),QUALCOMM_CYPRESS)
-export SUBDIR := cypress
-endif
-ifeq ($(SYNO_PLATFORM),QUALCOMM_HAWKEYE)
-export SUBDIR := hawkeye
-endif
 ifeq ($(SYNO_PLATFORM),STM_MONACO)
 export SUBDIR := monaco
 endif
@@ -134,9 +119,6 @@ endif
 ifeq ($(SYNO_PLATFORM),REALTEK_RTD1619B)
 export SUBDIR := rtd1619b
 endif
-ifeq ($(SYNO_PLATFORM),REALTEK_RTD1619B_MANGO)
-export SUBDIR := rtd1619bmango
-endif
 ifeq ($(SYNO_PLATFORM),BROADWELLNKV2)
 export SUBDIR := broadwellnkv2
 endif
@@ -148,7 +130,4 @@ export SUBDIR := geminilakevs
 endif
 ifeq ($(SYNO_PLATFORM),EPYC7003NTB)
 export SUBDIR := epyc7003ntb
-endif
-ifeq ($(SYNO_PLATFORM),RAPTORLAKES)
-export SUBDIR := raptorlakes
 endif

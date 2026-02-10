@@ -648,19 +648,6 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 #ifdef CONFIG_SYNO_SMBUS_HDD_POWERCTL
 			synobios_ops.hwmon_get_backplane_status = HWMONGetHDDBackPlaneStatusBySMBUS;
 #endif /* CONFIG_SYNO_SMBUS_HDD_POWERCTL */
-			if (syno_is_hw_revision(HW_R1)) {
-				synobios_ops.set_hdd_led = SetHddActLedByLedTrigger;
-#ifdef CONFIG_SYNO_LEDS_TRIGGER
-				synobios_ops.set_disk_led = SetDiskLedStatusByLedTrigger;
-				SetupDiskLedMap();
-#endif // CONFIG_SYNO_LEDS_TRIGGER
-			} else {
-#ifdef CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL
-				if (NULL != syno_valid_lsi3008_led) {
-					synobios_ops.set_hdd_led = syno_valid_lsi3008_led;
-				}
-#endif /* CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL */
-			}
 			break;
 		case MODEL_SA3610:
 			model_ops = &sa3610_ops;
@@ -676,19 +663,6 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 #ifdef CONFIG_SYNO_SMBUS_HDD_POWERCTL
 			synobios_ops.hwmon_get_backplane_status = HWMONGetHDDBackPlaneStatusBySMBUS;
 #endif /* CONFIG_SYNO_SMBUS_HDD_POWERCTL */
-			if (syno_is_hw_revision(HW_R1)) {
-				synobios_ops.set_hdd_led = SetHddActLedByLedTrigger;
-#ifdef CONFIG_SYNO_LEDS_TRIGGER
-				synobios_ops.set_disk_led = SetDiskLedStatusByLedTrigger;
-				SetupDiskLedMap();
-#endif // CONFIG_SYNO_LEDS_TRIGGER
-			} else {
-#ifdef CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL
-				if (NULL != syno_valid_lsi3008_led) {
-					synobios_ops.set_hdd_led = syno_valid_lsi3008_led;
-				}
-#endif /* CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL */
-			}
 			break;
 		default:
 			break;

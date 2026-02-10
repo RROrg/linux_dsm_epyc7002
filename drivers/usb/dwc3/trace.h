@@ -11,11 +11,11 @@
  */
 
 #undef TRACE_SYSTEM
-#if defined(MY_DEF_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE)
+#if defined(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE)
 #define TRACE_SYSTEM dwc3_rtk
-#else /* define(MY_DEF_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
+#else /* define(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
 #define TRACE_SYSTEM dwc3
-#endif /* define(MY_DEF_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
+#endif /* define(MY_ABC_HERE) && defined(DRIVERS_USB_DWC3_RTK_TRACE) */
 
 #if !defined(__DWC3_TRACE_H) || defined(TRACE_HEADER_MULTI_READ)
 #define __DWC3_TRACE_H

@@ -3366,14 +3366,14 @@ static int ffs_func_setup(struct usb_function *f,
 	__ffs_event_add(ffs, FUNCTIONFS_SETUP);
 	spin_unlock_irqrestore(&ffs->ev.waitq.lock, flags);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* Fix adnroid adb push big file fail */
 	return 0;
 #else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	return creq->wLength == 0 ? USB_GADGET_DELAYED_STATUS : 0;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 }
 
 static bool ffs_func_req_match(struct usb_function *f,

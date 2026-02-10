@@ -27,10 +27,10 @@
 #include <linux/mtd/map.h>
 
 #include <linux/uaccess.h>
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/syscalls.h>
 #include <linux/semaphore.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #include "mtdcore.h"
 
@@ -58,9 +58,9 @@ static int mtdchar_open(struct inode *inode, struct file *file)
 	int ret = 0;
 	struct mtd_info *mtd;
 	struct mtd_file_info *mfi;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	int syno_print_mtd_access_log = 1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	pr_debug("MTD_open\n");
 
@@ -71,7 +71,7 @@ static int mtdchar_open(struct inode *inode, struct file *file)
 	mutex_lock(&mtd_mutex);
 	mtd = get_mtd_device(NULL, devnum);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #ifdef MY_DEF_HERE
 	if (!strcmp("vendor", mtd->name)) {
 		syno_print_mtd_access_log = 0;
@@ -85,7 +85,7 @@ static int mtdchar_open(struct inode *inode, struct file *file)
 	if (syno_print_mtd_access_log) {
 		printk(KERN_ERR"open mtd (%s), process=%s\n", mtd->name, current->comm);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	if (IS_ERR(mtd)) {
 		ret = PTR_ERR(mtd);
@@ -126,13 +126,13 @@ static int mtdchar_close(struct inode *inode, struct file *file)
 {
 	struct mtd_file_info *mfi = file->private_data;
 	struct mtd_info *mtd = mfi->mtd;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	int syno_print_mtd_access_log = 1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	pr_debug("MTD_close\n");
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #ifdef MY_DEF_HERE
 	if (!strcmp("vendor", mtd->name)) {
 		syno_print_mtd_access_log = 0;
@@ -146,7 +146,7 @@ static int mtdchar_close(struct inode *inode, struct file *file)
 	if (syno_print_mtd_access_log) {
 		printk(KERN_ERR"close mtd (%s), process=%s\n", mtd->name, current->comm);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	/* Only sync if opened RW */
 	if ((file->f_mode & FMODE_WRITE))
@@ -267,7 +267,7 @@ static ssize_t mtdchar_read(struct file *file, char __user *buf, size_t count,
 	return total_retlen;
 } /* mtdchar_read */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static int syno_write_buf_size = 0x1000;
 
 char *kbuf;
@@ -335,26 +335,26 @@ SYSCALL_DEFINE1(syno_mtd_alloc, bool, blMalloc)
 	return do_syno_mtd_alloc(blMalloc);
 } /* sys_syno_mtd_alloc */
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t count,
 			loff_t *ppos)
 {
 	struct mtd_file_info *mfi = file->private_data;
 	struct mtd_info *mtd = mfi->mtd;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	// do nothing
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	size_t size = count;
 	char *kbuf;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	size_t retlen;
 	size_t total_retlen=0;
 	int ret=0;
 	int len;
 
 	pr_debug("MTD_write\n");
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (syno_write_buf_size < mtd->writesize) {
 		printk(KERN_ERR "mtd kmalloc size small than mtd driver minimal write size !!\n");
 		WARN_ON(1);
@@ -363,7 +363,7 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 			do_syno_mtd_alloc(false);
 		printk(KERN_ERR "mtd kmalloc size replace with mtd driver minimal write size !!\n");
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	if (*ppos >= mtd->size)
 		return -ENOSPC;
@@ -374,35 +374,35 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 	if (!count)
 		return 0;
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (!write_kbuf_len) {
 		ret = do_syno_mtd_alloc(true);
 		if (ret != 0)
 			return ret;
 	}
 	down(&write_kbuf_sem);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	kbuf = mtd_kmalloc_up_to(mtd, &size);
 	if (!kbuf)
 		return -ENOMEM;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	while (count) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (count > syno_write_buf_size)
 			len = syno_write_buf_size;
 		else
 			len = count;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		len = min_t(size_t, count, size);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		if (copy_from_user(kbuf, buf, len)) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			up(&write_kbuf_sem);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			kfree(kbuf);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			return -EFAULT;
 		}
 
@@ -449,20 +449,20 @@ static ssize_t mtdchar_write(struct file *file, const char __user *buf, size_t c
 			buf += retlen;
 		}
 		else {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			up(&write_kbuf_sem);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			kfree(kbuf);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			return ret;
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	up(&write_kbuf_sem);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	kfree(kbuf);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	return total_retlen;
 } /* mtdchar_write */
 
@@ -819,10 +819,10 @@ static int mtdchar_ioctl(struct file *file, u_int cmd, u_long arg)
 	case MTDFILEMODE:
 	case BLKPG:
 	case BLKRRPART:
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	case MEMMODIFYPARTINFO:
 	case MEMMODIFYFISINFO:
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		break;
 
 	/* "dangerous" commands */
@@ -1112,7 +1112,7 @@ static int mtdchar_ioctl(struct file *file, u_int cmd, u_long arg)
 		break;
 	}
 
-#ifdef  MY_DEF_HERE
+#ifdef  MY_ABC_HERE
 	case MEMMODIFYPARTINFO:
 	{
 		struct erase_info_user einfo32;
@@ -1145,7 +1145,7 @@ static int mtdchar_ioctl(struct file *file, u_int cmd, u_long arg)
 
 		break;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	/* This ioctl is being deprecated - it truncates the ECC layout */
 	case ECCGETLAYOUT:
@@ -1418,10 +1418,10 @@ int __init init_mtdchar(void)
 		return ret;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* Allocate buffer and init spinlock */
 	sema_init(&write_kbuf_sem, 1);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	return ret;
 }

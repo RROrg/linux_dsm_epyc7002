@@ -548,7 +548,7 @@ SYM_FUNC_START_LOCAL_NOALIGN(.Lrelocated)
 	shrq	$3, %rcx
 	rep	stosq
 
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#ifdef MY_DEF_HERE
 /*
  * Insert setup_data for testing whether decompression is skipped
  */
@@ -560,7 +560,7 @@ SYM_FUNC_START_LOCAL_NOALIGN(.Lrelocated)
 	movq	%r9, 0x0(%r8)
 	movq	%r8, 0x250(%rsi)
 3:
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 
 /*
  * If running as an SEV guest, the encryption mask is required in the
@@ -816,7 +816,7 @@ SYM_DATA_START_LOCAL(loaded_image_proto)
 SYM_DATA_END(loaded_image_proto)
 #endif
 
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#ifdef MY_DEF_HERE
 /*
  * setup_data for testing whether decompression is skipped
  */
@@ -826,7 +826,7 @@ decompression_setup_data:
 	.quad	0x0000000000000000		/* next */
 	.long	__DECOMPRESSION_TYPE__	/* type */
 	.long	0x00000000				/* len, no data */
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 
 /*
  * Check for the correct C-bit position when the startup_32 boot-path is used.

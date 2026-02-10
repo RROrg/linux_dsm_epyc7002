@@ -1057,7 +1057,7 @@ int extent_same_release_size_accounting(struct ulist *dst_extent_item,
 	return 0;
 }
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 /* ported from 4.4.x */
 static struct page *extent_same_get_page(struct inode *inode, pgoff_t index)
 {
@@ -2074,7 +2074,7 @@ int inline_dedupe_search(struct inode *inode, u64 start, u64 len,
 out:
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static void syno_inode_clone_change_flags(struct inode *src,

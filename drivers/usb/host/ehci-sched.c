@@ -9,13 +9,13 @@
 
 /* this file is part of ehci-hcd.c */
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 /* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
 extern int RTK_ohci_force_suspend(const char *func);
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /*-------------------------------------------------------------------------*/
 
 /*
@@ -919,7 +919,7 @@ static int intr_submit(
 	/* get endpoint and transfer/schedule data */
 	epnum = urb->ep->desc.bEndpointAddress;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_USB_OHCI_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
@@ -928,7 +928,7 @@ static int intr_submit(
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	spin_lock_irqsave(&ehci->lock, flags);
 
 	if (unlikely(!HCD_HW_ACCESSIBLE(ehci_to_hcd(ehci)))) {

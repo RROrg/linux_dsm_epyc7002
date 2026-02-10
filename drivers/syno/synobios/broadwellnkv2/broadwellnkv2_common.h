@@ -48,6 +48,8 @@ extern int syno_sys_temperature(struct _SynoThermalTemp *pThermalTemp);
 #endif /*MY_DEF_HERE*/
 
 extern void FS3410SMBusSwitchInit(void);
+extern void SA3410SMBusSwitchInit(void);
+extern void SA3610SMBusSwitchInit(void);
 
 #define BROADWELLNKV2_POWER1_PIN        50
 #define BROADWELLNKV2_POWER2_PIN        54

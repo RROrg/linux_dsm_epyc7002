@@ -1401,9 +1401,9 @@ again:
 							 trans->transid);
 			btrfs_set_file_extent_num_bytes(leaf, fi,
 							extent_end - end);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			btrfs_set_file_extent_offset(leaf, fi,
 						     end - orig_offset);
 			fi = btrfs_item_ptr(leaf, path->slots[0] - 1,
@@ -1412,9 +1412,9 @@ again:
 							 trans->transid);
 			btrfs_set_file_extent_num_bytes(leaf, fi,
 							end - other_start);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			btrfs_mark_buffer_dirty(leaf);
 			goto out;
 		}
@@ -1432,9 +1432,9 @@ again:
 							start - key.offset);
 			btrfs_set_file_extent_generation(leaf, fi,
 							 trans->transid);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			path->slots[0]++;
 			new_key.offset = start;
 			btrfs_set_item_key_safe(fs_info, path, &new_key);
@@ -1447,9 +1447,9 @@ again:
 							other_end - start);
 			btrfs_set_file_extent_offset(leaf, fi,
 						     start - orig_offset);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			btrfs_mark_buffer_dirty(leaf);
 			goto out;
 		}
@@ -1586,9 +1586,9 @@ again:
 		btrfs_set_file_extent_generation(leaf, fi, trans->transid);
 		btrfs_set_file_extent_num_bytes(leaf, fi,
 						extent_end - key.offset);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		btrfs_mark_buffer_dirty(leaf);
 
 		ret = btrfs_del_items(trans, root, path, del_slot, del_nr);
@@ -3337,9 +3337,9 @@ static int fill_holes(struct btrfs_trans_handle *trans,
 			btrfs_set_item_key_safe(root->fs_info, path, &key);
 		}
 		btrfs_set_file_extent_offset(leaf, fi, 0);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		btrfs_set_file_extent_generation(leaf, fi, trans->transid);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		btrfs_mark_buffer_dirty(leaf);
 		if (del_slot >= 0) {
 			ret = btrfs_del_items(trans, root, path, del_slot, 1);

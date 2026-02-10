@@ -2678,7 +2678,7 @@ static int __init keep_bootcon_setup(char *str)
 
 early_param("keep_bootcon", keep_bootcon_setup);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int syno_setup_console(struct console *newcon)
 {
 	int ret = -1;
@@ -2699,7 +2699,7 @@ static int syno_setup_console(struct console *newcon)
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * This is called by register_console() to try to match
@@ -2818,11 +2818,11 @@ void register_console(struct console *newcon)
 		if (newcon->index < 0)
 			newcon->index = 0;
 		if (newcon->setup == NULL ||
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		    syno_setup_console(newcon) == 0) {
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		    newcon->setup(newcon, NULL) == 0) {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			newcon->flags |= CON_ENABLED;
 			if (newcon->device) {
 				newcon->flags |= CON_CONSDEV;
@@ -2917,7 +2917,7 @@ void register_console(struct console *newcon)
 }
 EXPORT_SYMBOL(register_console);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void __ref pci_console_unmap_memory(void __iomem *addr, u32 size)
 {
 	if (!addr || !size)
@@ -2926,7 +2926,7 @@ static void __ref pci_console_unmap_memory(void __iomem *addr, u32 size)
 	else
 		early_iounmap(addr, size);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 int unregister_console(struct console *console)
 {
@@ -2974,11 +2974,11 @@ int unregister_console(struct console *console)
 	console->flags &= ~CON_ENABLED;
 	console_unlock();
 	console_sysfs_notify();
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (console->pcimapaddress) {
 		pci_console_unmap_memory(console->pcimapaddress, console->pcimapsize);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (console->exit)
 		res = console->exit(console);

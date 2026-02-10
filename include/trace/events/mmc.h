@@ -190,7 +190,7 @@ TRACE_EVENT(mmc_request_done,
 		  __entry->hold_retune, __entry->retune_period)
 );
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 /*
  * Tracepoint for rtk emmc issue legacy command.
  */
@@ -245,7 +245,7 @@ TRACE_EVENT(mmc_rtkemmc_legacy_irq_complete,
                   __entry->error_interrupt)
 );
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #endif /* _TRACE_MMC_H */
 
 /* This part must be outside protection */

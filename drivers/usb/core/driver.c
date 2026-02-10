@@ -305,7 +305,7 @@ static int usb_probe_device(struct device *dev)
 	return error;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 int RTK_usb_probe_device(struct device *dev)
 {
@@ -313,12 +313,12 @@ int RTK_usb_probe_device(struct device *dev)
 	ret = usb_probe_device(dev);
 	return ret;
 }
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 EXPORT_SYMBOL(RTK_usb_probe_device);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /* called from driver core with dev locked */
 static int usb_unbind_device(struct device *dev)
 {
@@ -334,7 +334,7 @@ static int usb_unbind_device(struct device *dev)
 	return 0;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 int RTK_usb_unbind_device(struct device *dev)
 {
@@ -342,12 +342,12 @@ int RTK_usb_unbind_device(struct device *dev)
 	ret = usb_unbind_device(dev);
 	return ret;
 }
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 EXPORT_SYMBOL(RTK_usb_unbind_device);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /* called from driver core with dev locked */
 static int usb_probe_interface(struct device *dev)
 {

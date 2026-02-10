@@ -79,7 +79,7 @@ extern int SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(int index);
 extern int SYNO_CTRL_HDD_POWERON(int index, int value);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/random.h>
 #include <linux/synolib.h>
 #include <linux/synosata.h>
@@ -94,7 +94,7 @@ extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
 static int gCurrentSpinupGroupNum = 0;
 static int giNeedWakeAll = 0;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #define ATA_SCSI_RBUF_SIZE	576
 
@@ -4270,7 +4270,7 @@ static void ata_scsi_qc_complete(struct ata_queued_cmd *qc)
 	if (need_sense && !ap->ops->error_handler)
 		ata_dump_status(ap->print_id, &qc->result_tf);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (!(cdb[0] == ATA_16 && cdb[14] == ATA_CMD_CHK_POWER)) {
 		/* update time of last command */
 		qc->dev->ulLastCmd = jiffies;
@@ -4289,7 +4289,7 @@ static void ata_scsi_qc_complete(struct ata_queued_cmd *qc)
 			giNeedWakeAll = 0;
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	ata_qc_done(qc);
 }
@@ -4385,7 +4385,7 @@ defer:
 		return SCSI_MLQUEUE_HOST_BUSY;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void ata_qc_complete_read(struct ata_queued_cmd *qc)
 {
 	if (qc->err_mask) {
@@ -4619,7 +4619,7 @@ ISSUE_READ:
 WAIT:
 	return SCSI_MLQUEUE_HOST_BUSY;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 struct ata_scsi_args {
 	struct ata_device	*dev;
@@ -7097,7 +7097,7 @@ int __ata_scsi_queuecmd(struct scsi_cmnd *scmd, struct ata_device *dev)
 #endif /* MY_ABC_HERE */
 
 	if (xlat_func)
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	{
 		if (0 == gSynoHddPowerupSeq && 1 == guiWakeupDisksNum) {
 			/* no spin up delay, use original function */
@@ -7107,9 +7107,9 @@ int __ata_scsi_queuecmd(struct scsi_cmnd *scmd, struct ata_device *dev)
 			rc = syno_ata_scsi_translate(dev, scmd, xlat_func);
 		}
 	}
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		rc = ata_scsi_translate(dev, scmd, xlat_func);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	else
 		ata_scsi_simulate(dev, scmd);
 

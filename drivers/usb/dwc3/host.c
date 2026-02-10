@@ -133,12 +133,12 @@ err:
 void dwc3_host_exit(struct dwc3 *dwc)
 {
 	platform_device_unregister(dwc->xhci);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #if 1 // USB_PATCH_BY_RTK
 	dwc->xhci = NULL;
 #endif
 
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 }

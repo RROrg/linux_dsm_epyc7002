@@ -120,11 +120,11 @@ EXPORT_SYMBOL_GPL(kvm_x86_ops);
 static bool __read_mostly ignore_msrs = 0;
 module_param(ignore_msrs, bool, S_IRUGO | S_IWUSR);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static bool __read_mostly report_ignored_msrs = false;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 static bool __read_mostly report_ignored_msrs = true;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 module_param(report_ignored_msrs, bool, S_IRUGO | S_IWUSR);
 
 unsigned int min_timer_period_us = 200;

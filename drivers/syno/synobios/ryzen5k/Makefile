@@ -10,9 +10,8 @@ ryzen5k-synobios-objs = \
 	../mapping.o \
 	../rtc/localtime.o \
 	../rtc/alarmtime.o \
-	../rtc/rtc-seiko-lib.o \
-	../rtc/rtc-linux-seiko.o \
+	../rtc/rtc-pericom-lib.o \
+	../rtc/rtc-linux-pericom.o \
 	../i2c/i2c-linux.o \
-	../pmbus/pmbus.o \
 	ryzen5k_common.o \
 	../led/led_trigger.o

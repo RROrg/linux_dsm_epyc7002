@@ -3046,11 +3046,11 @@ static void rtl_hw_start_8168(struct net_device *dev)
 
 	RTL_W16(C_PLUS_CMD, tp->cp_cmd);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	RTL_W16(INTR_MITIGATE, 0x1111);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	RTL_W16(INTR_MITIGATE, 0x5151);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	rtl_set_rx_tx_desc_registers(tp, ioaddr);
 

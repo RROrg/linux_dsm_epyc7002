@@ -858,7 +858,7 @@ static ssize_t remove_store(struct device *dev, struct device_attribute *attr,
 }
 static DEVICE_ATTR_IGNORE_LOCKDEP(remove, S_IWUSR, NULL, remove_store);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_RTK_HCD_TEST_MODE
 #include <linux/slab.h>
 #include <linux/usb/ch11.h>
@@ -1047,7 +1047,7 @@ set_runTestMode (struct device *dev, struct device_attribute *attr, const char *
 static DEVICE_ATTR(runTestMode, S_IRUGO | S_IWUSR,
 		show_runTestMode, set_runTestMode);
 #endif /* CONFIG_USB_RTK_HCD_TEST_MODE */
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static struct attribute *dev_attrs[] = {
 	/* current configuration's attributes */
@@ -1089,11 +1089,11 @@ static struct attribute *dev_attrs[] = {
 #ifdef CONFIG_OF
 	&dev_attr_devspec.attr,
 #endif
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_RTK_HCD_TEST_MODE
 	&dev_attr_runTestMode.attr,
 #endif // CONFIG_USB_RTK_HCD_TEST_MODE
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	NULL,
 };
 static struct attribute_group dev_attr_grp = {

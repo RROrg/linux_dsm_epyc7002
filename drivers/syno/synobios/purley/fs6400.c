@@ -3,7 +3,6 @@
 #include <linux/kernel.h> /* printk() */
 #include <linux/errno.h>  /* error codes */
 #include <linux/delay.h>
-#include <linux/i2c.h>
 #include "synobios.h"
 #include "purley_common.h"
 

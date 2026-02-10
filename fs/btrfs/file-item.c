@@ -165,7 +165,7 @@ out:
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int file_extent_deduped_check(struct btrfs_path *path,
 				     struct btrfs_root *root,
 				     u64 inode_num, u64 offset)
@@ -344,7 +344,7 @@ out:
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 int btrfs_insert_file_extent(struct btrfs_trans_handle *trans,
 			     struct btrfs_root *root,
@@ -385,9 +385,9 @@ int btrfs_insert_file_extent(struct btrfs_trans_handle *trans,
 	btrfs_set_file_extent_compression(leaf, item, compression);
 	btrfs_set_file_extent_encryption(leaf, item, encryption);
 	btrfs_set_file_extent_other_encoding(leaf, item, other_encoding);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	btrfs_set_file_extent_syno_flag(leaf, item, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	btrfs_mark_buffer_dirty(leaf);
 out:

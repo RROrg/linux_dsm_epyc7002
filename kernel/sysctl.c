@@ -106,33 +106,30 @@
 #ifdef CONFIG_LOCKUP_DETECTOR
 #include <linux/nmi.h>
 #endif
-#ifdef CONFIG_USER_NS
-#include <linux/user_namespace.h>
-#endif
 
-#if defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE || MY_DEF_HERE */
+#endif /* MY_ABC_HERE || MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <uapi/linux/syno.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synobios.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #if defined(CONFIG_SYSCTL)
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 char gszSynoTtyS0[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS0);
 char gszSynoTtyS1[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS1);
 char gszSynoTtyS2[50] = {0};
 EXPORT_SYMBOL(gszSynoTtyS2);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 long g_smbus_hdd_powerctl = 0;
 EXPORT_SYMBOL(g_smbus_hdd_powerctl);
 char gSynoSmbusHddType[16];
@@ -155,7 +152,7 @@ int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchAddrs);
 int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchVals);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 char gszSynoHWVersion[16];
@@ -179,10 +176,10 @@ char gszCustomSerialNum[32] = {'\0'};
 EXPORT_SYMBOL(gszCustomSerialNum);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int (*funcSYNOCtrlDiskLedBy1475)(unsigned short, unsigned short) = NULL;
 EXPORT_SYMBOL(funcSYNOCtrlDiskLedBy1475);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 /*
@@ -214,7 +211,7 @@ long g_is_sas_model = 0;
 EXPORT_SYMBOL(g_is_sas_model);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 long unsigned int guiWakeupDisksNum = 1;
 EXPORT_SYMBOL(guiWakeupDisksNum);
 int gSynoHddPowerupSeq = 0;
@@ -240,7 +237,7 @@ int giSynoDSleepCurrentSpinupGroupDiskNum = 0;
 EXPORT_SYMBOL(giSynoDSleepCurrentSpinupGroupDiskNum);
 int giSynoDSleepCurrentPoweronDisks = 0;
 EXPORT_SYMBOL(giSynoDSleepCurrentPoweronDisks);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 unsigned int gSynoCPUInfoCore = 0;
@@ -258,12 +255,12 @@ int gSynoResetFlag = 0;
 EXPORT_SYMBOL(gSynoResetFlag);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 char gszPciAddrList[PCI_ADDR_NUM_MAX][PCI_ADDR_LEN_MAX] = {{0}};
 int gPciAddrNum = 0;
 EXPORT_SYMBOL(gszPciAddrList);
 EXPORT_SYMBOL(gPciAddrNum);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 int (*syno_valid_lsi3008_led)(SYNO_LED ledStatus);
@@ -309,7 +306,7 @@ int (*func_synobios_event_handler)(unsigned long long synobios_event_type, ...);
 EXPORT_SYMBOL(func_synobios_event_handler);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 
 #define SZ_IF_PREFIX "eth"
 #define SYNO_SFP_UNSUPPORT_NOTIFY_SIZE 64
@@ -337,9 +334,9 @@ err:
 }
 EXPORT_SYMBOL(SynoSfpUnsupportNotifySet);
 
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int gSynoDiskReadyCheck = 1;
 EXPORT_SYMBOL(gSynoDiskReadyCheck);
 extern int syno_scsi_disk_ready_check(void);
@@ -351,7 +348,7 @@ static int proc_dointvec_disk_ready_check(struct ctl_table *table, int write,
 	gSynoDiskReadyCheck = syno_scsi_disk_ready_check();
 	return proc_dointvec(table, write, buffer, lenp, ppos);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 unsigned int SynoDiskSeqValidBytesThreshold = (1024 * 1024);
@@ -370,7 +367,7 @@ EXPORT_SYMBOL(gSynoAtaDebug);
 static int sixty = 60;
 #endif
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void (*funcSynoLP3943Mutex)(bool) = NULL;
 EXPORT_SYMBOL(funcSynoLP3943Mutex);
 void SYNOLP3943I2CMutex (bool lock)
@@ -380,7 +377,7 @@ void SYNOLP3943I2CMutex (bool lock)
 	}
 }
 EXPORT_SYMBOL(SYNOLP3943I2CMutex);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static int __maybe_unused neg_one = -1;
 static int __maybe_unused two = 2;
@@ -1915,7 +1912,7 @@ int syno_proc_do_string_vector(struct ctl_table *table, int write,
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 /**
  * Read:
  * The first element is the total length of array. ex:
@@ -2021,7 +2018,7 @@ out:
 	*ppos += *lenp;
 	return err;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #else /* CONFIG_PROC_SYSCTL */
 
@@ -2099,13 +2096,13 @@ int syno_proc_do_string_vector(struct ctl_table *table, int write,
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int syno_proc_do_int_vector(struct ctl_table *table, int write,
 			void __user *buffer, size_t *lenp, loff_t *ppos)
 {
     return -ENOSYS;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #endif /* CONFIG_PROC_SYSCTL */
 
@@ -2392,15 +2389,6 @@ static struct ctl_table kern_table[] = {
 		.procname	= "core_pipe_limit",
 		.data		= &core_pipe_limit,
 		.maxlen		= sizeof(unsigned int),
-		.mode		= 0644,
-		.proc_handler	= proc_dointvec,
-	},
-#endif
-#ifdef CONFIG_USER_NS
-	{
-		.procname	= "unprivileged_userns_clone",
-		.data		= &unprivileged_userns_clone,
-		.maxlen		= sizeof(int),
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
@@ -3282,7 +3270,7 @@ static struct ctl_table kern_table[] = {
 		.proc_handler	= proc_dointvec,
 	},
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	{
 		.procname	= "syno_internal_hd_num",
 		.data		= &g_syno_hdd_powerup_seq,
@@ -3311,7 +3299,7 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0644,
 		.proc_handler	= proc_dointvec,
 	},
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
     {
         .procname       = "syno_is_sas_model",
@@ -3353,7 +3341,7 @@ static struct ctl_table kern_table[] = {
             .proc_handler   = proc_dostring,
         },
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	{
 		.procname       = "syno_unsupported_sfp_notify",
 		.data           = &gSynoSfpUnsupportNotify,
@@ -3361,7 +3349,7 @@ static struct ctl_table kern_table[] = {
 		.mode           = 0644,
 		.proc_handler   = syno_proc_do_int_vector,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	{
 		.procname       = "syno_swap_flag",
@@ -3407,7 +3395,7 @@ static struct ctl_table kern_table[] = {
 		.proc_handler   = proc_dointvec,
 	},
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	{
 		.procname	= "syno_disk_ready_check",
 		.data		= &gSynoDiskReadyCheck,
@@ -3415,7 +3403,7 @@ static struct ctl_table kern_table[] = {
 		.mode		= 0444,
 		.proc_handler	= proc_dointvec_disk_ready_check,
 	},
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	{
 		.procname       = "syno_disk_seq_valid_bytes_threshold",
@@ -4264,7 +4252,7 @@ char* syno_get_hw_revision(void)
 EXPORT_SYMBOL(syno_get_hw_revision);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int (*funcSYNOReadAdtPeci)(struct _SynoCpuTemp *) = NULL;
 EXPORT_SYMBOL(funcSYNOReadAdtPeci);
 int (*funcSYNOReadAdtFanSpeedRpm)(struct _SYNO_HWMON_SENSOR_TYPE *) = NULL;
@@ -4322,4 +4310,4 @@ int syno_get_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE *FanSpeed
 	return ret;
 }
 EXPORT_SYMBOL(syno_get_adt_fan_speed_rpm_by_order);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */

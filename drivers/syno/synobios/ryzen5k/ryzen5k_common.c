@@ -16,10 +16,6 @@
 #include "../rtc/rtc.h"
 #include "../i2c/i2c-linux.h"
 #include "ryzen5k_common.h"
-#ifdef CONFIG_SYNO_HWMON_PMBUS
-#include <linux/syno_fdt.h>
-#include "../pmbus/pmbus.h"
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
 
 static int Uninitialize(void);
 
@@ -108,35 +104,35 @@ End:
 
 int xsGetBuzzerCleared(unsigned char *buzzer_cleared)
 {
-	GPIO_PIN Pin;
-	int ret = -1;
+    GPIO_PIN Pin;
+    int ret = -1;
 
-	if (NULL == buzzer_cleared) {
+	if ( NULL == buzzer_cleared ) {
 		goto End;
 	}
 
 	*buzzer_cleared = 0;
 
 	Pin.pin = RYZEN5K_BUZZER_OFF_PIN;
-	if (0 > GetGpioPin(&Pin)) {
+    if ( 0 > GetGpioPin( &Pin ) ) {
 #ifdef MY_DEF_HERE
 		giDenoOfTimeInterval = -1;
 #endif /* MY_DEF_HERE */
-		goto End;
-	}
+        goto End;
+    }
 
-	if (0 == Pin.value) {
-		*buzzer_cleared = 1;
+    if ( 0 == Pin.value ) {
+        *buzzer_cleared = 1;
 		// after read buzzer cleared, pull it back to high
 		// an workaround for #48623, because gpio 4 & 5 are jointed together
 		if (model_ops && model_ops->x86_set_buzzer_clear) {
 			model_ops->x86_set_buzzer_clear(1);
 		}
-	}
+    }
 
-	ret = 0;
+    ret = 0;
 End:
-	return ret;
+    return ret;
 }
 
 int xsCPUFanSpeedMapping(FAN_SPEED speed)
@@ -211,46 +207,6 @@ int HWMONGetVoltageSensorFromADT(SYNO_HWMON_SENSOR_TYPE *SysVoltage)
 END:
 	return iRet;
 }
-
-#ifdef CONFIG_SYNO_HWMON_PMBUS
-int Ryzen5kGetPSUStatusByI2C(SYNO_HWMON_SENSOR_TYPE *psu_status, int iPsuNumber)
-{
-	int iRet = -1;
-
-	if (NULL == hwmon_sensor_list) {
-		goto END;
-	}
-	memcpy(psu_status, hwmon_sensor_list->psu_status,
-		iPsuNumber * sizeof(SYNO_HWMON_SENSOR_TYPE));
-	iRet = HWMONGetPSUStatusByI2C(psu_status, iPsuNumber);
-END:
-	return iRet;
-}
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
-
-#if defined(CONFIG_SYNO_HWMON_PMBUS) || defined(CONFIG_SYNO_SATA_PWR_CTRL_SMBUS)
-int Ryzen5kPmbusGetPowerInfo(POWER_INFO *power_info)
-{
-	int iRet = -1;
-
-	if (NULL == power_info) {
-		printk("%s:%d in %s: parameters error!\n", __FILE__, __LINE__, __FUNCTION__);
-		goto END;
-	}
-
-	if (0 > I2CPmbusReadPowerStatus(0, &(power_info->power_1))) {
-		goto END;
-	}
-	if (0 > I2CPmbusReadPowerStatus(1, &(power_info->power_2))) {
-		goto END;
-	}
-
-	iRet = 0;
-
-END:
-	return iRet;
-}
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
 
 #if defined(CONFIG_SYNO_SMBUS_HDD_POWERCTL) || defined(CONFIG_SYNO_SATA_PWR_CTRL_SMBUS)
 extern void syno_smbus_hdd_powerctl_init(void);
@@ -333,16 +289,31 @@ int InitModuleType(struct synobios_ops *ops)
 }
 
 static
-int GetCpuTemperature(struct _SynoCpuTemp *pCpuTemp)
+int GetSysTemperature(struct _SynoThermalTemp *pThermalTemp)
+{
+	if (!pThermalTemp) {
+		return -1;
+	}
+
+#ifdef MY_DEF_HERE
+	syno_sys_temperature(pThermalTemp);
+#endif /*MY_DEF_HERE*/
+
+	return 0;
+}
+
+static
+int GetCpuTemperatureI3Transfer(struct _SynoCpuTemp *pCpuTemp)
 {
 	int iRet = -1;
 
 	if (NULL == pCpuTemp) {
 		goto END;
 	}
-#if defined(CONFIG_SYNO_K10TEMP) || defined(CONFIG_SYNO_HWMON_AMD_K10TEMP)
-	iRet = syno_k10cpu_temperature(pCpuTemp);
-#endif /* CONFIG_SYNO_K10TEMP || CONFIG_SYNO_HWMON_AMD_K10TEMP */
+
+#ifdef CONFIG_SYNO_X86_CORETEMP
+	iRet = syno_cpu_temperature(pCpuTemp);
+#endif /* CONFIG_SYNO_X86_CORETEMP */
 
 END:
 	return iRet;
@@ -438,16 +409,16 @@ static struct synobios_ops synobios_ops = {
 	.owner               = THIS_MODULE,
 	.get_brand           = GetBrand,
 	.get_model           = GetModel,
-	.get_rtc_time        = rtc_seiko_get_time,
-	.set_rtc_time        = rtc_seiko_set_time,
+	.get_rtc_time        = rtc_pericom_get_time,
+	.set_rtc_time        = rtc_pericom_set_time,
 	.get_auto_poweron    = rtc_get_auto_poweron,
-	.set_auto_poweron    = rtc_seiko_set_auto_poweron,
-	.init_auto_poweron   = rtc_seiko_auto_poweron_init,
-	.uninit_auto_poweron = rtc_seiko_auto_poweron_uninit,
+	.set_auto_poweron    = rtc_pericom_set_auto_poweron,
+	.init_auto_poweron   = rtc_pericom_auto_poweron_init,
+	.uninit_auto_poweron = rtc_pericom_auto_poweron_uninit,
 	.get_fan_status      = GetFanStatus,
 	.set_fan_status      = SetFanStatus,
-	.get_sys_temperature = NULL,
-	.get_cpu_temperature = GetCpuTemperature,
+	.get_sys_temperature = GetSysTemperature,
+	.get_cpu_temperature = GetCpuTemperatureI3Transfer,
 	.set_cpu_fan_status  = SetCpuFanStatus,
 	.get_gpio_pin        = GetGpioPin,
 	.set_gpio_pin        = SetGpioPin,
@@ -481,6 +452,7 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 	{
 		case MODEL_RS4024xsp:
 			model_ops = &rs4024xsp_ops;
+			RS4024xspSMBusSwitchInit();
 			synobios_ops.set_power_led = SetPowerLedStatus;
 			hwmon_sensor_list = &rs4024xsp_sensor_list;
 			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
@@ -497,9 +469,6 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 			funcSYNOSATADiskLedCtrl = SYNOSetDiskLedStatusByLedTrigger;
 #endif /* MY_DEF_HERE */
 #endif /* CONFIG_SYNO_LEDS_TRIGGER */
-#ifdef CONFIG_SYNO_HWMON_PMBUS
-			synobios_ops.hwmon_get_psu_status = Ryzen5kGetPSUStatusByI2C;
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
 #ifdef CONFIG_SYNO_AHCI_SOFTWARE_ACITIVITY
 			maxdisk = GetMaxInternalDiskNum();
 			for (i = 1; i <= maxdisk; ++i) {
@@ -577,4 +546,21 @@ int I2CSmbusReadPowerStatus(int i2c_bus_no, u16 i2c_addr, SYNO_POWER_STATUS* sta
 
 FAIL:
 	return ret;
+}
+
+void SMBusSwitchRegWrite(u8 command, u8 length, u8 *data)
+{
+	struct device_node *np = NULL;
+	struct i2c_client *client = NULL;
+
+	while ((np = of_find_compatible_node(np, NULL, "nxp,pca9546"))) {
+		if (of_property_read_bool(np, "led_enable")) {
+			client = of_find_i2c_device_by_node(np);
+
+			if (NULL == client || 0 > i2c_smbus_write_i2c_block_data(client, command, length, data)) {
+				printk("i2c_smbus_write_i2c_block_data failed\n");
+			}
+		}
+		of_node_put(np);
+	}
 }

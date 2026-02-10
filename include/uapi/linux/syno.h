@@ -75,14 +75,14 @@
  * Fix: DSM #103889
  * Dsc: Add notification for unsupported SFP+
  */
-#if defined (MY_ABC_HERE) && !defined (__ASSEMBLER__)
+#if defined (MY_DEF_HERE) && !defined (__ASSEMBLER__)
 typedef enum
 {
 	SFP_NOTIFY_UNSET 			= 0,
 	SFP_NOTIFY_NOT_SUPPORT_DROP	= 1,	/* Interface might drop. ex: ixgbe */
 	SFP_NOTIFY_NOT_SUPPORT_WARN = 2		/* Driver report not support but it might still work */
 } SYNO_SFP_UNSUPPORTED_NOTIFY_TYPE;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 
 #ifdef MY_ABC_HERE
@@ -107,8 +107,8 @@ typedef enum
  * Dsc: USB copy support
  *      use port number 99 to indicate USBCOPY port
  */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define USBCOPY_PORT_LOCATION 99
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #endif /* _UAPI_LINUX_SYNO_H */

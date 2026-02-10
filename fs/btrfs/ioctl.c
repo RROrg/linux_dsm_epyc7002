@@ -1669,7 +1669,7 @@ again:
 	    btrfs_extent_readonly(root->fs_info, extent_disko))
 		goto add_list;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (skip_cross_ref_check) {
 		// don't cow the data which we already dedupe while deduping reclaim
 		if (BTRFS_FILE_EXTENT_DEDUPED & btrfs_file_extent_syno_flag(leaf, item))
@@ -1845,7 +1845,7 @@ static int reclaim_check_partial_used(struct inode *inode, u64 start, u64 *endof
 	if (file_extent_num_bytes >= btrfs_file_extent_disk_num_bytes(leaf, item))
 		goto out;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	// don't cow the data which we already dedupe while deduping reclaim
 	if (BTRFS_FILE_EXTENT_DEDUPED & btrfs_file_extent_syno_flag(leaf, item))
 		goto out;
@@ -3133,11 +3133,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 
 		if (sizeof(sh) + item_len > *buf_size) {
 			if (*num_found) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 				ret = -EAGAIN;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 				ret = 1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 				goto out;
 			}
 
@@ -3152,11 +3152,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 		}
 
 		if (sizeof(sh) + item_len + *sk_offset > *buf_size) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			ret = -EAGAIN;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 			ret = 1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			goto out;
 		}
 
@@ -3200,11 +3200,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 			goto out;
 
 		if (*num_found >= sk->nr_items) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			ret = -EAGAIN;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 			ret = 1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			goto out;
 		}
 	}
@@ -3233,7 +3233,7 @@ out:
 	 *     * all items were found
 	 *     Either way, it will stops the loop which iterates to the next
 	 *     leaf
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	 *  -EAGAIN: try again to get more
 #endif
 	 *  -EOVERFLOW: item was to large for buffer
@@ -3253,9 +3253,9 @@ static noinline int search_ioctl(struct inode *inode,
 	struct btrfs_path *path;
 	int ret;
 	int num_found = 0;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u64 orig_min_offset = sk->min_offset;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	unsigned long sk_offset = 0;
 
 	if (*buf_size < sizeof(struct btrfs_ioctl_search_header)) {
@@ -3282,7 +3282,7 @@ static noinline int search_ioctl(struct inode *inode,
 	key.type = sk->min_type;
 	key.offset = sk->min_offset;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (sk->search_flag & BTRFS_SEARCH_FLAG_READAHEAD)
 		path->reada = READA_FORWARD_ALWAYS;
 	if ((sk->search_flag & BTRFS_SEARCH_FLAG_ADJUST_MIN) &&
@@ -3297,7 +3297,7 @@ static noinline int search_ioctl(struct inode *inode,
 		}
 		btrfs_release_path(path);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	while (1) {
 		ret = fault_in_pages_writeable(ubuf + sk_offset,
@@ -3321,9 +3321,9 @@ static noinline int search_ioctl(struct inode *inode,
 	if (ret > 0)
 		ret = 0;
 err:
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	sk->min_offset = orig_min_offset;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	sk->nr_items = num_found;
 	btrfs_put_root(root);
 	btrfs_free_path(path);
@@ -3356,11 +3356,11 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
 	 * In the origin implementation an overflow is handled by returning a
 	 * search header with a len of zero, so reset ret.
 	 */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (ret == -EOVERFLOW || ret == -EAGAIN)
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	if (ret == -EOVERFLOW)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		ret = 0;
 
 	if (ret == 0 && copy_to_user(&uargs->key, &sk, sizeof(sk)))
@@ -3395,13 +3395,13 @@ static noinline int btrfs_ioctl_tree_search_v2(struct file *file,
 	inode = file_inode(file);
 	ret = search_ioctl(inode, &args.key, &buf_size,
 			   (char __user *)(&uarg->buf[0]));
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (!(args.key.search_flag & BTRFS_SEARCH_FLAG_REPORT_BUF_FULL) && ret == -EAGAIN)
 		ret = 0;
 	if ((ret == 0 || ret == -EAGAIN) && copy_to_user(&uarg->key, &args.key, sizeof(args.key)))
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	if (ret == 0 && copy_to_user(&uarg->key, &args.key, sizeof(args.key)))
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		ret = -EFAULT;
 	else if (ret == -EOVERFLOW &&
 		copy_to_user(&uarg->buf_size, &buf_size, sizeof(buf_size)))
@@ -4166,7 +4166,7 @@ out:
 	return err;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static inline void get_min_max_range(u64 *min, u64 *max, u64 file_extent_offset,
 				     u64 extent_item_offset, u64 extent_item_size)
 {
@@ -4238,7 +4238,7 @@ out:
 	btrfs_free_path(path);
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static int btrfs_ioctl_defrag(struct file *file, void __user *argp)
 {
@@ -4294,11 +4294,11 @@ static int btrfs_ioctl_defrag(struct file *file, void __user *argp)
 				range->flags |= BTRFS_DEFRAG_RANGE_START_IO;
 				range->extent_thresh = (u32)-1;
 			}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			if (range->flags & BTRFS_DEFRAG_RANGE_SYNO_DEFRAG) {
 				syno_reclaim_range_adjust(BTRFS_I(inode), range);
 			}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		} else {
 			/* the rest are all set to zero by kzalloc */
 			range->len = (u64)-1;
@@ -7534,7 +7534,7 @@ static int btrfs_ioctl_cksumfailed_files_get(struct file *file, void __user *arg
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int btrfs_dedupe_set_inode_no_dedupe(struct inode *inode, bool on_off)
 {
 	int ret = -1;
@@ -7712,7 +7712,7 @@ out:
 
 	return ret;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static int btrfs_ioctl_syno_feat_tree_ctl(struct file *file, struct btrfs_ioctl_syno_feat_tree_ctl_args __user *argp)
@@ -7990,12 +7990,12 @@ long btrfs_ioctl(struct file *file, unsigned int
 	case BTRFS_IOC_CKSUMFAILED_FILES_GET:
 		return btrfs_ioctl_cksumfailed_files_get(file, argp);
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	case BTRFS_IOC_SYNO_SET_DEDUPE_FLAG:
 		return btrfs_ioctl_syno_dedupe_cmd(file, argp);
 	case BTRFS_IOC_SYNO_EXTENT_SAME:
 		return btrfs_ioctl_syno_extent_same(file, argp);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	case BTRFS_IOC_SYNO_FEAT_TREE_CTL:
 		return btrfs_ioctl_syno_feat_tree_ctl(file, argp);

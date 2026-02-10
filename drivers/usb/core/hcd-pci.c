@@ -197,17 +197,17 @@ int usb_hcd_pci_probe(struct pci_dev *dev, const struct pci_device_id *id,
 	 * make sure irq setup is not touched for xhci in generic hcd code
 	 */
 	if ((driver->flags & HCD_MASK) < HCD_USB3) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		// 8111EP EHCI controller don't support MSI, so force it on legacy mode
 		if (0x10EC == dev->vendor && 0x816D == dev->device) {
 			retval = pci_alloc_irq_vectors(dev, 1, 1, PCI_IRQ_LEGACY);
 		} else {
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		retval = pci_alloc_irq_vectors(dev, 1, 1, PCI_IRQ_LEGACY | PCI_IRQ_MSI);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		if (retval < 0) {
 			dev_err(&dev->dev,
 			"Found HC with no IRQ. Check BIOS/PCI %s setup!\n",

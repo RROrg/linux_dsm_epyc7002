@@ -591,19 +591,19 @@ static void rtk_spi_nor_unregister_all(struct rtksfc_host *host)
 
 static int rtk_spi_nor_register_all(struct rtksfc_host *host)
 {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	struct device *dev = host->dev;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	struct device_node *np = NULL;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	int ret;
 
 	//for_each_available_child_of_node(dev->of_node, np) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		ret = rtk_spi_nor_register(dev->of_node, host);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		ret = rtk_spi_nor_register(np, host);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		if (ret)
 			goto fail;
 	//}

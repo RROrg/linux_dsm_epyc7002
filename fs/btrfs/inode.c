@@ -337,9 +337,9 @@ static int insert_inline_extent(struct btrfs_trans_handle *trans,
 	btrfs_set_file_extent_type(leaf, ei, BTRFS_FILE_EXTENT_INLINE);
 	btrfs_set_file_extent_encryption(leaf, ei, 0);
 	btrfs_set_file_extent_other_encoding(leaf, ei, 0);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	btrfs_set_file_extent_syno_flag(leaf, ei, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	btrfs_set_file_extent_ram_bytes(leaf, ei, size);
 	ptr = btrfs_file_extent_inline_start(ei);
 
@@ -1149,7 +1149,7 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 	unsigned long page_ops;
 	bool extent_reserved = false;
 	int ret = 0;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool dedupe = root->inline_dedupe;
 	bool skip_extent = false;
 	struct inode *dedupe_inode = NULL;
@@ -1157,13 +1157,13 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 	bool already_hit = false;
 	u64 dedupe_disk_offset;
 	u64 dedupe_disk_bytenr, dedupe_disk_num_bytes;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if ((inode->flags & BTRFS_INODE_NODEDUPE) ||
 		test_bit(BTRFS_FS_SYNO_QUOTA_V1_ENABLED, &root->fs_info->flags))
 		dedupe = false;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	if (btrfs_is_free_space_inode(inode)) {
 		WARN_ON_ONCE(1);
 		ret = -EINVAL;
@@ -1223,7 +1223,7 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 
 	while (num_bytes > 0) {
 		cur_alloc_size = num_bytes;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (dedupe) {
 			skip_extent = false;
 			if (!already_hit) {
@@ -1246,7 +1246,7 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 		}
 
 		if (!skip_extent) {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			ret = btrfs_reserve_extent(root, cur_alloc_size, cur_alloc_size,
 						   min_alloc_size, 0, alloc_hint,
 						   &ins, 1, 1);
@@ -1264,7 +1264,7 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 					  ram_size, /* ram_bytes */
 					  BTRFS_COMPRESS_NONE, /* compress_type */
 					  BTRFS_ORDERED_REGULAR /* type */);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		} else {
 			memset(&ins, 0, sizeof(ins)); // reset reserved extent
 			ram_size = cur_alloc_size;
@@ -1277,20 +1277,20 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 					  BTRFS_COMPRESS_NONE, /* compress_type */
 					  BTRFS_ORDERED_DEDUPED /* type */);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		if (IS_ERR(em)) {
 			ret = PTR_ERR(em);
 			goto out_reserve;
 		}
 		free_extent_map(em);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		ret = btrfs_add_ordered_extent(inode, start, ins.objectid,
 					       ram_size, cur_alloc_size, skip_extent?BTRFS_ORDERED_DEDUPED:0);
 #else
 		ret = btrfs_add_ordered_extent(inode, start, ins.objectid,
 					       ram_size, cur_alloc_size, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		if (ret)
 			goto out_drop_extent_cache;
 
@@ -1314,9 +1314,9 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 						start + ram_size - 1, 0);
 		}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!skip_extent)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		btrfs_dec_block_group_reservations(fs_info, ins.objectid);
 
 		/* we're not doing compressed IO, don't unlock the first
@@ -1331,19 +1331,19 @@ static noinline int cow_file_range(struct btrfs_inode *inode,
 
 		extent_clear_unlock_delalloc(inode, start, start + ram_size - 1,
 					     locked_page,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 					     EXTENT_LOCKED | EXTENT_DELALLOC | (skip_extent?EXTENT_CLEAR_DATA_RESV:0),
 #else
 					     EXTENT_LOCKED | EXTENT_DELALLOC,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 					     page_ops);
 		if (num_bytes < cur_alloc_size)
 			num_bytes = 0;
 		else
 			num_bytes -= cur_alloc_size;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!skip_extent)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		alloc_hint = ins.objectid + ins.offset;
 		start += cur_alloc_size;
 		extent_reserved = false;
@@ -1362,14 +1362,14 @@ out:
 out_drop_extent_cache:
 	btrfs_drop_extent_cache(inode, start, start + ram_size - 1, 0);
 out_reserve:
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (!skip_extent) {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	btrfs_dec_block_group_reservations(fs_info, ins.objectid);
 	btrfs_free_reserved_extent(fs_info, ins.objectid, ins.offset, 1);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 out_unlock:
 	clear_bits = EXTENT_LOCKED | EXTENT_DELALLOC | EXTENT_DELALLOC_NEW |
 		EXTENT_DEFRAG | EXTENT_CLEAR_META_RESV;
@@ -3000,9 +3000,9 @@ static int insert_ordered_extent_file_extent(struct btrfs_trans_handle *trans,
 	btrfs_set_stack_file_extent_ram_bytes(&stack_fi, logical_len);
 	btrfs_set_stack_file_extent_compression(&stack_fi, oe->compress_type);
 	/* Encryption and other encoding is reserved and all 0 */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* syno flag is 0 */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	/*
 	 * For delalloc, when completing an ordered extent we update the inode's
@@ -3046,9 +3046,9 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 #ifdef MY_ABC_HERE
 	bool throttle = true;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool inline_dedupe = false;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	start = ordered_extent->file_offset;
 	end = start + ordered_extent->num_bytes - 1;
@@ -3082,14 +3082,14 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	inline_dedupe = test_bit(BTRFS_ORDERED_DEDUPED, &ordered_extent->flags)?true:false;
 	if (inline_dedupe && ordered_extent->qgroup_rsv &&
 			test_bit(BTRFS_FS_SYNO_QUOTA_V2_ENABLED, &fs_info->flags)) {
 		btrfs_qgroup_syno_free(root, ordered_extent->qgroup_rsv);
 		btrfs_usrquota_syno_free(BTRFS_I(inode), ordered_extent->qgroup_rsv);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	btrfs_free_io_failure_record(BTRFS_I(inode), start, end);
 
 	if (test_bit(BTRFS_ORDERED_TRUNCATED, &ordered_extent->flags)) {
@@ -3124,9 +3124,9 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 			goto out;
 		}
 		trans->block_rsv = &BTRFS_I(inode)->block_rsv;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		btrfs_file_extent_deduped_clear(trans, BTRFS_I(inode), ordered_extent->file_offset);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		ret = btrfs_update_inode_fallback(trans, root, inode);
 		if (ret) /* -ENOMEM or corruption */
 			btrfs_abort_transaction(trans, ret);
@@ -3158,9 +3158,9 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 						logical_len);
 	} else {
 		BUG_ON(root == fs_info->tree_root);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!inline_dedupe) {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		ret = insert_ordered_extent_file_extent(trans, ordered_extent);
 		if (!ret) {
 			clear_reserved_extent = false;
@@ -3168,9 +3168,9 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 						ordered_extent->disk_bytenr,
 						ordered_extent->disk_num_bytes);
 		}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	}
 	unpin_extent_cache(&BTRFS_I(inode)->extent_tree,
 			   ordered_extent->file_offset,
@@ -3180,17 +3180,17 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 		goto out;
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (!inline_dedupe) {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	ret = add_pending_csums(trans, &ordered_extent->list);
 	if (ret) {
 		btrfs_abort_transaction(trans, ret);
 		goto out;
 	}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	/*
 	 * If this is a new delalloc range, clear its new delalloc flag to
@@ -3204,21 +3204,21 @@ static int btrfs_finish_ordered_io(struct btrfs_ordered_extent *ordered_extent)
 		// To protect btrfs_clear_delalloc_extent()->inode_add_bytes().
 		down_read(&root->rescan_lock);
 		clear_extent_bit(&BTRFS_I(inode)->io_tree, start, end,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 				 EXTENT_DELALLOC_NEW | ((inline_dedupe && !ordered_extent->disk_bytenr)?0:EXTENT_ADD_INODE_BYTES),
 #else
 				 EXTENT_DELALLOC_NEW | EXTENT_ADD_INODE_BYTES,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 				 0, 0, &cached_state);
 		up_read(&root->rescan_lock);
 	}
 #else
 		clear_extent_bit(&BTRFS_I(inode)->io_tree, start, end,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 				 EXTENT_DELALLOC_NEW | ((inline_dedupe && !ordered_extent->disk_bytenr)?0:EXTENT_ADD_INODE_BYTES),
 #else
 				 EXTENT_DELALLOC_NEW | EXTENT_ADD_INODE_BYTES,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 				 0, 0, &cached_state);
 #endif /* MY_ABC_HERE */
 
@@ -3277,9 +3277,9 @@ out:
 		 * has already been done.
 		 */
 		if ((ret || !logical_len) &&
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			!inline_dedupe &&
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		    clear_reserved_extent &&
 		    !test_bit(BTRFS_ORDERED_NOCOW, &ordered_extent->flags) &&
 		    !test_bit(BTRFS_ORDERED_PREALLOC, &ordered_extent->flags)) {
@@ -6429,7 +6429,7 @@ struct inode *btrfs_iget(struct super_block *s, u64 ino, struct btrfs_root *root
 	return btrfs_iget_path(s, ino, root, NULL);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 /* check whether file could be access by path or not */
 static int check_file_name_exist(struct btrfs_root *root, u64 inum)
 {
@@ -6514,7 +6514,7 @@ out:
 	btrfs_put_root(root);
 	return inode;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static int btrfs_match_actor(struct inode *inode, unsigned long hashval, void *opaque)
@@ -8540,9 +8540,9 @@ static struct extent_map *create_io_em(struct btrfs_inode *inode, u64 start,
 	ASSERT(type == BTRFS_ORDERED_PREALLOC ||
 	       type == BTRFS_ORDERED_COMPRESSED ||
 	       type == BTRFS_ORDERED_NOCOW ||
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	       type == BTRFS_ORDERED_DEDUPED ||
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	       type == BTRFS_ORDERED_REGULAR);
 
 	em_tree = &inode->extent_tree;
@@ -8564,14 +8564,14 @@ static struct extent_map *create_io_em(struct btrfs_inode *inode, u64 start,
 	} else if (type == BTRFS_ORDERED_COMPRESSED) {
 		set_bit(EXTENT_FLAG_COMPRESSED, &em->flags);
 		em->compress_type = compress_type;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	} else if (type == BTRFS_ORDERED_DEDUPED) {
 		if (!block_start) {
 			em->block_len = 0;
 			em->block_start = EXTENT_MAP_HOLE;
 		}
 		set_bit(EXTENT_FLAG_DEDUPED, &em->flags);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	}
 
 	do {
@@ -11414,9 +11414,9 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
 	btrfs_set_file_extent_encryption(leaf, ei, 0);
 	btrfs_set_file_extent_compression(leaf, ei, 0);
 	btrfs_set_file_extent_other_encoding(leaf, ei, 0);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	btrfs_set_file_extent_syno_flag(leaf, ei, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	btrfs_set_file_extent_ram_bytes(leaf, ei, name_len);
 
 	ptr = btrfs_file_extent_inline_start(ei);
@@ -11513,9 +11513,9 @@ static struct btrfs_trans_handle *insert_prealloc_file_extent(
 	btrfs_set_stack_file_extent_ram_bytes(&stack_fi, len);
 	btrfs_set_stack_file_extent_compression(&stack_fi, BTRFS_COMPRESS_NONE);
 	/* Encryption and other encoding is reserved and all 0 */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* syno flag is 0 */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	ret = btrfs_qgroup_release_data(BTRFS_I(inode), file_offset, len);
 	if (ret < 0)
@@ -11581,15 +11581,15 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 	int ret = 0;
 	bool own_trans = true;
 	u64 end = start + num_bytes - 1;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool dedupe = root->inline_dedupe;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef CONFIG_SYNO_BTRFS_FALLOCATE_MARK_WRITTEN
 	int mark_written = (mode & FALLOC_FL_MARK_WRITTEN);
 	int extent_type = BTRFS_FILE_EXTENT_PREALLOC;
 #endif /* CONFIG_SYNO_BTRFS_FALLOCATE_MARK_WRITTEN */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if ((BTRFS_I(inode)->flags & BTRFS_INODE_NODEDUPE) ||
 			test_bit(BTRFS_FS_SYNO_QUOTA_V1_ENABLED, &fs_info->flags))
 		dedupe = false;
@@ -11606,7 +11606,7 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 	while (num_bytes > 0) {
 		cur_bytes = min_t(u64, num_bytes, SZ_256M);
 		cur_bytes = max(cur_bytes, min_size);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (dedupe) {
 			if (own_trans) {
 				trans = btrfs_start_transaction(root, 3);
@@ -11627,7 +11627,7 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 			btrfs_free_reserved_data_space(BTRFS_I(inode), NULL, cur_offset, cur_bytes);
 			clear_offset += ins.offset;
 		} else {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 			/*
 			 * If we are severely fragmented we could end up with really
 			 * small allocations, so if the allocator is returning small
@@ -11668,9 +11668,9 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 							ins.offset, 0);
 				break;
 			}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 		btrfs_drop_extent_cache(BTRFS_I(inode), cur_offset,
 					cur_offset + ins.offset -1, 0);
@@ -11689,9 +11689,9 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 		em->block_len = ins.offset;
 		em->orig_block_len = ins.offset;
 		em->ram_bytes = ins.offset;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!dedupe)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef CONFIG_SYNO_BTRFS_FALLOCATE_MARK_WRITTEN
 		if (!mark_written)
 			set_bit(EXTENT_FLAG_PREALLOC, &em->flags);
@@ -11700,13 +11700,13 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 #endif /* CONFIG_SYNO_BTRFS_FALLOCATE_MARK_WRITTEN */
 		em->generation = trans->transid;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (dedupe) {
 			em->block_start = EXTENT_MAP_HOLE;
 			em->block_len = 0;
 			em->orig_block_len = 0;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		while (1) {
 			write_lock(&em_tree->lock);
 			ret = add_extent_mapping(em_tree, em, 1);

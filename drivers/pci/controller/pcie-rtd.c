@@ -724,15 +724,15 @@ static int pcie_link_init(struct rtd_pcie_port *pp)
 	writel(0x001E0022, pp->ctrl_base + PCIE_SYS_CTR);
 	writel(0x00010120, pp->ctrl_base + PORT_LINK_CTRL_OFF);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	timeout = 1000;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	timeout = PCIE_CONNECT_TIMEOUT;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	do {
 		pci_link_detected = readl(pp->ctrl_base + PCIE_MAC_ST) & 0x800;
 		if (pci_link_detected) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			if (1000 - timeout > PCIE_CONNECT_TIMEOUT) {
 				dev_err(pp->dev, "error: link up with device timeout %d ms exceed default %d", 1000 - timeout, PCIE_CONNECT_TIMEOUT);
 			} else {
@@ -742,9 +742,9 @@ static int pcie_link_init(struct rtd_pcie_port *pp)
 			// Follow PCIe spec: software must wait for 100 ms after the Data Link Layer Link Active bit reads 1b before initiating a configuration access to the hot added device.
 			mdelay(100);
 
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			dev_info(pp->dev, "link up with device");
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			break;
 		}
 		mdelay(1);
@@ -960,7 +960,7 @@ static int rtd_pcie_probe(struct platform_device *pdev)
 	}
 	bus = bridge->bus;
 
-#if defined(MY_DEF_HERE) && defined(MY_ABC_HERE)
+#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
 	if (list_empty(&bus->devices) && syno_is_hw_version(HW_DS423)) {
 		dev_err(dev, "scan child pci device failed\n");
 		ret = pcie_link_init(pp);
@@ -970,7 +970,7 @@ static int rtd_pcie_probe(struct platform_device *pdev)
 		}
 		pci_scan_child_bus(bridge->bus);
 	}
-#endif /* defined(MY_DEF_HERE) && defined(MY_ABC_HERE) */
+#endif /* defined(MY_ABC_HERE) && defined(MY_ABC_HERE) */
 
 	pci_bus_size_bridges(bus);
 	pci_bus_assign_resources(bus);

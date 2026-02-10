@@ -2024,14 +2024,14 @@ static noinline int lock_delalloc_pages(struct inode *inode,
 	return ret;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 u64 btrfs_max_extent_size(struct inode *inode)
 {
 	if (BTRFS_I(inode)->flags & BTRFS_INODE_NODEDUPE)
 		return BTRFS_MAX_EXTENT_SIZE;
 	return BTRFS_I(inode)->root->small_extent_size;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * Find and lock a contiguous range of bytes in the file marked as delalloc, no
@@ -2046,11 +2046,11 @@ noinline_for_stack bool find_lock_delalloc_range(struct inode *inode,
 				    u64 *end)
 {
 	struct extent_io_tree *tree = &BTRFS_I(inode)->io_tree;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u64 max_bytes = btrfs_max_extent_size(inode);
 #else
 	u64 max_bytes = BTRFS_MAX_EXTENT_SIZE;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	u64 delalloc_start;
 	u64 delalloc_end;
 	bool found;
@@ -4052,9 +4052,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 	int nr = 0;
 	const unsigned int write_flags = wbc_to_write_flags(wbc);
 	bool compressed;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool deduped = false;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	ret = btrfs_writepage_cow_fixup(page, start, page_end);
 	if (ret) {
@@ -4105,9 +4105,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 		offset = em->block_start + extent_offset;
 		block_start = em->block_start;
 		compressed = test_bit(EXTENT_FLAG_COMPRESSED, &em->flags);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		deduped = test_bit(EXTENT_FLAG_DEDUPED, &em->flags);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		free_extent_map(em);
 		em = NULL;
 
@@ -4116,9 +4116,9 @@ static noinline_for_stack int __extent_writepage_io(struct btrfs_inode *inode,
 		 * paths in the FS
 		 */
 		if (compressed || block_start == EXTENT_MAP_HOLE ||
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			deduped ||
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		    block_start == EXTENT_MAP_INLINE) {
 			if (compressed)
 				nr++;

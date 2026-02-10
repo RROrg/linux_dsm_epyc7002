@@ -82,11 +82,11 @@ static struct console early_vga_console = {
 static unsigned long early_serial_base = 0x3f8;  /* ttyS0 */
 
 #define XMTRDY          0x20
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define TEMT		0x40
 #define THRE		XMTRDY
 #define BOTH_EMPTY 	(TEMT | THRE)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #define DLAB		0x80
 
@@ -214,7 +214,7 @@ static unsigned int mem32_serial_in(unsigned long addr, int offset)
 	return readl(vaddr + offset);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void early_serial_hw_deinit(void)
 {
 	unsigned long timeout_jiffies = jiffies + msecs_to_jiffies(2000);
@@ -402,7 +402,7 @@ static __init void early_pcifull_serial_init(char *s)
 	/* Set up the HW */
 	early_serial_hw_init(divisor);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * early_pci_serial_init()
@@ -464,9 +464,9 @@ static __init void early_pci_serial_init(char *s)
 	/*
 	 * Verify it is a UART type device
 	 */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	force = 1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (((classcode >> 16 != PCI_CLASS_COMMUNICATION_MODEM) &&
 	     (classcode >> 16 != PCI_CLASS_COMMUNICATION_SERIAL)) ||
@@ -492,11 +492,11 @@ static __init void early_pci_serial_init(char *s)
 		/* WARNING! assuming the address is always in the first 4G */
 		early_serial_base =
 			(unsigned long)early_ioremap(bar0 & 0xfffffff0, 0x10);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		early_serial_console.pcimapaddress = (void __iomem *)early_serial_base;
 		/* base on pci spec with serial console */
 		early_serial_console.pcimapsize = 0x10;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		write_pci_config(bus, slot, func, PCI_COMMAND,
 						cmdreg|PCI_COMMAND_MEMORY);
 	}
@@ -525,16 +525,16 @@ static __init void early_pci_serial_init(char *s)
 }
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* Move to upper */
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 static struct console early_serial_console = {
 	.name =		"earlyser",
 	.write =	early_serial_write,
 	.flags =	CON_PRINTBUFFER,
 	.index =	-1,
 };
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static void early_console_register(struct console *con, int keep_early)
 {
@@ -551,11 +551,11 @@ static void early_console_register(struct console *con, int keep_early)
 	register_console(early_console);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int __init setup_early_printk(char *buf)
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 static int __init setup_early_printk(char *buf)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 {
 	int keep;
 
@@ -585,21 +585,21 @@ static int __init setup_early_printk(char *buf)
 			early_console_register(&early_serial_console, keep);
 			buf += 9; /* Keep from match the above "serial" */
 		}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!strncmp(buf, "pcifull", 7)) {
 			early_pcifull_serial_init(buf + 7);
 			early_console_register(&early_serial_console, keep);
 			buf += 7; /* Keep from match the above "serial" */
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #endif
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (!strncmp(buf, "mmio", 4)) {
 			early_mmio_serial_init(buf + 4);
 			early_console_register(&early_serial_console, keep);
 			buf += 4; /* Keep from match the above "serial" */
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		if (!strncmp(buf, "vga", 3) &&
 		    boot_params.screen_info.orig_video_isVGA == 1) {
 			max_xpos = boot_params.screen_info.orig_video_cols;
@@ -625,7 +625,7 @@ static int __init setup_early_printk(char *buf)
 	return 0;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 EXPORT_SYMBOL(setup_early_printk);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 early_param("earlyprintk", setup_early_printk);

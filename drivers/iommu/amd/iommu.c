@@ -2741,7 +2741,7 @@ static int amd_iommu_def_domain_type(struct device *dev)
 {
 	struct iommu_dev_data *dev_data;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (dev_is_pci(dev)) {
 		struct pci_dev *pdev = to_pci_dev(dev);
 
@@ -2750,7 +2750,7 @@ static int amd_iommu_def_domain_type(struct device *dev)
 			return IOMMU_DOMAIN_DMA;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	
 	dev_data = dev_iommu_priv_get(dev);
 	if (!dev_data)

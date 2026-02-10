@@ -70,9 +70,9 @@
 #define ARCH_SHF_SMALL 0
 #endif
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 extern bool ramdisk_check_failed;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 /*
  * Modules' sections will be aligned on page boundaries
@@ -2920,9 +2920,9 @@ static int module_sig_check(struct load_info *info, int flags)
 	const char *reason;
 	const void *mod = info->hdr;
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 	sig_enforce |= ramdisk_check_failed;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 	/*
 	 * Require flags == 0, as a module with version information

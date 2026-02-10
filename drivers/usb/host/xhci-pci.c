@@ -186,11 +186,11 @@ static void xhci_pci_quirks(struct device *dev, struct xhci_hcd *xhci)
 		xhci->quirks |= XHCI_U2_DISABLE_WAKE;
 
 	if (pdev->vendor == PCI_VENDOR_ID_INTEL) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		xhci->quirks &= ~XHCI_LPM_SUPPORT;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		xhci->quirks |= XHCI_LPM_SUPPORT;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		xhci->quirks |= XHCI_INTEL_HOST;
 		xhci->quirks |= XHCI_AVOID_BEI;
 	}

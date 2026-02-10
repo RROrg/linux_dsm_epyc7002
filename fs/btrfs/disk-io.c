@@ -1464,10 +1464,10 @@ static void __setup_root(struct btrfs_root *root, struct btrfs_fs_info *fs_info,
 	root->has_usrquota_limit = false;
 	root->has_quota_limit = false;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	root->inline_dedupe = false;
 	root->small_extent_size = BTRFS_MAX_EXTENT_SIZE;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	INIT_LIST_HEAD(&root->syno_orphan_cleanup.root);
 #endif /* MY_ABC_HERE */
@@ -3738,7 +3738,7 @@ void btrfs_init_fs_info(struct btrfs_fs_info *fs_info)
 	atomic64_set(&fs_info->syno_meta_statistics.search_forward, 0);
 	atomic64_set(&fs_info->syno_meta_statistics.next_leaf, 0);
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	fs_info->dedupe_info.inode = NULL;
 	fs_info->dedupe_info.hash_table = NULL;
 	fs_info->dedupe_info.cuckoo_idx = NULL;
@@ -3749,7 +3749,7 @@ void btrfs_init_fs_info(struct btrfs_fs_info *fs_info)
 	atomic_set(&fs_info->dedupe_info.valid, 0);
 	atomic_set(&fs_info->dedupe_info.modify, 0);
 	atomic_set(&fs_info->dedupe_info.ref, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	fs_info->thread_pool_size = min_t(unsigned long,
 					  num_online_cpus() + 2, 8);

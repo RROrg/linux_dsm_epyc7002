@@ -34,9 +34,9 @@
 #include <linux/pci.h>
 #include "ahci.h"
 #include "libata.h"
-#if defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
+#if defined(MY_DEF_HERE) || defined(MY_ABC_HERE)
 #include <linux/leds.h>
-#endif /* MY_ABC_HERE || MY_DEF_HERE */
+#endif /* MY_DEF_HERE || MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 #include <linux/syno_gpio.h>
 #endif /* MY_DEF_HERE */
@@ -46,7 +46,7 @@
 #define SYNO_LED_BLINK_ON 1
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern void syno_ledtrig_active_set(int iLedNum);
 extern int *gpGreenLedMap;
 #endif /* SYNO_AHCI_SW_ACITIVITY_LED_TRIGGER */
@@ -125,12 +125,12 @@ static irqreturn_t syno_ahci_multi_irqs_intr_hard_jmb(int irq, void *dev_instanc
 static irqreturn_t (*syno_ahci_multi_irqs_intr)(int, void *);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void syno_internal_ahci_handle_port_interrupt(struct ata_port *ap,
 				       void __iomem *port_mmio, u32 status);
 static void ahci_handle_port_interrupt(struct ata_port *ap,
 				       void __iomem *port_mmio, u32 status);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static void syno_ahci_force_intr(struct ata_port *ap);
@@ -1118,9 +1118,9 @@ int ahci_reset_controller(struct ata_host *host)
 		tmp = readl(mmio + HOST_CTL);
 		if ((tmp & HOST_RESET) == 0) {
 			writel(tmp | HOST_RESET, mmio + HOST_CTL);
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			udelay(1);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			readl(mmio + HOST_CTL); /* flush */
 		}
 
@@ -1168,7 +1168,7 @@ static void ahci_sw_activity(struct ata_link *link)
 		mod_timer(&emp->timer, jiffies + msecs_to_jiffies(10));
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int syno_sw_activity(struct ata_port* ap, u32 state)
 {
 	/* Doesn't initialized */
@@ -1185,9 +1185,9 @@ static int syno_sw_activity(struct ata_port* ap, u32 state)
 
 	return 0;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static int sw_activity_by_ledtrig_disk_syno(struct ata_port* ap, u32 state)
 {
 	int ret = -EINVAL;
@@ -1229,7 +1229,7 @@ static int sw_activity_by_ledtrig_disk_syno(struct ata_port* ap, u32 state)
 Err:
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_DEF_HERE
 /**
@@ -1311,12 +1311,12 @@ static void syno_setup_blink_method(struct ata_port* ap)
 	of_property_read_string(slot_node, DT_HDD_LED_TYPE, &led_type);
 	of_node_put(slot_node);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if ((0 == strcmp(led_type, DT_HDD_LED_TYPE_LP3943)) || (0 == strcmp(led_type, DT_HDD_LED_TYPE_ATMEGA1608))) {
 		pp->syno_set_blink = &syno_sw_activity;
 		goto END;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 	if (0 == strcmp(led_type, DT_HDD_LED_TYPE_GPIO)) {
@@ -1325,12 +1325,12 @@ static void syno_setup_blink_method(struct ata_port* ap)
 	}
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (0 == strcmp(led_type, DT_HDD_LED_TYPE_TRIG_DISK_SYNO)) {
 		pp->syno_set_blink = &sw_activity_by_ledtrig_disk_syno;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 END:
 	return;
@@ -2426,7 +2426,7 @@ static void ahci_handle_port_interrupt(struct ata_port *ap,
 	}
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void syno_internal_ahci_handle_port_interrupt(struct ata_port *ap,
 				       void __iomem *port_mmio, u32 status)
 {
@@ -2477,7 +2477,7 @@ static void syno_internal_ahci_handle_port_interrupt(struct ata_port *ap,
 		ata_port_freeze(ap);
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static void ahci_port_intr(struct ata_port *ap)
 {
@@ -2487,13 +2487,13 @@ static void ahci_port_intr(struct ata_port *ap)
 	status = readl(port_mmio + PORT_IRQ_STAT);
 	writel(status, port_mmio + PORT_IRQ_STAT);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (likely(ap->syno_ahci_handle_port_interrupt)) {
 		ap->syno_ahci_handle_port_interrupt(ap, port_mmio, status);
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
        ahci_handle_port_interrupt(ap, port_mmio, status);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 
 #ifdef MY_ABC_HERE
@@ -2529,13 +2529,13 @@ static irqreturn_t syno_ahci_multi_irqs_intr_hard_jmb(int irq, void *dev_instanc
 	writel(status & ~(PORT_IRQ_PHYRDY | PORT_IRQ_CONNECT), port_mmio + PORT_IRQ_STAT);
 
 	spin_lock(ap->lock);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (likely(ap->syno_ahci_handle_port_interrupt)) {
 		ap->syno_ahci_handle_port_interrupt(ap, port_mmio, status);
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	ahci_handle_port_interrupt(ap, port_mmio, status);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	spin_unlock(ap->lock);
 
 	VPRINTK("EXIT\n");
@@ -2556,13 +2556,13 @@ static irqreturn_t ahci_multi_irqs_intr_hard(int irq, void *dev_instance)
 	writel(status, port_mmio + PORT_IRQ_STAT);
 
 	spin_lock(ap->lock);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (likely(ap->syno_ahci_handle_port_interrupt)) {
 		ap->syno_ahci_handle_port_interrupt(ap, port_mmio, status);
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	ahci_handle_port_interrupt(ap, port_mmio, status);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	spin_unlock(ap->lock);
 
 	VPRINTK("EXIT\n");
@@ -3232,7 +3232,7 @@ static int ahci_host_activate_multi_irqs(struct ata_host *host,
 	return ata_host_register(host, sht);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static bool syno_internal_slot_check(struct ata_port* ap)
 {
 	struct device_node *pSlotNode = NULL;
@@ -3277,7 +3277,7 @@ END:
 	}
 	return blRet;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /**
  *	ahci_host_activate - start AHCI host, request IRQs and register it
@@ -3295,10 +3295,10 @@ int ahci_host_activate(struct ata_host *host, struct scsi_host_template *sht)
 	struct ahci_host_priv *hpriv = host->private_data;
 	int irq = hpriv->irq;
 	int rc;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int i = 0;
 	struct ata_port *ap = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (hpriv->flags & AHCI_HFLAG_MULTI_MSI) {
 		if (hpriv->irq_handler &&
@@ -3317,7 +3317,7 @@ int ahci_host_activate(struct ata_host *host, struct scsi_host_template *sht)
 				       IRQF_SHARED, sht);
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	for (i = 0; i < host->n_ports; i++) {
 		ap = host->ports[i];
 		if (syno_internal_slot_check(ap)) {
@@ -3326,7 +3326,7 @@ int ahci_host_activate(struct ata_host *host, struct scsi_host_template *sht)
 			ap->syno_ahci_handle_port_interrupt = &ahci_handle_port_interrupt;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	return rc;
 }

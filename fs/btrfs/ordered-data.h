@@ -69,9 +69,9 @@ enum {
 	BTRFS_ORDERED_WORK_INITIALIZED,
 	BTRFS_ORDERED_HIGH_PRIORITY,
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	BTRFS_ORDERED_DEDUPED,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 struct btrfs_ordered_extent {

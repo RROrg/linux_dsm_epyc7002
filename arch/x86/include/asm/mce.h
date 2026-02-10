@@ -45,7 +45,7 @@
 #define MCI_STATUS_CEC_SHIFT	38           /* Corrected Error Count */
 #define MCI_STATUS_CEC_MASK	GENMASK_ULL(52,38)
 #define MCI_STATUS_CEC(c)	(((c) & MCI_STATUS_CEC_MASK) >> MCI_STATUS_CEC_SHIFT)
-#ifdef MY_ABC_HERE /* reference: intel 253668-037US chapter15 & 253669-037US appendix E  */
+#ifdef MY_DEF_HERE /* reference: intel 253668-037US chapter15 & 253669-037US appendix E  */
 #define SYNO_MCI_STATUS_UECC_SHIFT 45
 #define SYNO_MCI_STATUS_CECC_SHIFT 46
 #define SYNO_MCI_STATUS_ECC_SYNDROME_SHIFT 47
@@ -53,7 +53,7 @@
 #define SYNO_MCI_STATUS_CECC (1ULL << SYNO_MCI_STATUS_CECC_SHIFT)       /* correctable ECC error */
 #define SYNO_MCI_STATUS_ECC (SYNO_MCI_STATUS_UECC | SYNO_MCI_STATUS_CECC)
 #define SYNO_MCI_STATUS_ECC_SYNDROME (0xffULL << SYNO_MCI_STATUS_ECC_SYNDROME_SHIFT) /* ECC syndrome */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* AMD-specific bits */
 #define MCI_STATUS_TCC		BIT_ULL(55)  /* Task context corrupt */

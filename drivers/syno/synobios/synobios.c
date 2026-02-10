@@ -1961,7 +1961,6 @@ static SYNO_CPU_MAPPING gSynoCPUMapping[] = {
 	{CPU_AL314, "ANNAPURNALABS, Alpine, AL314, 4"},
 	{CPU_AL514, "ANNAPURNALABS, Alpine, AL514, 4"},
 	{CPU_C2538, "INTEL, Atom, C2538, 4"},
-	{CPU_BCM58622, "BROADCOM, Northstar plus, BCM58622, 2"},
 	{CPU_J1800, "INTEL, Celeron, J1800, 2"},
 	{CPU_J3355, "INTEL, Celeron, J3355, 2"},
 	{CPU_J3455, "INTEL, Celeron, J3455, 4"},
@@ -1997,8 +1996,6 @@ static SYNO_CPU_MAPPING gSynoCPUMapping[] = {
 	{CPU_RTD1619B, "Realtek, RTD1619B, SoC, 4"},
 	{CPU_EPYC7232P, "AMD, EPYC, 7232P, 8"},
 	{CPU_EPYC7443P, "AMD, EPYC, 7443P, 24"},
-	{CPU_5800E, "AMD, Ryzen, 5800E, 8"},
-	{CPU_13700, "INTEL, Core, i7-13700, 16"},
 	{CPU_UNKNOWN, "unknown, unknown, unknown, unknown"}
 };
 
@@ -2418,12 +2415,6 @@ typedef struct _tag_SYNO_MODEL_MAPPING {
 } SYNO_MODEL_MAPPING;
 
 static SYNO_MODEL_MAPPING gSynoModelMapping[] = {
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	{MODEL_RT2600ac,	"RT-2600ac"},
-	{MODEL_MR2200ac,	"MR-2200ac"},
-	{MODEL_RT6600ax,	"RT-6600ax"},
-	{MODEL_RT3000ax,	"RT-3000ax"},
-#endif
 	{MODEL_RS3411rpxs,  "RS-3411rpxs"},
 	{MODEL_RS3411xs,    "RS-3411xs"},
 	{MODEL_RS10613xsp,  "RS-10613xs+"},
@@ -2451,7 +2442,6 @@ static SYNO_MODEL_MAPPING gSynoModelMapping[] = {
 	{MODEL_DS2414xs,    "DS-2414xs"},
 	{MODEL_DS414j,       "DS-414j"},
 	{MODEL_DS415j,       "DS-415j"},
-	{MODEL_DS215air,     "DS-215air"},
 	{MODEL_DS213,       "DS-213"},
 	{MODEL_DS1513p,     "DS-1513+"},
 	{MODEL_DS1813p,       "DS-1813+"},
@@ -2481,7 +2471,6 @@ static SYNO_MODEL_MAPPING gSynoModelMapping[] = {
 	{MODEL_DS115,       "DS-115"},
 	{MODEL_RS815p,		"RS-815+"},
 	{MODEL_RS815rpp,	"RS-815rp+"},
-	{MODEL_DS215router,	"DS-215router"},
 	{MODEL_DS715,		"DS-715"},
 	{MODEL_RS815,       "RS-815"},
 	{MODEL_RS18016xsp,  "RS-18016xs+"},
@@ -2622,7 +2611,7 @@ static SYNO_MODEL_MAPPING gSynoModelMapping[] = {
 	{MODEL_RS2423p,     "RS-2423+"},
 	{MODEL_RS2423rpp,   "RS-2423rp+"},
 	{MODEL_DS1823xsp,   "DS-1823xs+"},
-	{MODEL_RS1624xsp,   "RS-1624xs+"},
+	{MODEL_RS1623xsp,   "RS-1623xs+"},
 	{MODEL_FS6410,      "FS-6410"},
 	{MODEL_SA6400,      "SA-6400"},
 	{MODEL_SA6200,      "SA-6200"},
@@ -2631,15 +2620,12 @@ static SYNO_MODEL_MAPPING gSynoModelMapping[] = {
 	{MODEL_SA3410,      "SA-3410"},
 	{MODEL_SA3610,      "SA-3610"},
 	{MODEL_DS124,       "DS-124"},
-	{MODEL_MANGO,       "Mango"},
 	{MODEL_DS224p,      "DS-224+"},
 	{MODEL_RS4024xsp,   "RS-4024xs+"},
 	{MODEL_VS750hd,	    "VS-750hd"},
-	{MODEL_DS1624p,     "DS-1624+"},
-	{MODEL_DS1824p,     "DS-1824+"},
+	{MODEL_DS1623p,     "DS-1623+"},
+	{MODEL_DS1823p,     "DS-1823+"},
 	{MODEL_SC2500,      "SC-2500"},
-	{MODEL_RS1224p,     "RS-1224+"},
-	{MODEL_RS1224rpp,   "RS-1224rp+"},
 	{MODEL_INVALID,	    "Unknown"},
 };
 
@@ -2844,30 +2830,6 @@ END:
 	return ret;
 }
 
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-int synobios_event_reset_method(const int method)
-{
-	int ret = 0;
-	SYNOBIOSEVENT event;
-
-	event.event = SYNO_EVENT_BUTTON_RESET;
-	event.data[0] = method; // 1:reset password only!
-	synobios_record_event_new(NULL, &event);
-	return ret;
-}
-
-void synobios_event_sdcard_change(const int sd_event)
-{
-	SYNOBIOSEVENT event;
-	printk(KERN_INFO "synobios: SD card change detected\n");
-
-	event.event = SYNO_EVENT_DETECT_CARD_CHANGE;
-	event.data[0] = sd_event; // 1:plug in/out, 2: DMA transfer error
-	synobios_record_event_new(NULL, &event);
-	return;
-}
-
-#endif
 #if defined(MY_DEF_HERE) || defined(CONFIG_SYNO_SATA_ERROR_REPORT)
 extern struct list_head gSynoBiosEventHead;
 extern spinlock_t syno_sata_error_lock;

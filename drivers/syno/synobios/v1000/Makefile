@@ -21,12 +21,10 @@ v1000-synobios-objs = \
 	rs2423p.o \
 	rs2423rpp.o \
 	ds1823xsp.o \
-	rs1624xsp.o \
-	ds1624p.o \
-	ds1824p.o \
+	rs1623xsp.o \
+	ds1623p.o \
+	ds1823p.o \
 	sc2500.o \
-	rs1224p.o \
-	rs1224rpp.o \
 	../mapping.o \
 	../rtc/localtime.o \
 	../rtc/alarmtime.o \

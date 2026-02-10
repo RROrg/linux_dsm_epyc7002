@@ -48,9 +48,9 @@ static void insert_extent(struct btrfs_root *root, u64 start, u64 len,
 	btrfs_set_file_extent_compression(leaf, fi, compression);
 	btrfs_set_file_extent_encryption(leaf, fi, 0);
 	btrfs_set_file_extent_other_encoding(leaf, fi, 0);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	btrfs_set_file_extent_syno_flag(leaf, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 
 static void insert_inode_item_key(struct btrfs_root *root)

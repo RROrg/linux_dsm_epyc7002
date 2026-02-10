@@ -6,15 +6,23 @@
 #include "synobios.h"
 #include "ryzen5k_common.h"
 
+#define I2C_SWITCH_VAL 0x9
+
+#define PSU_I2C_BUS 		0
+#define PSU_TOP_I2C_ADDR 	0x58
+#define PSU_BTM_I2C_ADDR 	0x59
+
 // extern function from ryzen5k_common
 extern int I2CSmbusReadPowerStatus(int i2c_bus_no, u16 i2c_addr, SYNO_POWER_STATUS* status);
 extern int xsSetBuzzerClear(unsigned char buzzer_cleared);
 extern int xsGetBuzzerCleared(unsigned char *buzzer_cleared);
 extern int xsCPUFanSpeedMapping(FAN_SPEED speed);
 extern int xsFanSpeedMapping(FAN_SPEED speed);
-#ifdef CONFIG_SYNO_HWMON_PMBUS
-extern int Ryzen5kPmbusGetPowerInfo(POWER_INFO *power_info);
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
+
+void RS4024xspSMBusSwitchInit(void) {
+	u8 data = I2C_SWITCH_VAL;
+	SMBusSwitchRegWrite(0, 1, &data);
+}
 
 SYNO_HWMON_SENSOR_TYPE RS4024xsp_thermal_sensor = {
 	.type_name = HWMON_SYS_THERMAL_NAME,
@@ -78,7 +86,7 @@ SYNO_HWMON_SENSOR_TYPE RS4024xsp_psu_status[2] = {
 			.sensor_name = HWMON_PSU_SENSOR_POUT,
 		},
 		.sensor[2] = {
-			.sensor_name = HWMON_PSU_SENSOR_TEMP1,
+			.sensor_name = HWMON_PSU_SENSOR_TEMP,
 		},
 		.sensor[3] = {
 			.sensor_name = HWMON_PSU_SENSOR_FAN,
@@ -97,7 +105,7 @@ SYNO_HWMON_SENSOR_TYPE RS4024xsp_psu_status[2] = {
 			.sensor_name = HWMON_PSU_SENSOR_POUT,
 		},
 		.sensor[2] = {
-			.sensor_name = HWMON_PSU_SENSOR_TEMP1,
+			.sensor_name = HWMON_PSU_SENSOR_TEMP,
 		},
 		.sensor[3] = {
 			.sensor_name = HWMON_PSU_SENSOR_FAN,
@@ -119,9 +127,35 @@ SYNO_HWMON_SENSOR_TYPE RS4024xsp_hdd_backplane_status = {
 	},
 };
 
+static
+int RS4024xspI2CGetPowerInfo(POWER_INFO *power_info)
+{
+	int ret = -1;
+	int err = -1;
+
+	if (NULL == power_info) {
+		goto FAIL;
+	}
+
+	err = I2CSmbusReadPowerStatus(PSU_I2C_BUS, PSU_TOP_I2C_ADDR, &(power_info->power_1));
+	if (0 != err) {
+		goto FAIL;
+	}
+
+	err = I2CSmbusReadPowerStatus(PSU_I2C_BUS, PSU_BTM_I2C_ADDR, &(power_info->power_2));
+	if (0 != err) {
+		goto FAIL;
+	}
+
+        ret = 0;
+
+FAIL:
+	return ret;
+}
+
 static SYNO_GPIO_INFO alarm_led = {
 	.nr_gpio                = 1,
-	.gpio_port              = {86},
+	.gpio_port              = {57},
 	.gpio_polarity  = ACTIVE_HIGH,
 };
 
@@ -162,9 +196,7 @@ struct model_ops rs4024xsp_ops = {
 	.x86_set_esata_led_status = NULL,
 	.x86_cpufan_speed_mapping = xsCPUFanSpeedMapping,
 	.x86_get_buzzer_cleared = xsGetBuzzerCleared,
-#ifdef CONFIG_SYNO_HWMON_PMBUS
-	.x86_get_power_status = Ryzen5kPmbusGetPowerInfo,
-#endif /* CONFIG_SYNO_HWMON_PMBUS */
+	.x86_get_power_status = RS4024xspI2CGetPowerInfo,
 	.x86_set_buzzer_clear = xsSetBuzzerClear,
 	.x86_gpio_init = RS4024xspGpioInit,
 	.x86_gpio_cleanup = RS4024xspGpioCleanup,

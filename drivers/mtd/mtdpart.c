@@ -1124,7 +1124,7 @@ uint64_t mtd_get_device_size(const struct mtd_info *mtd)
 }
 EXPORT_SYMBOL_GPL(mtd_get_device_size);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned long length)
 {
 	struct mtd_info *master = mtd_get_master((struct mtd_info *)mtd);
@@ -1140,4 +1140,4 @@ int SYNOMTDModifyPartInfo(struct mtd_info *mtd, unsigned long offset, unsigned l
 
 	return 0;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */

@@ -2090,7 +2090,7 @@ static void serial8250_break_ctl(struct uart_port *port, int break_state)
 /*
  *	Wait for transmitter & holding register to empty
  */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void syno_kt_wait_for_xmitr(struct uart_8250_port *up, int bits)
 {
 	unsigned int status, tmout = 10000;
@@ -2157,7 +2157,7 @@ static void syno_kt_wait_for_xmitr(struct uart_8250_port *up, int bits)
 		}
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  *	Wait for transmitter & holding register to empty
@@ -3215,7 +3215,7 @@ static ssize_t rx_trig_bytes_store(struct device *dev,
 
 static DEVICE_ATTR_RW(rx_trig_bytes);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static ssize_t serial8250_get_attr_console_enable(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -3272,13 +3272,13 @@ static ssize_t serial8250_set_attr_console_enable(struct device *dev,
 static DEVICE_ATTR(console_enable, S_IRUSR | S_IWUSR | S_IRGRP,
 		   serial8250_get_attr_console_enable,
 		   serial8250_set_attr_console_enable);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static struct attribute *serial8250_dev_attrs[] = {
 	&dev_attr_rx_trig_bytes.attr,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	&dev_attr_console_enable.attr,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	NULL
 };
 
@@ -3426,15 +3426,15 @@ static void serial8250_console_putchar(struct uart_port *port, int ch)
 {
 	struct uart_8250_port *up = up_to_u8250p(port);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (SYNO_OOB_TTY == up->port.line) {
 		syno_kt_wait_for_xmitr(up, UART_LSR_THRE);
 	} else {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	wait_for_xmitr(up, UART_LSR_THRE);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	serial_port_out(port, UART_TX, ch);
 }
 
@@ -3553,11 +3553,11 @@ static unsigned int probe_baud(struct uart_port *port)
 
 int serial8250_console_setup(struct uart_port *port, char *options, bool probe)
 {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int baud = 115200;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	int baud = 9600;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	int bits = 8;
 	int parity = 'n';
 	int flow = 'n';

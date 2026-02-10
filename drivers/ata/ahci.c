@@ -41,18 +41,18 @@
 #include <linux/of.h>
 #endif /* MY_ABC_HERE */
 
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* MY_ABC_HERE || MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 #include <linux/synobios.h>
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/syno_gpio.h>
 extern struct ata_port *syno_ata_port_get_by_port(const unsigned short diskPort);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 extern char g_ahci_switch;
@@ -669,7 +669,7 @@ static const struct pci_device_id ahci_pci_tbl[] = {
 	{ }	/* terminate list */
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define SYNO_SATA_MAX_PORTS_CNT 32
 
 static struct {
@@ -1022,7 +1022,7 @@ void syno_mv_9xxx_amp_adjust_by_port(struct ata_host *host, u32 val, unsigned in
 void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 {
 	int port = 0;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int idx = 0;
 
 	if (0 <= (idx = syno_m2d_model_get(pdev))) {
@@ -1040,7 +1040,7 @@ void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 			}
 		}
 	} else {
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	if (syno_is_hw_version(HW_DS720p)) {
 		// ESATA port
 		/* MV9170 */
@@ -1068,9 +1068,9 @@ void syno_mv_9xxx_amp_adjust(struct ata_host *host, struct pci_dev *pdev)
 			syno_mv_9xxx_amp_adjust_by_port(host, 0xE75, mv_port_addr[port], mv_port_data[port], mv_sata_gen[2]);
 		}
 	}
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 #endif /* MY_ABC_HERE */
 
@@ -1629,7 +1629,7 @@ void syno_jmb58x_init(struct ata_host *host)
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 //Access Offset 0xAC to set GPIO[15:11] for pull up[15:11] and output enable [15:11], pull up is used to control resister status, set 0 in this case
 //Register description:
 //   Memory Write (BAR5 + 0xAC ) = { pull_up[15:11] , 3'h0 , 8'h00, output_enable [15:11] , 3'h0,  8'h00  }
@@ -1738,9 +1738,9 @@ void syno_jmb585_led_wait(void)
 	}
 }
 EXPORT_SYMBOL(syno_jmb585_led_wait);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define SYNO_ASM1061_MAX_PORT_NUM 2
 #define SYNO_ASM1061_GEN 3
 /*
@@ -1856,7 +1856,7 @@ void syno_asmedia_1061_init(struct ata_host *host)
 		syno_asmedia_1061_reg_set(pdev, devfn, 0xDAE, 0x92);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 #define SYNO_ASM116X_MAX_PORT_NUM    6
@@ -3396,7 +3396,7 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 		}
 	}
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		for (gen = 0; gen < SYNO_ASM1061_GEN; gen++) {
 			for (port = 0; port < SYNO_ASM1061_MAX_PORT_NUM; ++port) {
@@ -3407,7 +3407,7 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 			}
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 	if (0 == syno_asmedia_116x_check(pdev)) {
 		for (gen = 0; gen < SYNO_ASM116X_GEN; ++gen) {
@@ -3508,13 +3508,13 @@ static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 	syno_set_signal(host, sigData, sscOffTable);
 
 /* General adjust */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		syno_asmedia_1061_reg_set(pdev, pdev->devfn, 0xCAE, 0x92);
 		mdelay(100);
 		syno_asmedia_1061_reg_set(pdev, pdev->devfn, 0xDAE, 0x92);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 END:
 	return;
@@ -3808,11 +3808,11 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 	}
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (0 == syno_asmedia_1061_check(pdev)) {
 		syno_asmedia_1061_init(host);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 	if (0 == syno_asmedia_116x_check(pdev)) {

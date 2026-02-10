@@ -17,6 +17,50 @@ extern int xsGetBuzzerCleared(unsigned char *buzzer_cleared);
 extern int xsCPUFanSpeedMapping(FAN_SPEED speed);
 extern int xsFanSpeedMapping(FAN_SPEED speed);
 
+
+/* FIXME: should not directly copy following function
+ * Modified from drivers/i2c/muxes/i2c-mux-pca954x.c */
+int SA3610SMBusSwitchRegWrite(int bus_no, u16 addr, u8 val)
+{
+        int ret = -1;
+        struct i2c_adapter *adap = NULL;
+
+        adap = i2c_get_adapter(bus_no);
+        if (!adap) {
+                printk("Cannot get i2c adapter!\n");
+                goto END;
+        }
+
+        if (adap->algo->master_xfer) {
+                struct i2c_msg msg;
+                char buf[1];
+
+                msg.addr = addr;
+                msg.flags = 0;
+                msg.len = 1;
+                buf[0] = val;
+                msg.buf = buf;
+                ret = __i2c_transfer(adap, &msg, 1);
+        } else {
+                union i2c_smbus_data data;
+                ret = adap->algo->smbus_xfer(adap, addr,
+                                0, I2C_SMBUS_WRITE,
+                                val, I2C_SMBUS_BYTE, &data);
+        }
+END:
+        return ret;
+}
+
+void SA3610SMBusSwitchInit(void) {
+
+    //
+    // PCIe SMBus switch 0x70 write 0x4, to open the route to PCIe Slot#3)
+    // 1. SMBus topology : PCIe Slot#3 ---> SAS HBA card ---> HDD BP ---> PIC (slave addr 0x47)
+    // 2. PIC (slave addr 0x47) to control disk power-on delay (default no delay) and to read hdd present
+    //
+	SA3610SMBusSwitchRegWrite(0, 0x70, 0x4);
+}
+
 SYNO_HWMON_SENSOR_TYPE SA3610_thermal_sensor = {
 	.type_name = HWMON_SYS_THERMAL_NAME,
 	.sensor_num = 3,

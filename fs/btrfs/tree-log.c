@@ -4374,9 +4374,9 @@ static int log_one_extent(struct btrfs_trans_handle *trans,
 	btrfs_set_token_file_extent_compression(&token, fi, em->compress_type);
 	btrfs_set_token_file_extent_encryption(&token, fi, 0);
 	btrfs_set_token_file_extent_other_encoding(&token, fi, 0);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	btrfs_set_token_file_extent_syno_flag(&token, fi, 0);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	btrfs_mark_buffer_dirty(leaf);
 
 	btrfs_release_path(path);

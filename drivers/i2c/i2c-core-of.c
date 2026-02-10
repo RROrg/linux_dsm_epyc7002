@@ -19,11 +19,11 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/sysfs.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synolib.h>
 #include <linux/string.h>
 #include <linux/syno_fdt.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #include "i2c-core.h"
 
@@ -70,7 +70,7 @@ int of_i2c_get_board_info(struct device *dev, struct device_node *node,
 }
 EXPORT_SYMBOL_GPL(of_i2c_get_board_info);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 void syno_of_i2c_register_device(struct i2c_adapter *adap, struct device_node *node)
 {
 	struct i2c_board_info info = {};
@@ -111,7 +111,7 @@ void syno_of_i2c_register_devices(struct i2c_adapter *adap)
 		}
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
 						 struct device_node *node)

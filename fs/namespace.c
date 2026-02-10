@@ -33,16 +33,16 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #include "pnode.h"
 #include "internal.h"
 
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 extern bool ramdisk_check_failed;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 int (*funcSYNOSendErrorFsBtrfsEvent)(const u8*) = NULL;
@@ -3293,26 +3293,26 @@ int path_mount(const char *dev_name, struct path *path,
 		return do_reconfigure_mnt(path, mnt_flags);
 	if (flags & MS_REMOUNT)
 		return do_remount(path, flags, sb_flags, mnt_flags, data_page);
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 	if ((flags & MS_BIND) && ramdisk_check_failed)
 		return -EPERM;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 	if ((flags & MS_BIND) && kexec_test_flags)
 		return -EPERM;
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 	if (flags & MS_BIND)
 		return do_loopback(path, dev_name, flags & MS_REC);
 	if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
 		return do_change_type(path, flags);
-#ifdef CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK
+#ifdef MY_DEF_HERE
 	if ((flags & MS_MOVE) && ramdisk_check_failed)
 		return -EPERM;
-#endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 	if ((flags & MS_MOVE) && kexec_test_flags)
 		return -EPERM;
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 

@@ -15,7 +15,7 @@
 #include <linux/uio.h>
 #include "tee_private.h"
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 /* extra references appended to shm object for registered shared memory */
 struct tee_shm_dmabuf_ref {
 	struct tee_shm shm;
@@ -24,7 +24,7 @@ struct tee_shm_dmabuf_ref {
 	struct sg_table *sgt;
 };
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 static void release_registered_pages(struct tee_shm *shm)
 {
 	if (shm->pages) {
@@ -51,7 +51,7 @@ static void tee_shm_release(struct tee_shm *shm)
 		mutex_unlock(&teedev->mutex);
 	}
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if (shm->flags & TEE_SHM_EXT_DMA_BUF) {
 		struct tee_shm_dmabuf_ref *ref;
 
@@ -61,9 +61,9 @@ static void tee_shm_release(struct tee_shm *shm)
 		dma_buf_detach(ref->dmabuf, ref->attach);
 		dma_buf_put(ref->dmabuf);
 	} else if (shm->flags & TEE_SHM_POOL) {
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (shm->flags & TEE_SHM_POOL) {
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		struct tee_shm_pool_mgr *poolm;
 
 		if (shm->flags & TEE_SHM_DMA_BUF)
@@ -343,7 +343,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(tee_shm_register);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 struct tee_shm *tee_shm_register_fd(struct tee_context *ctx, int fd)
 {
 	struct tee_shm_dmabuf_ref *ref;
@@ -436,7 +436,7 @@ err:
 }
 EXPORT_SYMBOL_GPL(tee_shm_register_fd);
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /**
  * tee_shm_get_fd() - Increase reference count and return file descriptor
  * @shm:	Shared memory handle
@@ -553,10 +553,10 @@ EXPORT_SYMBOL_GPL(tee_shm_get_va);
  */
 int tee_shm_get_pa(struct tee_shm *shm, size_t offs, phys_addr_t *pa)
 {
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if (offs >= shm->size)
 		return -EINVAL;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (pa)
 		*pa = shm->paddr + offs;
 	return 0;

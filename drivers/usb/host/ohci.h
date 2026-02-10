@@ -11,12 +11,12 @@
  * This file is licenced under the GPL.
  */
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #if 0//def CONFIG_USB_PATCH_ON_RTK
 #include <soc/realtek/rtd129x_lockapi.h>
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /*
  * __hc32 and __hc16 are "Host Controller" types, they may be equivalent to
  * __leXX (normally) or __beXX (given OHCI_BIG_ENDIAN), depending on the
@@ -371,12 +371,12 @@ enum ohci_rh_state {
 struct ohci_hcd {
 	spinlock_t		lock;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	void __iomem *wrap_reg;
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	/*
 	 * I/O memory used to communicate with the HC (dma-consistent)
 	 */
@@ -414,12 +414,12 @@ struct ohci_hcd {
 	 * driver state
 	 */
 	enum ohci_rh_state	rh_state;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	int 		resuming;
 	struct completion resuming_done;
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	int			num_ports;
 	int			load [NUM_INTS];
 	u32			hc_control;	/* copy of hc control reg */
@@ -582,7 +582,7 @@ static inline struct usb_hcd *ohci_to_hcd (const struct ohci_hcd *ohci)
 static inline unsigned int _ohci_readl (const struct ohci_hcd *ohci,
 					__hc32 __iomem * regs)
 {
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	//unsigned long flags;
 	//rtk_lockapi_lock(flags, __FUNCTION__); /* Add global lock for emmc issue*/
@@ -595,7 +595,7 @@ static inline unsigned int _ohci_readl (const struct ohci_hcd *ohci,
 	//rtk_lockapi_unlock(flags,__FUNCTION__); /* Add global lock for emmc issue*/
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef CONFIG_USB_OHCI_BIG_ENDIAN_MMIO
 	return big_endian_mmio(ohci) ?
 		readl_be (regs) :
@@ -608,7 +608,7 @@ static inline unsigned int _ohci_readl (const struct ohci_hcd *ohci,
 static inline void _ohci_writel (const struct ohci_hcd *ohci,
 				 const unsigned int val, __hc32 __iomem *regs)
 {
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	//unsigned long flags;
 	//rtk_lockapi_lock(flags, __FUNCTION__); /* Add global lock for emmc issue*/
@@ -620,7 +620,7 @@ static inline void _ohci_writel (const struct ohci_hcd *ohci,
 	//rtk_lockapi_unlock(flags,__FUNCTION__); /* Add global lock for emmc issue*/
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef CONFIG_USB_OHCI_BIG_ENDIAN_MMIO
 	big_endian_mmio(ohci) ?
 		writel_be (val, regs) :

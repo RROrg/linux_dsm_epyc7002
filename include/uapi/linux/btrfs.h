@@ -642,11 +642,11 @@ struct btrfs_ioctl_ino_lookup_user_args {
 	char path[BTRFS_INO_LOOKUP_USER_PATH_MAX];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define BTRFS_SEARCH_FLAG_ADJUST_MIN (1 << 0)
 #define BTRFS_SEARCH_FLAG_REPORT_BUF_FULL (1 << 1)
 #define BTRFS_SEARCH_FLAG_READAHEAD (1 << 2)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* Search criteria for the btrfs SEARCH ioctl family. */
 struct btrfs_ioctl_search_key {
@@ -701,12 +701,12 @@ struct btrfs_ioctl_search_key {
 	__u32 unused;
 
 	/* some extra for later */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	__u32 search_flag;
 	__u32 unused1;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	__u64 unused1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	__u64 unused2;
 	__u64 unused3;
 	__u64 unused4;
@@ -874,7 +874,7 @@ struct btrfs_ioctl_same_args {
 	struct btrfs_ioctl_same_extent_info info[0];
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 enum btrfs_ioctl_syno_dedupe_cmd_action {
 	DEDUPE_CMD_NONE = 0,
 	DEDUPE_CMD_SET,
@@ -919,7 +919,7 @@ struct btrfs_ioctl_syno_extent_same_args {
 	__u64 release_size;		/* out */
 	__u8  status;			/* out */
 };
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 struct btrfs_ioctl_space_info {
 	__u64 flags;
@@ -1733,12 +1733,12 @@ int btrfs_list_hardlinks(struct btrfs_list_hardlinks_args *args);
 				   struct btrfs_ioctl_syno_feat_tree_ctl_args)
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define BTRFS_IOC_SYNO_SET_DEDUPE_FLAG _IOWR(BTRFS_IOCTL_MAGIC, 237, \
 					     struct btrfs_ioctl_syno_dedupe_cmd_args)
 #define BTRFS_IOC_SYNO_EXTENT_SAME _IOWR(BTRFS_IOCTL_MAGIC, 238, \
 					 struct btrfs_ioctl_syno_extent_same_args)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 #define BTRFS_IOC_FREE_SPACE_ANALYZE	_IOWR(BTRFS_IOCTL_MAGIC, 240, \
 				   struct btrfs_ioctl_free_space_analyze_args)

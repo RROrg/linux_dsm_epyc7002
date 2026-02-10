@@ -366,7 +366,7 @@ struct tee_iocl_supp_send_arg {
 #define TEE_IOC_SUPPL_SEND	_IOR(TEE_IOC_MAGIC, TEE_IOC_BASE + 7, \
 				     struct tee_ioctl_buf_data)
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 /**
  * struct tee_ioctl_shm_register_fd_data - Shared memory registering argument
  * @fd:		[in] file descriptor identifying the shared memory
@@ -396,7 +396,7 @@ struct tee_ioctl_shm_register_fd_data {
 #define TEE_IOC_SHM_REGISTER_FD	_IOWR(TEE_IOC_MAGIC, TEE_IOC_BASE + 8, \
 				     struct tee_ioctl_shm_register_fd_data)
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /**
  * struct tee_ioctl_shm_register_data - Shared memory register argument
  * @addr:      [in] Start address of shared memory to register

@@ -1029,9 +1029,9 @@ enum {
 	BTRFS_NR_FILE_EXTENT_TYPES = 3,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define BTRFS_FILE_EXTENT_DEDUPED	0x1
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 struct btrfs_file_extent_item {
 	/*
@@ -1056,15 +1056,15 @@ struct btrfs_file_extent_item {
 	 */
 	__u8 compression;
 	__u8 encryption;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	__u8 other_encoding; /* spare for later use */
 	/*
 	 * BTRFS_FILE_EXTENT_DEDUPED
 	 */
 	__u8 syno_flag;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	__le16 other_encoding; /* spare for later use */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	/* are we inline data or a real extent? */
 	__u8 type;

@@ -32,10 +32,10 @@
 #include <linux/irq.h>
 #include <linux/uaccess.h>
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/pci.h>
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 
 /*
@@ -2856,7 +2856,7 @@ static ssize_t console_store(struct device *dev,
 	return ret < 0 ? ret : count;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define UART_MSR              0x6
 static ssize_t msr_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -2869,9 +2869,9 @@ static ssize_t msr_show(struct device *dev,
 	msr = uport->serial_in(uport, UART_MSR);
 	return snprintf(buf, PAGE_SIZE, "%x\n", msr);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -2904,7 +2904,7 @@ static ssize_t syno_pcipath_show(struct device *dev,
 
 	return sprintf(buf, "%s\n", szPciePath);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static DEVICE_ATTR_RO(uartclk);
 static DEVICE_ATTR_RO(type);
@@ -2920,12 +2920,12 @@ static DEVICE_ATTR_RO(io_type);
 static DEVICE_ATTR_RO(iomem_base);
 static DEVICE_ATTR_RO(iomem_reg_shift);
 static DEVICE_ATTR_RW(console);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static DEVICE_ATTR_RO(msr);
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 static DEVICE_ATTR_RO(syno_pcipath);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static struct attribute *tty_dev_attrs[] = {
 	&dev_attr_uartclk.attr,
@@ -2942,12 +2942,12 @@ static struct attribute *tty_dev_attrs[] = {
 	&dev_attr_iomem_base.attr,
 	&dev_attr_iomem_reg_shift.attr,
 	&dev_attr_console.attr,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	&dev_attr_msr.attr,
-#endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#endif /* MY_DEF_HERE */
+#ifdef MY_DEF_HERE
 	&dev_attr_syno_pcipath.attr,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	NULL
 };
 

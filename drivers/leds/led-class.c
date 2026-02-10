@@ -252,7 +252,7 @@ struct led_classdev *of_led_get(struct device_node *np, int index)
 }
 EXPORT_SYMBOL_GPL(of_led_get);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /**
  * of_leddev_get() - request a LED device via the LED framework
  * @np: device node to get the LED device from
@@ -282,7 +282,7 @@ struct led_classdev *of_leddev_get(struct device_node *led_node)
 	return led_cdev;
 }
 EXPORT_SYMBOL_GPL(of_leddev_get);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /**
  * led_put() - release a LED device

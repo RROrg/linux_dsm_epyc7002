@@ -56,9 +56,9 @@ struct lp3943_led_node {
 	u8 prescale;
 	enum lp3943_led_channel *channel;
 	int num_channels;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	char *default_trigger;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 };
 
 /*

@@ -94,7 +94,7 @@ struct mtd_write_req {
 	__u8 padding[7];
 };
 
-#ifdef  MY_DEF_HERE
+#ifdef  MY_ABC_HERE
 struct SYNO_MTD_FIS_INFO {
 	unsigned char name[16]; // Null terminated name
 	u_int32_t offset;
@@ -105,7 +105,7 @@ struct SYNO_MTD_FIS_INFO {
 #define SYNO_MSYS_FLASH_BLOCK_SIZE  ( 16 * 1024 )
 #define SYNO_MSYS_PARTITION_NUMBER  8
 #define SYNO_MSYS_TOTAL_UNITS       967
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #define MTD_ABSENT		0
 #define MTD_RAM			1
@@ -211,7 +211,7 @@ struct otp_info {
 #define MEMERASE64		_IOW('M', 20, struct erase_info_user64)
 /* Write data to OOB (64-bit version) */
 #define MEMWRITEOOB64		_IOWR('M', 21, struct mtd_oob_buf64)
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define MEMMODIFYPARTINFO   _IOW('M', 22, struct erase_info_user)
 #define MEMMODIFYFISINFO    _IOW('M', 23, struct SYNO_MTD_FIS_INFO)
 #define MSYSMEMFORMAT       _IOW('M', 24, int)
@@ -219,12 +219,12 @@ struct otp_info {
 #define MSYSMEMPARTITIONINFO    _IOR('M', 26, int*)
 #define MEMREADOOB64        _IOWR('M', 27, struct mtd_oob_buf64)
 #define MEMISLOCKED     _IOR('M', 28, struct erase_info_user)
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 /* Read data from OOB (64-bit version) */
 #define MEMREADOOB64		_IOWR('M', 22, struct mtd_oob_buf64)
 /* Check if chip is locked (for MTD that supports it) */
 #define MEMISLOCKED		_IOR('M', 23, struct erase_info_user)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*
  * Most generic write interface; can write in-band and/or out-of-band in various

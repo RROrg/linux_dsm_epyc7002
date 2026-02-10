@@ -17,9 +17,9 @@
 #include <linux/of.h>
 #include <linux/mtd/mtd.h>
 #include <linux/mtd/partitions.h>
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/sched.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #include <linux/module.h>
 
 struct fis_image_desc {
@@ -325,7 +325,7 @@ module_mtd_part_parser(redboot_parser);
 /* mtd parsers will request the module by parser name */
 MODULE_ALIAS("RedBoot");
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 int SYNOMTDModifyFisInfo(struct mtd_info *mtd, struct SYNO_MTD_FIS_INFO SynoMtdFisInfo)
 {
 	struct fis_image_desc *buf;
@@ -404,7 +404,7 @@ out:
 	kfree(buf);
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 
 MODULE_LICENSE("GPL");

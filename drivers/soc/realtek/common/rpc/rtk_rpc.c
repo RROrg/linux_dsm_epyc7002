@@ -78,10 +78,10 @@ static DEFINE_SPINLOCK(gASLock);
 static int rpc_major;
 static int rpc_acpu_irq;
 static int rpc_vcpu_irq;
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 static int rpc_ve3_irq;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 
 #ifdef SHOW_TASKS_ON_DEBUGFS
@@ -672,10 +672,10 @@ static int rtk_rpc_probe(struct platform_device *pdev)
 	int ret = -1;
 	struct device_node *np = pdev->dev.of_node;
 	struct rtk_ipc_shm __iomem *ipc = (void __iomem *) IPC_SHM_VIRT;
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 	struct device_node *syscon_np;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	rpc_dev = &pdev->dev;
 	chip_id = get_rtd_chip_id();

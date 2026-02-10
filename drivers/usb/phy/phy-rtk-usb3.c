@@ -115,10 +115,10 @@ static int __get_phy_parameter_by_efuse(struct rtk_usb_phy_s *rtk_phy,
 	} else {
 		unsigned char *buf;
 		size_t buf_size;
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 		int value_size = 4;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		buf = nvmem_cell_read(cell, &buf_size);
 

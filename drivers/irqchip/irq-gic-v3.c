@@ -34,10 +34,10 @@
 
 #include "irq-gic-common.h"
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #define GICD_CTLR_E1NWF	(1 << 7)
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #define GICD_INT_NMI_PRI	(GICD_INT_DEF_PRI & ~0x80)
 
 #define FLAGS_WORKAROUND_GICR_WAKER_MSM8996	(1ULL << 0)
@@ -45,14 +45,14 @@
 
 #define GIC_IRQ_TYPE_PARTITION	(GIC_IRQ_TYPE_LPI + 1)
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 static unsigned int GICR_ISENABLER0_REG;
 static unsigned int GIC_ISENABLER0_REG;
 static unsigned int GIC_ISENABLER1_REG;
 static unsigned int GIC_ISENABLER2_REG;
 static unsigned int GIC_ISENABLER3_REG;
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 struct redist_region {
 	void __iomem		*redist_base;
 	phys_addr_t		phys_base;
@@ -250,27 +250,27 @@ static void gic_enable_redist(bool enable)
 	rbase = gic_data_rdist_rd_base();
 
 	val = readl_relaxed(rbase + GICR_WAKER);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if (enable) {
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 		if (readl_relaxed(rbase) & 0x02000000)
 			writel_relaxed(readl_relaxed(rbase) & 0xfdffffff, rbase);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (readl_relaxed(rbase) & 0x02000000)
 		writel_relaxed(readl_relaxed(rbase) & 0xfdffffff, rbase);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (enable)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		/* Wake up this CPU redistributor */
 		val &= ~GICR_WAKER_ProcessorSleep;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	} else
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		val |= GICR_WAKER_ProcessorSleep;
 	writel_relaxed(val, rbase + GICR_WAKER);
 
@@ -816,11 +816,11 @@ static void __init gic_dist_init(void)
 	/* Now do the common stuff, and wait for the distributor to drain */
 	gic_dist_config(base, GIC_LINE_NR, gic_dist_wait_for_rwp);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	val = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1 | GICD_CTLR_E1NWF;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	val = GICD_CTLR_ARE_NS | GICD_CTLR_ENABLE_G1A | GICD_CTLR_ENABLE_G1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (gic_data.rdists.gicd_typer2 & GICD_TYPER2_nASSGIcap) {
 		pr_info("Enabling SGIs without active state\n");
 		val |= GICD_CTLR_nASSGIreq;
@@ -834,7 +834,7 @@ static void __init gic_dist_init(void)
 	 * enabled.
 	 */
 	affinity = gic_mpidr_to_affinity(cpu_logical_map(smp_processor_id()));
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 	/*
 	* The GIC selects the appropriate core for a SPI.
@@ -842,7 +842,7 @@ static void __init gic_dist_init(void)
 	*/
 	affinity |= 0x80000000;
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	for (i = 32; i < GIC_LINE_NR; i++)
 		gic_write_irouter(affinity, base + GICD_IROUTER + i * 8);
 
@@ -1157,7 +1157,7 @@ static int gic_starting_cpu(unsigned int cpu)
 	return 0;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 static int gic_off_cpu(unsigned int cpu)
 {
 
@@ -1169,7 +1169,7 @@ static int gic_off_cpu(unsigned int cpu)
 	return 0;
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 static u16 gic_compute_target_list(int *base_cpu, const struct cpumask *mask,
 				   unsigned long cluster_id)
 {
@@ -1251,11 +1251,11 @@ static void __init gic_smp_init(void)
 
 	cpuhp_setup_state_nocalls(CPUHP_AP_IRQ_GIC_STARTING,
 				  "irqchip/arm/gicv3:starting",
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 				  gic_starting_cpu, gic_off_cpu);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 				  gic_starting_cpu, NULL);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	/* Register all 8 non-secure SGIs */
 	base_sgi = __irq_domain_alloc_irqs(gic_data.domain, -1, 8,
@@ -1296,11 +1296,11 @@ static int gic_set_affinity(struct irq_data *d, const struct cpumask *mask_val,
 	reg = gic_dist_base(d) + offset + (index * 8);
 	val = gic_mpidr_to_affinity(cpu_logical_map(cpu));
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if (cpumask_subset(cpu_online_mask, mask_val))
 		val |= 0x80000000;
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	gic_write_irouter(val, reg);
 
 	/*
@@ -1331,7 +1331,7 @@ static int gic_retrigger(struct irq_data *data)
 static int gic_cpu_pm_notifier(struct notifier_block *self,
 			       unsigned long cmd, void *v)
 {
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	void __iomem *rbase;
 
 	rbase = gic_data_rdist_sgi_base();
@@ -1360,7 +1360,7 @@ static int gic_cpu_pm_notifier(struct notifier_block *self,
 		pr_err("GIC_ISENABLER3 = %x\n", GIC_ISENABLER3_REG);
 	}
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (cmd == CPU_PM_EXIT) {
 		if (gic_dist_security_disabled())
 			gic_enable_redist(true);

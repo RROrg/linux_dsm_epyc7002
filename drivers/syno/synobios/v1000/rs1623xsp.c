@@ -8,7 +8,7 @@
 
 extern int V1000RedundantPowerGetPowerStatus(POWER_INFO *power_info);
 
-PWM_FAN_SPEED_MAPPING gRS1624xspSpeedMapping[] = {
+PWM_FAN_SPEED_MAPPING gRS1623xspSpeedMapping[] = {
 	{ .fanSpeed = FAN_SPEED_STOP,       .iDutyCycle = 0  },
 	{ .fanSpeed = FAN_SPEED_ULTRA_LOW,  .iDutyCycle = 15 },
 	{ .fanSpeed = FAN_SPEED_VERY_LOW,   .iDutyCycle = 20 },
@@ -20,7 +20,7 @@ PWM_FAN_SPEED_MAPPING gRS1624xspSpeedMapping[] = {
 	{ .fanSpeed = FAN_SPEED_FULL,       .iDutyCycle = 99 },
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1624xsp_thermal_sensor = {
+SYNO_HWMON_SENSOR_TYPE RS1623xsp_thermal_sensor = {
 	.type_name = HWMON_SYS_THERMAL_NAME,
 	.sensor_num = 3,
 	.sensor[0] = {
@@ -34,7 +34,7 @@ SYNO_HWMON_SENSOR_TYPE RS1624xsp_thermal_sensor = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1624xsp_voltage_sensor = {
+SYNO_HWMON_SENSOR_TYPE RS1623xsp_voltage_sensor = {
 	.type_name = HWMON_SYS_VOLTAGE_NAME,
 	.sensor_num = 5,
 	.sensor[0] = {
@@ -54,7 +54,7 @@ SYNO_HWMON_SENSOR_TYPE RS1624xsp_voltage_sensor = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1624xsp_fan_speed_rpm = {
+SYNO_HWMON_SENSOR_TYPE RS1623xsp_fan_speed_rpm = {
 	.type_name = HWMON_SYS_FAN_RPM_NAME,
 	.sensor_num = 2,
 	.sensor[0] = {
@@ -65,7 +65,7 @@ SYNO_HWMON_SENSOR_TYPE RS1624xsp_fan_speed_rpm = {
 	},
 };
 
-SYNO_HWMON_SENSOR_TYPE RS1624xsp_hdd_backplane_status = {
+SYNO_HWMON_SENSOR_TYPE RS1623xsp_hdd_backplane_status = {
 	.type_name = HWMON_HDD_BP_STATUS_NAME,
 	.sensor_num = 2,
 	.sensor[0] = {
@@ -76,7 +76,7 @@ SYNO_HWMON_SENSOR_TYPE RS1624xsp_hdd_backplane_status = {
 	},
 };
 
-int RS1624xspGetBuzzerCleared(unsigned char *buzzer_cleared)
+int RS1623xspGetBuzzerCleared(unsigned char *buzzer_cleared)
 {
     return SYNO_BUZZER_BUTTON_GPIO_GET(buzzer_cleared);
 }
@@ -103,7 +103,7 @@ static SYNO_GPIO_INFO mute_button_detect = {
 };
 
 static
-void RS1624xspGpioInit(void)
+void RS1623xspGpioInit(void)
 {
 	syno_gpio.alarm_led		= &alarm_led;
 	syno_gpio.redundant_power_detect    = &redundant_power_detect;
@@ -111,7 +111,7 @@ void RS1624xspGpioInit(void)
 }
 
 static
-void RS1624xspGpioCleanup(void)
+void RS1623xspGpioCleanup(void)
 {
 	syno_gpio.alarm_led		= NULL;
 	syno_gpio.redundant_power_detect    = NULL;
@@ -119,24 +119,24 @@ void RS1624xspGpioCleanup(void)
 }
 
 static
-int RS1624xspInitModuleType(struct synobios_ops *ops)
+int RS1623xspInitModuleType(struct synobios_ops *ops)
 {
-	module_t type_rs1624xsp = MODULE_T_RS1624xsp;
-	module_t *pType = &type_rs1624xsp;
+	module_t type_rs1623xsp = MODULE_T_RS1623xsp;
+	module_t *pType = &type_rs1623xsp;
 
 	module_type_set(pType);
 	return 0;
 }
 
 static
-int RS1624xspFanSpeedMapping(FAN_SPEED speed)
+int RS1623xspFanSpeedMapping(FAN_SPEED speed)
 {
 	int iDutyCycle = -1;
 	size_t i;
 
-	for( i = 0; i < sizeof(gRS1624xspSpeedMapping)/sizeof(PWM_FAN_SPEED_MAPPING); ++i ) {
-		if( gRS1624xspSpeedMapping[i].fanSpeed == speed ) {
-			iDutyCycle = gRS1624xspSpeedMapping[i].iDutyCycle;
+	for( i = 0; i < sizeof(gRS1623xspSpeedMapping)/sizeof(PWM_FAN_SPEED_MAPPING); ++i ) {
+		if( gRS1623xspSpeedMapping[i].fanSpeed == speed ) {
+			iDutyCycle = gRS1623xspSpeedMapping[i].iDutyCycle;
 			break;
 		}
 	}
@@ -144,22 +144,22 @@ int RS1624xspFanSpeedMapping(FAN_SPEED speed)
 	return iDutyCycle;
 }
 
-struct model_ops rs1624xsp_ops = {
-	.x86_init_module_type = RS1624xspInitModuleType,
-	.x86_fan_speed_mapping = RS1624xspFanSpeedMapping,
+struct model_ops rs1623xsp_ops = {
+	.x86_init_module_type = RS1623xspInitModuleType,
+	.x86_fan_speed_mapping = RS1623xspFanSpeedMapping,
 	.x86_set_esata_led_status = NULL, /* no esata led */
 	.x86_cpufan_speed_mapping = NULL, /* no cpu fan */
-	.x86_get_buzzer_cleared = RS1624xspGetBuzzerCleared,
-	.x86_gpio_init = RS1624xspGpioInit,
-	.x86_gpio_cleanup = RS1624xspGpioCleanup,
+	.x86_get_buzzer_cleared = RS1623xspGetBuzzerCleared,
+	.x86_gpio_init = RS1623xspGpioInit,
+	.x86_gpio_cleanup = RS1623xspGpioCleanup,
 	.x86_get_power_status = V1000RedundantPowerGetPowerStatus,
 };
 
-struct hwmon_sensor_list rs1624xsp_sensor_list = {
-	.thermal_sensor = &RS1624xsp_thermal_sensor,
-	.voltage_sensor = &RS1624xsp_voltage_sensor,
-	.fan_speed_rpm = &RS1624xsp_fan_speed_rpm,
+struct hwmon_sensor_list rs1623xsp_sensor_list = {
+	.thermal_sensor = &RS1623xsp_thermal_sensor,
+	.voltage_sensor = &RS1623xsp_voltage_sensor,
+	.fan_speed_rpm = &RS1623xsp_fan_speed_rpm,
 	.psu_status = NULL,
-	.hdd_backplane = &RS1624xsp_hdd_backplane_status,
+	.hdd_backplane = &RS1623xsp_hdd_backplane_status,
 };
 

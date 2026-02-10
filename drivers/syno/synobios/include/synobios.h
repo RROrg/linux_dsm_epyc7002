@@ -98,13 +98,11 @@ typedef struct _Synohw_custom {
 
 extern struct proc_dir_entry *proc_synobios_root;
 
-#ifndef CONFIG_SYNO_QUALCOMM_COMMON
 typedef struct _SynoMsgPkt {
 	long	usNum;
 	long	usLen;
 	char	szMsg[128];
 } SYNOMSGPKT;
-#endif
 
 #define BIOS_STR_LEN_MAX	32
 
@@ -264,14 +262,6 @@ typedef struct _SynoMsgPkt {
 #define SYNO_EVENT_USBSTATION_EJECT 	0x5001
 
 #define SYNO_EVENT_WIFIWPS              0x6000
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-#ifdef SYNO_WIFI_WORKAROUND
-#define SYNO_EVENT_WIFI_NOTIFICATION    0x6001
-#endif /* SYNO_WIFI_WORKAROUND */
-
-#define SYNO_EVENT_WIFI_ON_OFF          0x6002
-#define SYNO_EVENT_WIFI_ON_OFF_READY    0x6003
-#endif
 #define DRIVER_CLASS_FXP                0x00
 #define DRIVER_CLASS_EM                 0x10
 #define DRIVER_CLASS_RL                 0x20
@@ -506,10 +496,6 @@ typedef enum {
 	LED_DISKS,
 	LED_DISK_ESATA,
 	LED_DISKS_ALARM,
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	LED_RT,
-	LED_MR,
-#endif
 } LED_T;
 
 #if defined(MY_DEF_HERE) || defined(CONFIG_SYNO_MD_SYNC_STATUS_REPORT)
@@ -598,11 +584,6 @@ typedef enum {
 } LCM_T;
 
 typedef enum {
-	WIFI_WPS_215air = 0x0, /* GPIO PIN 0  */
-	WIFI_WPS_213air = 0x28, /* GPIO PIN 40  */
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	WIFI_WPS_BTN_INDEPENDENT = 0xFD,
-#endif
 	WIFI_WPS_NO = 0xFE,
 	WIFI_WPS_UNKNOWN = 0xFF
 } WIFI_WPS_T;
@@ -712,13 +693,6 @@ typedef enum {
 
 typedef enum {
 	CPU_UNKNOWN,
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	CPU_IPQ8065,
-	CPU_IPQ8064,
-	CPU_IPQ8071a,
-	CPU_IPQ6018,
-	CPU_IPQ4019,
-#endif
 	CPU_E5_2620v3,
 	CPU_E5_2609v3,
 	CPU_E3_1230v2,
@@ -793,16 +767,11 @@ typedef enum {
 	CPU_RTD1619B,
 	CPU_EPYC7232P,
 	CPU_5800E,
-	CPU_EPYC7443P,
-	CPU_13700
+	CPU_EPYC7443P
 } CPU_ARCH_INFO_T;
 
 typedef enum {
 	CRYPTO_HW_NONE,
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	CRYPTO_IPQ806X,
-	CRYPTO_DAKOTA,
-#endif
 	CRYPTO_A370,
 	CRYPTO_A375,
 	CRYPTO_A38X,
@@ -883,7 +852,6 @@ typedef enum {
 	MODEL_DS112slim,
 	MODEL_DS414j,
 	MODEL_DS415j,
-	MODEL_DS215air,
 	MODEL_DS213,
 	MODEL_RS214,		//30
 	MODEL_DS1513p,
@@ -913,7 +881,6 @@ typedef enum {
 	MODEL_DS215j,
 	MODEL_RS815p,
 	MODEL_RS815rpp,
-	MODEL_DS215router,
 	MODEL_DS715,
 	MODEL_DS115, 		//60
 	MODEL_RS815,
@@ -1062,29 +1029,19 @@ typedef enum {
 	MODEL_RS2423p,
 	MODEL_RS2423rpp,
 	MODEL_DS1823xsp,
-	MODEL_RS1624xsp,
+	MODEL_RS1623xsp,
 	MODEL_DS423p,
 	MODEL_SA3410,
 	MODEL_SA3610,
 	MODEL_DS124,
-	MODEL_MANGO,
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	MODEL_RT2600ac,
-	MODEL_MR2200ac,
-	MODEL_RT6600ax,
-	MODEL_RT3000ax,
-#endif
 	MODEL_VS750hd,
 	MODEL_SA3400d,
 	MODEL_DS224p,
 	MODEL_RS4024xsp,
 	MODEL_FS6600DN,
-	MODEL_DS1624p,
-	MODEL_DS1824p,
+	MODEL_DS1623p,
+	MODEL_DS1823p,
 	MODEL_SC2500,
-	MODEL_RS1224p,
-	MODEL_RS1224rpp,
-	MODEL_RS4025xsp,
 	MODEL_INVALID
 } PRODUCT_MODEL;
 
@@ -1121,12 +1078,6 @@ typedef enum {
 	NET_NOLINK,
 } SYNO_NET_LINK_EVENT;
 
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-typedef enum {
-	SYNO_RESET_CLASSIC = 0,
-	SYNO_RESET_PASSWORD_ONLY = 1,
-} SYNO_RESET_TYPE;
-#endif
 
 /**
  * from first 0 bit to 6th bit is signature
@@ -1201,15 +1152,6 @@ typedef struct _tag_SYNO_DISK_INTF_INFO {
 	SYNO_DISK_INTF disk_intf[MAX_DISK_INTF];
 } SYNO_DISK_INTF_INFO;
 
-#if defined(CONFIG_SYNO_QUALCOMM_COMMON)
-typedef enum {
-	EXTERNAL_STORAGE_MOUNT_STATUS_FAIL = -1,
-	EXTERNAL_STORAGE_MOUNT_STATUS_NO_VOLUME = 0,
-	EXTERNAL_STORAGE_MOUNT_STATUS_ALL_MOUNTED,
-	EXTERNAL_STORAGE_MOUNT_STATUS_FORMATTING,
-	EXTERNAL_STORAGE_MOUNT_STATUS_NUM
-} EXTERNAL_STORAGE_MOUNT_STATUS;
-#endif /* defined(CONFIG_SYNO_QUALCOMM_COMMON) */
 #define SYNOIO_EXDISPLAY          _IOWR(SYNOBIOS_IOC_MAGIC, 1, struct _SynoMsgPkt)
 #define SYNOIO_NEXTEVENT          _IOWR(SYNOBIOS_IOC_MAGIC, 2, u_int)
 
@@ -1519,19 +1461,7 @@ typedef enum {
 #define SYNO_LED_USB_COPY_NONE          0x5100
 #define SYNO_LED_USB_COPY_STEADY        0x5101
 #define SYNO_LED_USB_COPY_BLINK         0x5102
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-#define SYNO_LED_USB_EJECT_BEG          0x5103	/* start eject notification */
-#define SYNO_LED_USB_EJECT_BLINK        SYNO_LED_USB_EJECT_BEG	/* alias for compatibility */
-#define SYNO_LED_USB_EJECT_END          0x5104	/* eject notification done */
-#define SYNO_LED_USB_VOL_MOUNT          0x5105	/* external volume mounted */
-#define SYNO_LED_USB_VOL_UMOUNT_BEG     0x5106	/* all external volume umount start */
-#define SYNO_LED_USB_VOL_UMOUNT_END     0x5107	/* all external volume umount end */
-#define SYNO_LED_USB_SVCCTL_BEG         0x5108	/* service/pkg-related operation during eject/mnt */
-#define SYNO_LED_USB_SVCCTL_END         0x5109	/* service/pkg operation done */
-#define SYNO_LED_USB_VOL_NOT_MOUNT      0x5110	/* indicating not mounted volume */
-#else
 #define SYNO_LED_USB_EJECT_BLINK        0x5103
-#endif
 #define SYNO_LED_HDD_GS                 0x5200
 #define SYNO_LED_HDD_AS                 0x5201
 #define SYNO_LED_HDD_AB                 0x5202
@@ -1540,15 +1470,6 @@ typedef enum {
 #define SYNO_LED_ALARM_ON				0x5205
 #define SYNO_LED_ALARM_BLINKING			0x5206
 #define SYNO_LED_ALARM_OFF				0x5207
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-#define SYNO_LED_MASK_ALL				0x5208
-#define SYNO_LED_NOMASK_ALL				0x5209
-#define SYNO_LED_READY_TO_SETUP			0x520a
-#define SYNO_LED_NETWORK_SETTING		0x520b
-#define SYNO_LED_DISCONNECT				0x520c
-#define SYNO_LED_NETWORK_SETTING_END	0x520d
-#define SYNO_LED_CONNECT				0x520e
-#endif
 #define SYNO_BEEP_OFF                   0x5300
 #define SYNO_BEEP_ON                    0x5301
 #define SYNO_BEEP_200MS                 0x5302
@@ -1563,10 +1484,6 @@ typedef enum {
 #define SYNO_LED_USBSTATION_DISK_ORANGE 0x5901
 #define SYNO_LED_USBSTATION_POWER       0x5902
 #define SYNO_LED_USBSTATION_MEMTEST_LED		0x5903
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-#define SYNO_MESH_BACKHAUL_IFACE        0x6000
-#define SYNO_MESH_SIGNAL_QUALITY        0x6001
-#endif
 
 /*add by chchou : moved from synobios.c*/
 /*int SYNOBiosSetEvent(u_int event_type);
@@ -1639,9 +1556,6 @@ struct synobios_ops {
 	int		(*get_sys_current)(unsigned long*);
 	int             (*get_disk_intf)(SYNO_DISK_INTF_INFO *);
 	int		(*set_rp_fan)(unsigned char);
-#ifdef CONFIG_SYNO_QUALCOMM_COMMON
-	int		(*set_router_status)(struct _SynoMsgPkt *);
-#endif
 };
 
 /**************************/

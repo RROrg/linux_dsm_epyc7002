@@ -178,26 +178,6 @@ case "$BUILD_TARGET" in
 		subdir="rtd1619b"
 		platform="rtd1619b"
 	;;
-	REALTEK_RTD1619B_MANGO)
-		subdir="rtd1619bmango"
-		platform="rtd1619bmango"
-	;;
-	QUALCOMM_IPQ806X)
-		subdir="ipq806x"
-		platform="ipq806x"
-	;;
-	QUALCOMM_DAKOTA)
-		subdir="dakota"
-		platform="dakota"
-	;;
-	QUALCOMM_CYPRESS)
-		subdir="cypress"
-		platform="cypress"
-	;;
-	QUALCOMM_HAWKEYE)
-		subdir="hawkeye"
-		platform="hawkeye"
-	;;
 	BROADWELLNKV2)
 		subdir="broadwellnkv2"
 		platform="broadwellnkv2"

@@ -108,26 +108,26 @@ struct gpio_desc *gpio_to_desc(unsigned gpio)
 {
 	struct gpio_device *gdev;
 	unsigned long flags;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	unsigned int gpio_base = 0;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	spin_lock_irqsave(&gpio_lock, flags);
 
 	list_for_each_entry(gdev, &gpio_devices, list) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		gpio_base = ARCH_NR_GPIOS - (gdev->base+gdev->ngpio);
 		if (gpio_base <= gpio && gpio_base + gdev->ngpio > gpio) {
 			spin_unlock_irqrestore(&gpio_lock, flags);
 			return &gdev->descs[gpio - gpio_base];
 		}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		if (gdev->base <= gpio &&
 		    gdev->base + gdev->ngpio > gpio) {
 			spin_unlock_irqrestore(&gpio_lock, flags);
 			return &gdev->descs[gpio - gdev->base];
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	}
 
 	spin_unlock_irqrestore(&gpio_lock, flags);

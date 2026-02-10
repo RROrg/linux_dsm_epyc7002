@@ -296,11 +296,11 @@ static long compat_mcp_dev_ioctl(struct file* file, unsigned int cmd, unsigned l
 			mcp_warning("do ioctl command failed - copy desc_set from user failed 1\n");
 			return -EFAULT;
 		}
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 		p_desc = compat_ptr((uintptr_t)desc_set.p_desc);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		p_desc = compat_ptr(desc_set.p_desc);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #else
 		if(copy_from_user(&desc_set, (void *)arg, sizeof(mcp_desc_set))){
 			mcp_warning("do ioctl command failed - copy desc_set from user failed 1\n");
@@ -463,8 +463,8 @@ static struct file_operations mcp_ops =
 	.release = mcp_dev_release,
 };
 
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 /*------------------------------------------------------------------
  * Func : _mcp_load_otp
  * Desc : load otp key
@@ -486,7 +486,7 @@ static void _mcp_load_otp(void)
 	}
 }
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /*------------------------------------------------------------------
  * Func : _mcp_phy_init
  * Desc : init mcp engine
@@ -843,13 +843,13 @@ int MCP_AES_Decryption(unsigned char Mode, unsigned char Key[16], unsigned char 
 	//addr1 = _mcp_map_single(p_in, len, DMA_TO_DEVICE);
 	//addr2 = _mcp_map_single(p_out, len, DMA_FROM_DEVICE);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	desc.data_in = (uintptr_t)p_in;
 	desc.data_out = (uintptr_t)p_out;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	desc.data_in = p_in;
 	desc.data_out = p_out;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	desc.length = len & ~0xF;
 
 	ret = mcp_do_command(&desc, 1);
@@ -883,13 +883,13 @@ int MCP_AES_Encryption(unsigned char mode, unsigned char key[16], unsigned char 
 	//addr1 = _mcp_map_single(p_in, len, DMA_TO_DEVICE);
 	//addr2 = _mcp_map_single(p_out, len, DMA_FROM_DEVICE);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	desc.data_in = (uintptr_t)p_in;
 	desc.data_out = (uintptr_t)p_out;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	desc.data_in = p_in;
 	desc.data_out = p_out;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	desc.length = len & ~0xF;
 
 	ret = mcp_do_command(&desc, 1);
@@ -935,13 +935,13 @@ int MCP_SHA256(unsigned char *p_in, unsigned char *p_out, unsigned long len, uns
 
 	MCP_SHA256_DESC_INIT(&desc, iv);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	desc.data_in  = (uintptr_t)p_in;
 	desc.data_out = (uintptr_t)p_out;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	desc.data_in  = p_in;
 	desc.data_out = p_out;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	desc.length   = len;
 
 	ret = mcp_do_command(&desc, 1);

@@ -268,7 +268,7 @@ struct dma_buf_ops {
 	 */
 	int (*mmap)(struct dma_buf *, struct vm_area_struct *vma);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	/**
 	 * @map:
 	 *
@@ -295,7 +295,7 @@ struct dma_buf_ops {
 	void (*unmap)(struct dma_buf *, unsigned long, void *);
 
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	void *(*vmap)(struct dma_buf *);
 	void (*vunmap)(struct dma_buf *, void *vaddr);
 };
@@ -531,11 +531,11 @@ int dma_buf_begin_cpu_access(struct dma_buf *dma_buf,
 int dma_buf_end_cpu_access(struct dma_buf *dma_buf,
 			   enum dma_data_direction dir);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 void *dma_buf_kmap(struct dma_buf *, unsigned long);
 void dma_buf_kunmap(struct dma_buf *, unsigned long, void *);
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
 		 unsigned long);
 void *dma_buf_vmap(struct dma_buf *);

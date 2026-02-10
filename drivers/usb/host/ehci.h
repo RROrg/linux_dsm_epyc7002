@@ -222,12 +222,12 @@ struct ehci_hcd {			/* one per controller */
 	unsigned		need_oc_pp_cycle:1; /* MPC834X port power */
 	unsigned		imx28_write_fix:1; /* For Freescale i.MX28 */
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	unsigned		fixed_async_list_addr_bug:1;
 #endif // CONFIG_USB_PATCH_ON_RTK
  
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	/* required for usb32 quirk */
 	#define OHCI_CTRL_HCFS          (3 << 6)
 	#define OHCI_USB_OPER           (2 << 6)

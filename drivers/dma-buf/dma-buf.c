@@ -1143,7 +1143,7 @@ int dma_buf_end_cpu_access(struct dma_buf *dmabuf,
 }
 EXPORT_SYMBOL_GPL(dma_buf_end_cpu_access);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 /**
  * dma_buf_kmap - Map a page of the buffer object into kernel address space. The
  * same restrictions as for kmap and friends apply.
@@ -1183,7 +1183,7 @@ EXPORT_SYMBOL_GPL(dma_buf_kunmap);
 
 
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /**
  * dma_buf_mmap - Setup up a userspace mmap with the given vma

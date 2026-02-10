@@ -154,11 +154,11 @@ struct console {
 	short	index;
 	int	cflag;
 	void	*data;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	void __iomem * pcimapaddress;
 	unsigned long pcimapsize;
 	void	(*deinit)(void);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	struct	 console *next;
 };
 

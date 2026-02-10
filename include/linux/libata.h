@@ -68,10 +68,10 @@
 #define VPRINTK(fmt, args...)
 #endif	/* ATA_DEBUG */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /* WD suggest 30s */
 #define ISSUEREADTIMEOUT (30UL*HZ)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 extern int gSynoAtaDebug;
@@ -716,9 +716,9 @@ struct ata_host {
 	unsigned short	vendor;
 	unsigned short	device;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u8 uJMB585LedStat;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	struct ata_port		*simplex_claimed;	/* channel owning the DMA */
 	struct ata_port		*ports[];
@@ -826,7 +826,7 @@ struct ata_device {
 	void			*zpodd;
 #endif
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* be careful the ATA_DEVICE_CLEAR_OFFSET when porting this */
 	unsigned long ulLastCmd;
 	unsigned long ulSpinupState;
@@ -835,7 +835,7 @@ struct ata_device {
 	/* bit definitions */
 	#define CHKPOWER_FIRST_CMD 0x0
 	#define CHKPOWER_FIRST_WAIT 0x1
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	struct device		tdev;
 	/* n_sector is CLEAR_BEGIN, read comment above CLEAR_BEGIN */
@@ -1213,9 +1213,9 @@ struct ata_port {
     u8					uSynoPMPErrorPort;
 	struct work_struct	SendDiskPowerShortBreakEventTask; /* for disk power short-brake event */
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	void (*syno_ahci_handle_port_interrupt)(struct ata_port *, void __iomem *, u32);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 /* The following initializer overrides a method to NULL whether one of
@@ -2550,10 +2550,10 @@ extern void syno_ata_present_print(struct ata_port *ap, const char *eventlog);
 #define IS_SYNO_PMP_575_CMD(tf) (ATA_CMD_PMP_SYNO_I2C == tf.command || ATA_CMD_PMP_SYNO_LED_GPIO == tf.command || ATA_CMD_PMP_GET_BOARD_INFO_JMB575 == tf.command)
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define IS_SYNO_SPINUP_CMD(qc) (NULL == qc->scsicmd && !ata_tag_internal(qc->tag) && \
 			ATA_CMD_IDLEIMMEDIATE == qc->tf.command)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*
  * Syno inline functions
@@ -2569,11 +2569,11 @@ static inline int syno_qc_filter(struct ata_queued_cmd *qc){
 	}
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (IS_SYNO_SPINUP_CMD(qc)) {
 		return 1;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	return 0;
 }

@@ -46,7 +46,7 @@
 static void update_done_list(struct ohci_hcd *);
 static void ohci_work(struct ohci_hcd *);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_USB_EHCI_RTK
 /* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
@@ -54,7 +54,7 @@ extern bool RTK_ehci_check_schedule_actived(const char *func);
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef	CONFIG_PM
 static int ohci_rh_suspend (struct ohci_hcd *ohci, int autostop)
 __releases(ohci->lock)
@@ -167,7 +167,7 @@ __acquires(ohci->lock)
 	int			status = -EINPROGRESS;
 	int			autostopped = ohci->autostop;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_USB_EHCI_RTK
 	/* Add Workaround to fixed EHCI/OHCI Wrapper can't work simultaneously */
@@ -182,7 +182,7 @@ __acquires(ohci->lock)
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	ohci->autostop = 0;
 	ohci->hc_control = ohci_readl (ohci, &ohci->regs->control);
 
@@ -323,14 +323,14 @@ skip_resume:
 	}
 
 	ohci->rh_state = OHCI_RH_RUNNING;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	if (ohci->resuming) {
 		complete(&ohci->resuming_done);
 		ohci->resuming = 0;
 	}
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	return 0;
 }
 
@@ -557,7 +557,7 @@ int ohci_hub_status_data(struct usb_hcd *hcd, char *buf)
 	else
 		clear_bit(HCD_FLAG_POLL_RH, &hcd->flags);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* add to check OHCI register deadbeef */
 	if (true) {
@@ -569,7 +569,7 @@ int ohci_hub_status_data(struct usb_hcd *hcd, char *buf)
 		}
 	}
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 done:
 	spin_unlock_irqrestore (&ohci->lock, flags);

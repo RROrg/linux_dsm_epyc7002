@@ -768,7 +768,7 @@ enum syno_data_correction_suppress_log_status {
 struct syno_quota_rescan_ctx;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 struct dedupe_info {
 	struct inode *inode;
 	u64 seed;
@@ -781,7 +781,7 @@ struct dedupe_info {
 	atomic_t modify;
 	atomic_t ref;
 };
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 struct btrfs_fs_info {
 	u8 chunk_tree_uuid[BTRFS_UUID_SIZE];
@@ -1207,9 +1207,9 @@ struct btrfs_fs_info {
 	} syno_orphan_cleanup;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	struct dedupe_info dedupe_info;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 	struct mutex block_group_hint_tree_mutex; // Protect block group hint tree creation.
@@ -1658,7 +1658,7 @@ struct btrfs_root {
 	 * root_item_lock.
 	 */
 	int dedupe_in_progress;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	u64 small_extent_size;
 	bool inline_dedupe;
 #endif
@@ -2096,9 +2096,9 @@ do {                                                                   \
 #define BTRFS_INODE_NOATIME		(1 << 9)
 #define BTRFS_INODE_DIRSYNC		(1 << 10)
 #define BTRFS_INODE_COMPRESS		(1 << 11)
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define BTRFS_INODE_NODEDUPE		(1 << 29)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 #define BTRFS_INODE_UQ_REF_USED		(1 << 30)
 #endif /* MY_ABC_HERE */
@@ -3261,15 +3261,15 @@ BTRFS_SETGET_FUNCS(file_extent_compression, struct btrfs_file_extent_item,
 		   compression, 8);
 BTRFS_SETGET_FUNCS(file_extent_encryption, struct btrfs_file_extent_item,
 		   encryption, 8);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 BTRFS_SETGET_FUNCS(file_extent_other_encoding, struct btrfs_file_extent_item,
 		   other_encoding, 8);
 BTRFS_SETGET_FUNCS(file_extent_syno_flag, struct btrfs_file_extent_item,
 		   syno_flag, 8);
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 BTRFS_SETGET_FUNCS(file_extent_other_encoding, struct btrfs_file_extent_item,
 		   other_encoding, 16);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * this returns the number of bytes used by the item on disk, minus the
@@ -3968,7 +3968,7 @@ int btrfs_search_next_file_extent(struct btrfs_key *key,
 				  struct btrfs_root *root,
 				  struct btrfs_path *path);
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int btrfs_file_extent_deduped_clear(struct btrfs_trans_handle *trans,
 				    struct btrfs_inode *inode, u64 file_offset);
 int btrfs_file_extent_deduped_set_range(struct inode *inode, u64 offset,
@@ -3978,7 +3978,7 @@ int inline_dedupe_search(struct inode *inode, u64 start, u64 len,
 			u64 *match_off, u64 *match_len);
 int insert_dedupe_file_extent(struct btrfs_trans_handle *trans, struct inode *inode,
 			     u64 offset, u64 len, u64 disk_bytenr, u64 disk_num_bytes, u64 disk_offset);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 int btrfs_insert_file_extent(struct btrfs_trans_handle *trans,
 			     struct btrfs_root *root,
 			     u64 objectid, u64 pos,
@@ -4090,10 +4090,10 @@ void __cold btrfs_destroy_cachep(void);
 struct inode *btrfs_iget_path(struct super_block *s, u64 ino,
 			      struct btrfs_root *root, struct btrfs_path *path);
 struct inode *btrfs_iget(struct super_block *s, u64 ino, struct btrfs_root *root);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 struct inode *btrfs_get_regular_file_inode(struct super_block *sb,
 					   u64 root_objectid, u64 objectid);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 bool btrfs_test_inode_nowait(struct super_block *s, u64 ino, struct btrfs_root *root);
 #endif /* MY_ABC_HERE */

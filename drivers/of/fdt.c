@@ -42,7 +42,7 @@
 extern int gSynoInternalHddNumber;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int gSynoSmbusHddAdapter;
 extern int gSynoSmbusHddAddress;
 extern char gSynoSmbusHddType[16];
@@ -50,14 +50,14 @@ extern int gSynoSmbusSwitchCount;
 extern int gSynoSmbusSwitchAdapters[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
-#endif /*MY_ABC_HERE */
+#endif /*MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int gSynoHddPowerupSeq;
 extern int giSynoSpinupGroup[SYNO_SPINUP_GROUP_MAX];
 extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 void __init syno_init_internal_hdd_number(void)
@@ -77,7 +77,7 @@ void __init syno_init_internal_hdd_number(void)
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 void __init syno_init_smbus_hdd_pwrctl(void)
 {
 	int retReadDT = 0;
@@ -155,9 +155,9 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 	gSynoSmbusSwitchVals[gSynoSmbusSwitchCount] = 0xff;
 	return;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void __init syno_init_spinup_group(void)
 {
 	int group_num = 0, retReadDT = 0, spinupGroupMemberNum = 0, spinupGroupDelay = 0;
@@ -186,7 +186,7 @@ void __init syno_init_spinup_group(void)
 		printk("SYNO Spinup Group Delay: %d\n", giSynoSpinupGroupDelay);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -1397,12 +1397,12 @@ void __init unflatten_device_tree(void)
 #ifdef MY_ABC_HERE
 	syno_init_internal_hdd_number();
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
-	syno_init_smbus_hdd_pwrctl();
-#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
-	syno_init_spinup_group();
+	syno_init_smbus_hdd_pwrctl();
 #endif /* MY_DEF_HERE */
+#ifdef MY_ABC_HERE
+	syno_init_spinup_group();
+#endif /* MY_ABC_HERE */
 }
 
 /**

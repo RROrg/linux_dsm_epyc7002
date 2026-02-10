@@ -87,9 +87,9 @@ typedef enum __syno_disk_type {
 	SYNO_DISK_ISCSI,
 	SYNO_DISK_SAS,
 	SYNO_DISK_VIRTIO_SCSI,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	SYNO_DISK_OOB,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	SYNO_DISK_END, // end of enum
 } SYNO_DISK_TYPE;
 #endif /* MY_ABC_HERE */

@@ -101,7 +101,7 @@ struct syno_device_list {
 #define DT_SIGNAL_DATA_GEN_FMT "signal_data_gen%d"
 #define DT_SET_SSC_OFF "set_ssc_off"
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define DT_SYNO_HDD_SMBUS_TYPE "syno_smbus_hdd_type"
 #define DT_SYNO_HDD_SMBUS_ADAPTER "syno_smbus_hdd_adapter"
 #define DT_SYNO_HDD_SMBUS_ADDRESS "syno_smbus_hdd_address"
@@ -110,9 +110,9 @@ struct syno_device_list {
 #define DT_SYNO_SMBUS_SWITCH_ADAPTERS "syno_smbus_switch_adapters"
 #define DT_SYNO_SMBUS_SWITCH_ADDRS "syno_smbus_switch_addrs"
 #define DT_SYNO_SMBUS_SWITCH_VALS "syno_smbus_switch_vals"
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define DT_SYNO_PMBUS_ADAPTER "syno_pmbus_adapter"
 #define DT_SYNO_PMBUS_ADDRESS "syno_pmbus_address"
 #define DT_SYNO_PMBUS_PIN_REG "syno_pmbus_pin_register"
@@ -124,7 +124,7 @@ struct syno_device_list {
 #define DT_SYNO_PMBUS_STATUS_REG "syno_pmbus_status_register"
 #define DT_SYNO_PMBUS_PSU_OFF_BIT "syno_pmbus_psu_off_bit"
 #define DT_SYNO_PMBUS_PSU_PRESENT_BIT "syno_pmbus_psu_present_bit"
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #define SZ_DTS_EBOX_I2C_PWR_BTN "power_btn"
 #define SZ_DTS_EBOX_I2C_OFFSET "offset"
@@ -140,9 +140,9 @@ struct syno_device_list {
 #define SYNO_DTS_PROPERTY_CONTENT_LENGTH 128 // If used to retrive PCIe path, can only accept 9 layer PCIe switch.
 #define MAX_NODENAME_LEN 31
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define DT_AHCI_INTERNAL_MODE "internal_mode"
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #define DT_SEG7_NUM "seg7_num"
 #define DT_SEG7_LED_MAP_0 "seg7_led_map_0"
@@ -177,7 +177,7 @@ typedef enum _tag_DISK_PWRCTRL_TYPE {
 } DISK_PWRCTRL_TYPE;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 typedef struct _syno_smbus_hdd_powerctl {
         bool bl_init;
         int (*syno_smbus_hdd_enable_write)(int adapter, int address, int index, int val);
@@ -185,9 +185,9 @@ typedef struct _syno_smbus_hdd_powerctl {
         int (*syno_smbus_hdd_present_read)(int adapter, int address, int index);
         int (*syno_smbus_hdd_enable_write_all_once)(int adapter, int address);
 } SYNO_SMBUS_HDD_POWERCTL;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define SYNO_SPINUP_GROUP_MAX 16
 #define SYNO_SPINUP_GROUP_PIN_MAX_NUM 8
 extern int g_syno_rp_detect_no;
@@ -196,15 +196,15 @@ extern int g_syno_hdd_detect_no;
 extern int g_syno_hdd_detect_list[SYNO_SPINUP_GROUP_PIN_MAX_NUM];
 extern int g_syno_hdd_enable_no;
 extern int g_syno_hdd_enable_list[SYNO_SPINUP_GROUP_PIN_MAX_NUM];
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define PCI_ADDR_LEN_MAX 9
 #define PCI_ADDR_NUM_MAX CONFIG_SYNO_PCI_MAX_SLOT
 extern char gszPciAddrList[PCI_ADDR_NUM_MAX][PCI_ADDR_LEN_MAX];
 extern int gPciAddrNum;
 extern int syno_check_on_option_pci_slot(struct pci_dev *pdev);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
 #define SYNOBIOS_EVENTDATA_NUM_MAX 8
@@ -221,7 +221,7 @@ typedef struct _synobios_evnet_action_tag {
 } SYNOBIOS_EVENT_ACTION_LIST;
 #endif /* MY_ABC_HERE || MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 /*
  * Notice
  * ------
@@ -246,7 +246,7 @@ static __always_inline bool syno_kexec_test(int test)
 {
 	return 0 != test_bit(test, &kexec_test_flags);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 /**

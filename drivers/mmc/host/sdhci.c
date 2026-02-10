@@ -4148,11 +4148,11 @@ int sdhci_setup_host(struct sdhci_host *host)
 
 	override_timeout_clk = host->timeout_clk;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	if (host->version > SDHCI_SPEC_300) {
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (host->version > SDHCI_SPEC_420) {
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		pr_err("%s: Unknown controller version (%d). You may experience problems.\n",
 		       mmc_hostname(mmc), host->version);
 	}

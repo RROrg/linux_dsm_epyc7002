@@ -931,7 +931,7 @@ static void ata_hsm_qc_complete(struct ata_queued_cmd *qc, int in_wq)
 	struct ata_port *ap = qc->ap;
 
 	if (ap->ops->error_handler) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (IS_SYNO_SPINUP_CMD(qc)) {
 			if (in_wq) { 
 				ata_sff_irq_on(ap);
@@ -949,7 +949,7 @@ static void ata_hsm_qc_complete(struct ata_queued_cmd *qc, int in_wq)
 				
 			return;
 		}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		if (in_wq) {
 			/* EH might have kicked in while host lock is

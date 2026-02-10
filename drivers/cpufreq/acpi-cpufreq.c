@@ -226,16 +226,16 @@ static unsigned extract_msr(struct cpufreq_policy *policy, u32 msr)
 	perf = to_perf_data(data);
 
 	cpufreq_for_each_entry(pos, policy->freq_table)
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		/*
 		 * The value of MSR_IA32_PERF_CTL (199h) may not match any state of P-State
 		 * table. The different part is "Voltage Target", this field is no use in
 		 * some Intel BIOS, so just compare "P-State Target".
 		 */
 		if ((msr & 0xff00) == (perf->states[pos->driver_data].status & 0xff00))
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		if (msr == perf->states[pos->driver_data].status)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			return pos->frequency;
 	return policy->freq_table[0].frequency;
 }

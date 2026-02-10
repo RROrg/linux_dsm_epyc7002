@@ -85,9 +85,9 @@ static inline void i2c_acpi_remove_space_handler(struct i2c_adapter *adapter) { 
 
 #ifdef CONFIG_OF
 void of_i2c_register_devices(struct i2c_adapter *adap);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 void syno_of_i2c_register_devices(struct i2c_adapter *adap);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #else
 static inline void of_i2c_register_devices(struct i2c_adapter *adap) { }
 #endif

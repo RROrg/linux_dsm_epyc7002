@@ -70,13 +70,13 @@
 #endif /* MY_ABC_HERE */
 
 /* Power control via GPIO */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/syno_gpio.h>
-#endif /* MY_DEF_HERE*/
+#endif /* MY_ABC_HERE*/
 
-#if defined(MY_DEF_HERE) || defined(MY_ABC_HERE)
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
 #include <linux/synosata.h>
-#endif /* MY_DEF_HERE) || defined(MY_ABC_HERE */
+#endif /* MY_ABC_HERE) || defined(MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 #include <linux/math64.h>
@@ -5634,11 +5634,11 @@ void ata_link_init(struct ata_port *ap, struct ata_link *link, int pmp)
 #ifdef CONFIG_ATA_ACPI
 		dev->gtf_filter = ata_acpi_gtf_filter;
 #endif
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		dev->ulSpinupState = 0;
 		dev->ulLastCmd = 0;
 		dev->iCheckPwr = 0;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		ata_dev_init(dev);
 	}
@@ -6130,7 +6130,7 @@ void ata_host_init(struct ata_host *host, struct device *dev,
 }
 EXPORT_SYMBOL_GPL(ata_host_init);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /*
  * delay for HW ready, if this port already wait for latency,
  * we delay 5s, otherwise we dleay 7s. And the first, last
@@ -6188,21 +6188,21 @@ static void DelayForHWCtl(struct ata_port *ap)
 		goto END;
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if(SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(iSynoDiskIdx)) {
 		/* disk doesn't present, no need to delay */
 		if (0 == SYNO_CHECK_HDD_DETECT(iSynoDiskIdx)) {
 			goto END;
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	delay_use_strategy();
 
 END:
 	return;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 void __ata_port_probe(struct ata_port *ap)
 {
@@ -6233,12 +6233,12 @@ int ata_port_probe(struct ata_port *ap)
 	unsigned long flags;
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* delay Xs to avoid probe disks in the same time(consume too much power)
 	 * If this async_port_probe(..) function is run asynchronously this code is not work,
 	 * so we must disable async_enabled before call async_port_probe(..) */
 	DelayForHWCtl(ap);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	/* If the machine supports disk power control, switch to power on */

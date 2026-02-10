@@ -485,7 +485,7 @@ static int xhci_plat_remove(struct platform_device *dev)
 	return 0;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 /* [DEV_FIX]implement New USB reset mechanism with CRT reset to workaround any HW or IP issues
  * commit 319ff9f5c298b94517a10d4ced59812b54994347
@@ -497,14 +497,14 @@ int RTK_xhci_plat_suspend(struct device *dev) {
 #endif // CONFIG_USB_PATCH_ON_RTK
 
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 static int __maybe_unused xhci_plat_suspend(struct device *dev)
 {
 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	int ret;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_PLATFORM
 	if (RTK_PM_STATE == PM_SUSPEND_STANDBY) {
@@ -517,7 +517,7 @@ static int __maybe_unused xhci_plat_suspend(struct device *dev)
 #endif // CONFIG_USB_PATCH_ON_RTK
 
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	ret = xhci_priv_suspend_quirk(hcd);
 	if (ret)
 		return ret;
@@ -528,7 +528,7 @@ static int __maybe_unused xhci_plat_suspend(struct device *dev)
 	return xhci_suspend(xhci, device_may_wakeup(dev));
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 /* [DEV_FIX]implement New USB reset mechanism with CRT reset to workaround any HW or IP issues
  * commit 319ff9f5c298b94517a10d4ced59812b54994347
@@ -540,14 +540,14 @@ int RTK_xhci_plat_resume(struct device *dev)
 }
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 static int __maybe_unused xhci_plat_resume(struct device *dev)
 {
 	struct usb_hcd	*hcd = dev_get_drvdata(dev);
 	struct xhci_hcd	*xhci = hcd_to_xhci(hcd);
 	int ret;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_PLATFORM
 	if (RTK_PM_STATE == PM_SUSPEND_STANDBY) {
@@ -558,7 +558,7 @@ static int __maybe_unused xhci_plat_resume(struct device *dev)
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	ret = xhci_priv_resume_quirk(hcd);
 	if (ret)
 		return ret;

@@ -17,9 +17,9 @@ int btrfs_ioctl_syno_clone_range_v2(struct file *dst_file,
 		struct btrfs_ioctl_syno_clone_range_args_v2 __user *argp);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 long btrfs_ioctl_syno_extent_same(struct file *file,
 		struct btrfs_ioctl_syno_extent_same_args __user *argp);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #endif /* BTRFS_REFLINK_H */

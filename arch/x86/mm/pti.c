@@ -82,7 +82,7 @@ void __init pti_check_boottime_disable(void)
 {
 	char arg[5];
 	int ret;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* Assume mode is off unless overridden. */
 	pti_mode = PTI_FORCE_OFF;
 
@@ -96,10 +96,10 @@ void __init pti_check_boottime_disable(void)
 			goto enable;
 		}
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	/* Assume mode is auto unless overridden. */
 	pti_mode = PTI_AUTO;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (hypervisor_is_type(X86_HYPER_XEN_PV)) {
 		pti_mode = PTI_FORCE_OFF;
@@ -125,16 +125,16 @@ void __init pti_check_boottime_disable(void)
 		}
 	}
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	return;
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	if (cmdline_find_option_bool(boot_command_line, "nopti") ||
 	    cpu_mitigations_off()) {
 		pti_mode = PTI_FORCE_OFF;
 		pti_print_if_insecure("disabled on command line.");
 		return;
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 autosel:
 	if (!boot_cpu_has_bug(X86_BUG_CPU_MELTDOWN))

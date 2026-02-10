@@ -1029,9 +1029,9 @@ struct xhci_virt_device {
 	u16				current_mel;
 	/* Used for the debugfs interfaces. */
 	void				*debugfs_private;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	bool                            disconnected;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 };
 
 /*
@@ -1538,7 +1538,7 @@ struct xhci_segment {
 	unsigned int		bounce_len;
 };
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 struct xhci_cache_buf {
 	dma_addr_t		dma;
@@ -1550,7 +1550,7 @@ struct xhci_cache_buf {
 };
 #endif /* CONFIG_USB_PATCH_ON_RTK */
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 struct xhci_td {
 	struct list_head	td_list;
 	struct list_head	cancelled_td_list;
@@ -1561,12 +1561,12 @@ struct xhci_td {
 	struct xhci_segment	*bounce_seg;
 	/* actual_length of the URB has already been set */
 	bool			urb_length_set;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	struct list_head cache_buf_list;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 };
 
 /* xHCI command default timeout value */

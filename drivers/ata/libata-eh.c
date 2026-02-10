@@ -92,9 +92,9 @@ enum {
 	ATA_EH_PROBE_TRIALS		= 2,
 };
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern unsigned int guiWakeupDisksNum;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /* The following table determines how we sequence resets.  Each entry
  * represents timeout for that try.  The first try can be soft or
@@ -818,11 +818,11 @@ EXPORT_SYMBOL(ata_scsi_cmd_error_handler);
 #ifdef MY_ABC_HERE
 
 /* Global value for spin up group */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int gSynoHddPowerupSeq;
 static unsigned long int gJiffiesLastPmOn = 0;
 DEFINE_SPINLOCK(PmPendingLock);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static int wake_up_deepsleep_internal(struct ata_port *ap)
 {
@@ -860,7 +860,7 @@ static int wake_up_deepsleep_internal(struct ata_port *ap)
 	ap->pflags |= ATA_PFLAG_SYNO_IRQOFF_LOCK_FOR_EH;
 	spin_unlock_irqrestore(ap->lock, flags);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* Spin up group control for disk deepsleep */
 	if (gSynoHddPowerupSeq) {
 		spin_lock(&PmPendingLock);
@@ -880,7 +880,7 @@ static int wake_up_deepsleep_internal(struct ata_port *ap)
 		}
 		spin_unlock(&PmPendingLock);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	ata_port_printk(ap, KERN_ERR, "wake up from deepsleep, reset link now\n");
 	iDeepCtlRet = -1;
@@ -5467,7 +5467,7 @@ void ata_eh_finish(struct ata_port *ap)
 	/* retry or finish qcs */
 	ata_qc_for_each_raw(ap, qc, tag) {
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (0 < guiWakeupDisksNum && 1 == ap->nr_active_links &&
 			(qc->flags & ATA_QCFLAG_ACTIVE) && IS_SYNO_SPINUP_CMD(qc)) {
 			DBGMESG("ata%u eh finish, set failed to spinup cmd 0x%x\n", ap->print_id, qc->tf.command);
@@ -5475,7 +5475,7 @@ void ata_eh_finish(struct ata_port *ap)
 			__ata_qc_complete(qc);
 			continue;
 		}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		if (!(qc->flags & ATA_QCFLAG_FAILED))
 			continue;

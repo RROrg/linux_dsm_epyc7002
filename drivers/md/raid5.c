@@ -212,7 +212,7 @@ static void raid5_wakeup_stripe_thread(struct stripe_head *sh)
 	int i, cpu = sh->cpu;
 
 	if (!cpu_online(cpu)) {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		int node = conf->mddev->syno_md_thread_fixed_node;
 		int selected_cpu = cpumask_any_and(cpumask_of_node(node),
 		                                   cpu_online_mask);
@@ -224,9 +224,9 @@ static void raid5_wakeup_stripe_thread(struct stripe_head *sh)
 			conf->syno_handle_stripes_cpu = cpu;
 		} else
 			cpu = cpumask_any(cpu_online_mask);
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 		cpu = cpumask_any(cpu_online_mask);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		sh->cpu = cpu;
 	}
 
@@ -776,10 +776,10 @@ retry:
 	sh->overwrite_disks = 0;
 	insert_hash(conf, sh);
 	sh->cpu = smp_processor_id();
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (-1 != conf->syno_handle_stripes_cpu)
 		sh->cpu = conf->syno_handle_stripes_cpu;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	set_bit(STRIPE_BATCH_READY, &sh->state);
 }
 
@@ -10045,9 +10045,9 @@ static struct r5conf *setup_conf(struct mddev *mddev)
 #ifdef MY_ABC_HERE
 	conf->syno_active_stripe_threshold = SYNO_DEFAULT_ACTIVE_STRIPE_THRESHOLD;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	conf->syno_handle_stripes_cpu = -1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	conf->syno_stat_lat_enable = false;
 #endif /* MY_ABC_HERE */
@@ -11576,7 +11576,7 @@ static int raid5_start(struct mddev *mddev)
 	return r5l_start(conf->log);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void raid5_adjust_md_threads_node(struct mddev  *mddev)
 {
 	struct r5conf *conf = mddev->private;
@@ -11593,7 +11593,7 @@ static void raid5_adjust_md_threads_node(struct mddev  *mddev)
 		conf->syno_handle_stripes_cpu = selected_cpu < nr_cpu_ids ? selected_cpu : -1;
 	}
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static void raid5_align_chunk_addr_virt_to_dev(struct mddev *mddev,
@@ -11670,9 +11670,9 @@ static struct md_personality raid6_personality =
 	.quiesce	= raid5_quiesce,
 	.takeover	= raid6_takeover,
 	.change_consistency_policy = raid5_change_consistency_policy,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	.adjust_md_threads_node = raid5_adjust_md_threads_node,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	.align_chunk_addr_virt_to_dev = raid5_align_chunk_addr_virt_to_dev,
 #endif /* MY_ABC_HERE */
@@ -11708,9 +11708,9 @@ static struct md_personality raid5_personality =
 	.quiesce	= raid5_quiesce,
 	.takeover	= raid5_takeover,
 	.change_consistency_policy = raid5_change_consistency_policy,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	.adjust_md_threads_node = raid5_adjust_md_threads_node,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	.align_chunk_addr_virt_to_dev = raid5_align_chunk_addr_virt_to_dev,
 #endif /* MY_ABC_HERE */
@@ -11747,9 +11747,9 @@ static struct md_personality raid4_personality =
 	.quiesce	= raid5_quiesce,
 	.takeover	= raid4_takeover,
 	.change_consistency_policy = raid5_change_consistency_policy,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	.adjust_md_threads_node = raid5_adjust_md_threads_node,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	.align_chunk_addr_virt_to_dev = raid5_align_chunk_addr_virt_to_dev,
 #endif /* MY_ABC_HERE */
@@ -11785,9 +11785,9 @@ static struct md_personality raid_f1_personality = {
 	.quiesce        = raid5_quiesce,
 	.takeover       = raid_f1_takeover,
 	.change_consistency_policy = raid5_change_consistency_policy,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	.adjust_md_threads_node = raid5_adjust_md_threads_node,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	.align_chunk_addr_virt_to_dev = raid5_align_chunk_addr_virt_to_dev,
 #endif /* MY_ABC_HERE */

@@ -51,9 +51,9 @@
 #include <asm/unwind.h>
 #include <asm/vsyscall.h>
 #include <linux/vmalloc.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * max_low_pfn_mapped: highest directly mapped pfn < 4 GB
@@ -950,9 +950,9 @@ void __init setup_arch(char **cmdline_p)
 
 	x86_report_nx();
 
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#ifdef MY_DEF_HERE
 	syno_kexec_test_init();
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 
 	/* after early param, so could get panic from serial */
 	memblock_x86_reserve_range_setup_data();

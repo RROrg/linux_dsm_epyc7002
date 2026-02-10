@@ -34,12 +34,10 @@ extern struct model_ops rs822rpp_ops;
 extern struct model_ops rs2423p_ops;
 extern struct model_ops rs2423rpp_ops;
 extern struct model_ops ds1823xsp_ops;
-extern struct model_ops rs1624xsp_ops;
-extern struct model_ops ds1624p_ops;
-extern struct model_ops ds1824p_ops;
+extern struct model_ops rs1623xsp_ops;
+extern struct model_ops ds1623p_ops;
+extern struct model_ops ds1823p_ops;
 extern struct model_ops sc2500_ops;
-extern struct model_ops rs1224p_ops;
-extern struct model_ops rs1224rpp_ops;
 
 #if defined(CONFIG_SYNO_SMBUS_HDD_POWERCTL) || defined(CONFIG_SYNO_SATA_PWR_CTRL_SMBUS)
 extern long g_smbus_hdd_powerctl;
@@ -67,12 +65,10 @@ extern struct hwmon_sensor_list rs822rpp_sensor_list;
 extern struct hwmon_sensor_list rs2423p_sensor_list;
 extern struct hwmon_sensor_list rs2423rpp_sensor_list;
 extern struct hwmon_sensor_list ds1823xsp_sensor_list;
-extern struct hwmon_sensor_list rs1624xsp_sensor_list;
-extern struct hwmon_sensor_list ds1624p_sensor_list;
-extern struct hwmon_sensor_list ds1824p_sensor_list;
+extern struct hwmon_sensor_list rs1623xsp_sensor_list;
+extern struct hwmon_sensor_list ds1623p_sensor_list;
+extern struct hwmon_sensor_list ds1823p_sensor_list;
 extern struct hwmon_sensor_list sc2500_sensor_list;
-extern struct hwmon_sensor_list rs1224p_sensor_list;
-extern struct hwmon_sensor_list rs1224rpp_sensor_list;
 
 extern SYNO_HWMON_FAN_ORDER rs822rpp_fan_order_list;
 

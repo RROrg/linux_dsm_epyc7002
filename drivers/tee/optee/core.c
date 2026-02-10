@@ -736,16 +736,16 @@ static struct platform_driver optee_driver = {
 		.of_match_table = optee_dt_match,
 	},
 };
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 static int __init optee_init(void)
 {
 	return platform_driver_register(&optee_driver);
 }
 subsys_initcall(optee_init);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 module_platform_driver(optee_driver);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 MODULE_AUTHOR("Linaro");
 MODULE_DESCRIPTION("OP-TEE driver");

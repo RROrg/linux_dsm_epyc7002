@@ -5271,10 +5271,10 @@ int btrfs_search_forward(struct btrfs_root *root, struct btrfs_key *min_key,
 {
 	struct extent_buffer *cur;
 	struct btrfs_key found_key;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int i, reada_end;
 	struct extent_buffer *eb;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	int slot;
 	int sret;
 	u32 nritems;
@@ -5353,7 +5353,7 @@ find_next_key:
 			goto out;
 		}
 		btrfs_set_path_blocking(path);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define MAX_READA_EXTENT_BUFFER 32
 		if (path->reada == READA_FORWARD_ALWAYS && level == 1) {
 			eb = find_extent_buffer(root->fs_info,
@@ -5371,7 +5371,7 @@ find_next_key:
 			if (eb)
 				free_extent_buffer(eb);
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		cur = btrfs_read_node_slot(cur, slot);
 		if (IS_ERR(cur)) {
 			ret = PTR_ERR(cur);

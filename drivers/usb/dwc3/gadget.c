@@ -2364,13 +2364,13 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	}
 
 	dwc->gadget_driver	= driver;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	dwc->link_state = 0;
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
 	return 0;
@@ -2397,13 +2397,13 @@ static int dwc3_gadget_stop(struct usb_gadget *g)
 
 	spin_lock_irqsave(&dwc->lock, flags);
 	dwc->gadget_driver	= NULL;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	dwc->link_state = 0;
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	spin_unlock_irqrestore(&dwc->lock, flags);
 
 	free_irq(dwc->irq_gadget, dwc->ev_buf);
@@ -3986,13 +3986,13 @@ void dwc3_gadget_exit(struct dwc3 *dwc)
 	kfree(dwc->setup_buf);
 	dma_free_coherent(dwc->sysdev, sizeof(*dwc->ep0_trb) * 2,
 			  dwc->ep0_trb, dwc->ep0_trb_addr);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #if 1 // USB_PATCH_BY_RTK
 	dwc->gadget->udc = NULL;
 	dwc->gadget = NULL;
 #endif // USB_PATCH_BY_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 }
 
 int dwc3_gadget_suspend(struct dwc3 *dwc)

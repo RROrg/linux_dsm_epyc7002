@@ -1,7 +1,6 @@
 ifeq ($(SYNO_PLATFORM),MINDSPEED_COMCERTO2K)
 obj-m += ds414j-synobios.o
 obj-m += ds415j-synobios.o
-obj-m += ds215air-synobios.o
 endif
 
 common-obj += \
@@ -22,4 +21,3 @@ fan-resister-obj += fan-resister.o
 
 ds414j-synobios-objs = ds414j.o $(fan-resister-obj) $(common-obj)
 ds415j-synobios-objs = ds415j.o $(fan-resister-obj) $(common-obj)
-ds215air-synobios-objs = ds215air.o $(fan-pwm-obj) $(common-obj)

@@ -47,11 +47,11 @@ static void svc_unregister(const struct svc_serv *serv, struct net *net);
  * Setup once during sunrpc initialisation.
  */
 struct svc_pool_map svc_pool_map = {
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	.mode = SVC_POOL_PERNODE
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	.mode = SVC_POOL_DEFAULT
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 EXPORT_SYMBOL_GPL(svc_pool_map);
 

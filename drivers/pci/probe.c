@@ -24,9 +24,9 @@
 #include <linux/pm_runtime.h>
 #include "pci.h"
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/synobios.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #define CARDBUS_LATENCY_TIMER	176	/* secondary latency timer */
 #define CARDBUS_RESERVE_BUSNR	3
@@ -1973,14 +1973,14 @@ int pci_setup_device(struct pci_dev *dev)
 			pci_read_config_word(dev, pos + PCI_SSVID_DEVICE_ID, &dev->subsystem_device);
 		}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (syno_is_hw_version(HW_DS1621p) || syno_is_hw_version(HW_DS1520p)) {
 			if ( 0x1b21 == dev->vendor && 0x1806 == dev->device ) {
 				dev->subsystem_vendor = 0;
 				dev->subsystem_device = 0;
 			}
 		}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 		break;
 

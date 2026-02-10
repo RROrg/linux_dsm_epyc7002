@@ -24,15 +24,15 @@ static DEFINE_IDA(soc_ida);
 static ssize_t soc_info_show(struct device *dev, struct device_attribute *attr,
 			     char *buf);
 
-#if defined(MY_DEF_HERE)
-#else /* MY_DEF_HERE */
+#if defined(MY_ABC_HERE)
+#else /* MY_ABC_HERE */
 struct soc_device {
 	struct device dev;
 	struct soc_device_attribute *attr;
 	int soc_dev_num;
 };
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 static struct bus_type soc_bus_type = {
 	.name  = "soc",
 };

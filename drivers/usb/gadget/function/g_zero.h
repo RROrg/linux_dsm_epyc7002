@@ -39,11 +39,11 @@ struct f_ss_opts {
 	unsigned bulk_buflen;
 	unsigned bulk_qlen;
 	unsigned iso_qlen;
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	unsigned bulk_maxburst;
 #endif /* CONFIG_USB_PATCH_ON_RTK */
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	/*
 	 * Read/write access to configfs attributes is handled by configfs.

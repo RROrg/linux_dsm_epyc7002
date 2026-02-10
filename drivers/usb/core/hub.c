@@ -54,7 +54,7 @@
 #define HUB_QUIRK_CHECK_PORT_AUTOSUSPEND	0x01
 #define HUB_QUIRK_DISABLE_AUTOSUSPEND		0x02
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_USB_CTRL_MANAGER
 extern int RTK_usb_reprobe_usb_storage(struct usb_device *udev);
@@ -62,14 +62,14 @@ extern bool RTK_usb_disable_hub_autosuspend(void);
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #define USB_TP_TRANSMISSION_DELAY	40	/* ns */
 #define USB_TP_TRANSMISSION_DELAY_MAX	65535	/* ns */
 #define USB_PING_RESPONSE_TIME		400	/* ns */
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #define SYNO_SERIAL_EXT_HUB "syno.ext.hub"
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /* Protect struct usb_device->state and ->children members
  * Note: Both are also protected by ->dev.sem, except that ->state can
@@ -438,7 +438,7 @@ static int get_hub_descriptor(struct usb_device *hdev,
 	return -EINVAL;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_RTK_HCD_TEST_MODE
 int get_hub_descriptor_port(struct usb_device *hdev, void *data, int size, int port1)
 {
@@ -459,7 +459,7 @@ int get_hub_descriptor_port(struct usb_device *hdev, void *data, int size, int p
 EXPORT_SYMBOL_GPL(get_hub_descriptor_port);
 #endif //CONFIG_USB_RTK_HCD_TEST_MODE
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 /*
  * USB 2.0 spec Section 11.24.2.1
  */
@@ -1076,7 +1076,7 @@ syno_get_power_on_time_ms(void) {
 	return CONFIG_SYNO_USB_POWER_ON_TIME;
 }
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 extern struct device_node *syno_hub_node_get(const struct usb_device *hdev, const int portnum);
 static int is_syno_ext_hub(struct usb_device *udev)
 {
@@ -1162,7 +1162,7 @@ static int syno_usb_power_set_children(struct usb_hub *hub, const int port, cons
 END:
 	return ret;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static int
 __syno_usb_power_cycle(struct usb_hub *hub, int port) {
@@ -1183,11 +1183,11 @@ __syno_usb_power_cycle(struct usb_hub *hub, int port) {
 			SYNO_POWER_CYCLE_TRIES,
 			power_cycle_delay_time, port);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	ret = syno_usb_power_set_children(hub, port, 0);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	ret = syno_usb_set_power(hub, 0, port);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (0 > ret)
 		return -EINVAL;
 	msleep(power_cycle_delay_time);
@@ -1201,11 +1201,11 @@ __syno_usb_power_cycle(struct usb_hub *hub, int port) {
 			hub->ports[port - 1]->power_cycle_counter,
 			SYNO_POWER_CYCLE_TRIES,
 			power_cycle_delay_time, port);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 	ret = syno_usb_power_set_children(hub, port, 1);
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	ret = syno_usb_set_power(hub, 1, port);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (0 > ret)
 		return -EINVAL;
 
@@ -1218,12 +1218,12 @@ int
 syno_usb_power_cycle(struct usb_hub *hub, int port, int status) {
 	struct usb_device *hdev = hub->hdev;
 	struct usb_hcd *hcd = bus_to_hcd(hdev->bus);
-#if defined (MY_DEF_HERE)
+#if defined (MY_ABC_HERE)
 	if (hdev->parent && 0 != is_syno_ext_hub(hdev))
-#else /* defined (MY_DEF_HERE) */
+#else /* defined (MY_ABC_HERE) */
 	/* Ignore external hub */
 	if (hdev->parent)
-#endif /* defined (MY_DEF_HERE) */
+#endif /* defined (MY_ABC_HERE) */
 		return -EINVAL;
 	
 	if ((status == -ENODEV) || (status == -ENOTCONN) || (status == -ENOTSUPP))
@@ -2140,7 +2140,7 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	 */
 	if (hdev->parent) {		/* normal device */
 		usb_enable_autosuspend(hdev);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_USB_CTRL_MANAGER
 		if (RTK_usb_disable_hub_autosuspend()) {
@@ -2149,7 +2149,7 @@ static int hub_probe(struct usb_interface *intf, const struct usb_device_id *id)
 		}
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	} else {			/* root hub */
 		const struct hc_driver *drv = bus_to_hcd(hdev->bus)->driver;
 
@@ -2740,7 +2740,7 @@ static int usb_enumerate_device(struct usb_device *udev)
 	 */
 	udev->syno_old_serial = udev->serial;
 
-#if defined (MY_DEF_HERE)
+#if defined (MY_ABC_HERE)
 	// for syno external hub,
 	// we need to fix serial name as SYNO_SERIAL_EXT_HUB for user space recognization
 	if (0 == is_syno_ext_hub(udev)) {
@@ -2750,7 +2750,7 @@ static int usb_enumerate_device(struct usb_device *udev)
 			printk("Set serial number \"%s\" for Synology External hub.\n",udev->serial);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #endif /* MY_ABC_HERE */
 
 	err = usb_enumerate_device_otg(udev);
@@ -2789,9 +2789,9 @@ static int device_serial_match(struct usb_device *dev, struct usb_device *udev_s
 
 			/* Can't down() here. Because when using hub, it will be lock by someone else */
 			if (childdev->serial[0] &&
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 				0 != is_syno_ext_hub(childdev) &&
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 				strcmp(childdev->serial, udev_search->serial) == 0) {
 				match++;
 			} else {
@@ -4135,7 +4135,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 
 	status = check_port_resume_type(udev,
 			hub, port1, status, portchange, portstatus);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	/* [DEV_FIX] Disconnect usb port at resume.
@@ -4170,7 +4170,7 @@ int usb_port_resume(struct usb_device *udev, pm_message_t msg)
 	}
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	if (status == 0)
 		status = finish_port_resume(udev);
 	if (status < 0) {
@@ -5101,7 +5101,7 @@ static int check_superspeed(struct usb_hub *hub, struct usb_device *udev)
 {
 	struct usb_device *hdev = hub->hdev;
 	int retval = -EINVAL;
-#if defined (MY_DEF_HERE)
+#if defined (MY_ABC_HERE)
 	/* The usb3.0 hub instance won't have chance to do reset,
 	 * because the upstream port's usb2.0 pins have been given
 	 * to usb2.0 hub instance.
@@ -5117,9 +5117,9 @@ static int check_superspeed(struct usb_hub *hub, struct usb_device *udev)
 	 * can do speed downgrade recovery.
 	 */
 	if ((!hdev->parent || 0 == is_syno_ext_hub(hdev)) &&
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (!hdev->parent &&
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		!hub_is_superspeed(hdev) &&
 		0x0210 <= le16_to_cpu(udev->descriptor.bcdUSB)) {
 		dev_info(&udev->dev, "not running at top speed\n");
@@ -5295,7 +5295,7 @@ port_speed_morph:
 				(udev->config) ? "reset" : "new", speed,
 				devnum, driver_name);
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	if (udev->speed < USB_SPEED_SUPER)
 		dev_notice(&udev->dev,
@@ -5317,7 +5317,7 @@ port_speed_morph:
 	}
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	/* Set up TT records, if needed  */
 	if (hdev->tt) {
 		udev->tt = hdev->tt;
@@ -5454,7 +5454,7 @@ port_speed_morph:
 					 (udev->rx_lanes == 2 && udev->tx_lanes == 2) ?
 							"x2" : "",
 					 devnum, driver_name);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 
 #ifdef CONFIG_USB_PATCH_ON_RTK
 				dev_notice(&udev->dev,
@@ -5479,7 +5479,7 @@ port_speed_morph:
 					    ({dump_stack(); devnum;}));
 				}
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			}
 
 			/* cope with hardware quirkiness:
@@ -6018,14 +6018,14 @@ static void hub_port_connect(struct usb_hub *hub, int port1, u16 portstatus,
 		/* Run it through the hoops (find a driver, etc) */
 		if (!status) {
 			status = usb_new_device(udev);
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 #ifdef CONFIG_RTK_USB_CTRL_MANAGER
 			if (!status)
 				RTK_usb_reprobe_usb_storage(udev);
 #endif
 #endif // CONFIG_USB_PATCH_ON_RTK
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			if (status) {
 				mutex_lock(&usb_port_peer_mutex);
 				spin_lock_irq(&device_state_lock);
@@ -6110,13 +6110,13 @@ static void hub_port_connect_change(struct usb_hub *hub, int port1,
 	int status = -ENODEV;
 	int retval;
 
-#if defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 	dev_notice(&port_dev->dev, "port %d, status %04x, change %04x, %s\n",
 			port1, portstatus, portchange, portspeed(hub, portstatus));
 #endif // CONFIG_USB_PATCH_ON_RTK
 
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	dev_dbg(&port_dev->dev, "status %04x, change %04x, %s\n", portstatus,
 			portchange, portspeed(hub, portstatus));
 

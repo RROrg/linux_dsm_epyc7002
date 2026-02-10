@@ -33,9 +33,9 @@
 #include <linux/string.h>
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/leds.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 SYNO_GPIO syno_gpio = {
 	.fan_ctrl =NULL,
@@ -131,7 +131,7 @@ int SynoAllRedundantPowerDetected(void)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int giSynoSpinupGroupDebug;
 void DBG_SpinupGroupListGpio(void)
 {
@@ -150,7 +150,7 @@ void DBG_SpinupGroupListGpio(void)
 	}
 }
 EXPORT_SYMBOL(DBG_SpinupGroupListGpio);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 /**
@@ -377,7 +377,7 @@ END:
 EXPORT_SYMBOL(syno_led_type_get);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /**
  * syno_led_dev_get - get the szLedType led_type of target slot
  * @szSlotName [IN]:    slot name
@@ -428,4 +428,4 @@ END:
 	return led_cdev;
 }
 EXPORT_SYMBOL(syno_led_dev_get);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */

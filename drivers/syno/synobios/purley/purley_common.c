@@ -505,19 +505,11 @@ int synobios_model_init(struct file_operations *fops, struct synobios_ops **ops)
 	{
 		case MODEL_FS6400:
 			model_ops = &fs6400_ops;
-			if (syno_is_hw_revision(HW_R1)) {
-				synobios_ops.set_hdd_led = SetHddActLedByLedTrigger;
-#ifdef CONFIG_SYNO_LEDS_TRIGGER
-				synobios_ops.set_disk_led = SetDiskLedStatusByLedTrigger;
-				SetupDiskLedMap();
-#endif // CONFIG_SYNO_LEDS_TRIGGER
-			} else {
 #ifdef CONFIG_SYNO_SAS_HOST_DISK_LED_CTRL
-				if (NULL != syno_valid_lsi3008_led){
-					synobios_ops.set_hdd_led = syno_valid_lsi3008_led;
-				}
-#endif /*config_syno_sas_host_disk_led_ctrl*/
+			if (NULL != syno_valid_lsi3008_led){
+				synobios_ops.set_hdd_led = syno_valid_lsi3008_led;
 			}
+#endif /*config_syno_sas_host_disk_led_ctrl*/
 			hwmon_sensor_list = &fs6400_sensor_list;
 #ifdef CONFIG_SYNO_ADT7490_FEATURES
 			synobios_ops.hwmon_get_fan_speed_rpm = HWMONGetFanSpeedRPMFromADT;
