@@ -1322,13 +1322,20 @@ static noinline int btrfs_mksubvol(const struct path *parent,
 	if (btrfs_root_refs(&BTRFS_I(dir)->root->root_item) == 0)
 		goto out_up_read;
 
-	if (snap_src)
+	if (snap_src) {
+#ifdef MY_ABC_HERE
+		if (btrfs_root_refs(&snap_src->root_item) == 0) {
+			error = -ENOENT;
+			btrfs_warn(fs_info, "Can not create snapshot, src is deleted, objectid:[%llu]", snap_src->root_key.objectid);
+			goto out_up_read;
+		}
+#endif /* #ifdef MY_ABC_HERE */
 		error = create_snapshot(snap_src, dir, dentry, readonly, inherit
 #ifdef MY_ABC_HERE
 			,copy_limit_from
 #endif /* MY_ABC_HERE */
 			);
-	else
+	} else
 		error = create_subvol(dir, dentry, name, namelen, inherit);
 
 	if (!error)
@@ -2976,6 +2983,13 @@ update_flags:
 		}
 #endif /* MY_ABC_HERE */
 	} else {
+#ifdef MY_ABC_HERE
+		if (!syno_op_locker_is_open(inode)) {
+			ret = -EPERM;
+			goto out_drop_sem;
+		}
+#endif /* MY_ABC_HERE */
+
 		/*
 		 * Block RO -> RW transition if this subvolume is involved in
 		 * send
@@ -5609,9 +5623,12 @@ locked:
 			bctl->fast_key_offset = bargs->key_offset;
 	}
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
 	bctl->total_chunk_used = 0;
-	if (bctl->flags & ~(BTRFS_BALANCE_ARGS_MASK | BTRFS_BALANCE_TYPE_MASK | BTRFS_BALANCE_DRY_RUN)) {
+	if (bctl->flags & ~(BTRFS_BALANCE_ARGS_MASK |
+						BTRFS_BALANCE_TYPE_MASK |
+						BTRFS_BALANCE_DRY_RUN |
+						BTRFS_BALANCE_DONT_WAIT_DROP_ROOT)) {
 #else
 	if (bctl->flags & ~(BTRFS_BALANCE_ARGS_MASK | BTRFS_BALANCE_TYPE_MASK)) {
 #endif /* SYNO_BTRFS_BALANCE_DRY_RUN */
@@ -6328,6 +6345,13 @@ static long _btrfs_ioctl_set_received_subvol(struct file *file,
 		ret = -EROFS;
 		goto out;
 	}
+
+#ifdef MY_ABC_HERE
+	if (test_bit(BTRFS_ROOT_ORPHAN_ITEM_INSERTED, &root->state)) {
+		ret = -EINVAL;
+		goto out;
+	}
+#endif /* MY_ABC_HERE */
 
 	/*
 	 * 1 - root item

@@ -18,7 +18,10 @@
 
 #include "../pci.h"
 #include "portdrv.h"
-
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
+#include <linux/synolib.h>
+extern int syno_pci_dev_to_i2c_bus(struct pci_dev *pdev);
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
 struct portdrv_service_data {
 	struct pcie_port_service_driver *drv;
 	struct device *dev;
@@ -262,6 +265,11 @@ static int get_port_device_capability(struct pci_dev *dev)
 	if (pci_pcie_type(dev) == PCI_EXP_TYPE_DOWNSTREAM ||
 	    pci_pcie_type(dev) == PCI_EXP_TYPE_ROOT_PORT)
 		services |= PCIE_PORT_SERVICE_BWNOTIF;
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
+	if (0 <= syno_pci_dev_to_i2c_bus(dev)) {
+		services |= PCIE_PORT_SERVICE_SWITCH_I2C;
+	}
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
 
 	return services;
 }

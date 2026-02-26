@@ -33,9 +33,9 @@
 #include <uapi/linux/mount.h>
 #include <linux/fs_context.h>
 #include <linux/shmem_fs.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #include "pnode.h"
 #include "internal.h"
@@ -3297,10 +3297,10 @@ int path_mount(const char *dev_name, struct path *path,
 	if ((flags & MS_BIND) && ramdisk_check_failed)
 		return -EPERM;
 #endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#ifdef MY_DEF_HERE
 	if ((flags & MS_BIND) && kexec_test_flags)
 		return -EPERM;
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 	if (flags & MS_BIND)
 		return do_loopback(path, dev_name, flags & MS_REC);
 	if (flags & (MS_SHARED | MS_PRIVATE | MS_SLAVE | MS_UNBINDABLE))
@@ -3309,10 +3309,10 @@ int path_mount(const char *dev_name, struct path *path,
 	if ((flags & MS_MOVE) && ramdisk_check_failed)
 		return -EPERM;
 #endif /* CONFIG_SYNO_RAMDISK_INTEGRITY_CHECK */
-#ifdef CONFIG_SYNO_KEXEC_TEST
+#ifdef MY_DEF_HERE
 	if ((flags & MS_MOVE) && kexec_test_flags)
 		return -EPERM;
-#endif /* CONFIG_SYNO_KEXEC_TEST */
+#endif /* MY_DEF_HERE */
 	if (flags & MS_MOVE)
 		return do_move_mount_old(path, dev_name);
 

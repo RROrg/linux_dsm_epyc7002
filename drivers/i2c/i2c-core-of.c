@@ -81,7 +81,7 @@ void syno_of_i2c_register_device(struct i2c_adapter *adap, struct device_node *n
 
 	if ( 0 == of_property_read_string(node, DT_I2C_DEVICE_NAME, &i2c_driver_name) && 
 			0 == of_property_read_string(node, DT_I2C_ADDRESS, &i2c_address)) {
-		if(0 == kstrtoul(i2c_address, 16, (unsigned long*) &val)) {
+		if (0 == kstrtou16(i2c_address, 16, &val)) {
 			info.addr = val;
 			info.of_node = node;
 			strlcpy(info.type,i2c_driver_name,sizeof(info.type));

@@ -617,6 +617,9 @@ svc_rqst_alloc(struct svc_serv *serv, struct svc_pool *pool, int node)
 		return rqstp;
 
 	__set_bit(RQ_BUSY, &rqstp->rq_flags);
+#ifdef MY_ABC_HERE
+	atomic_long_inc(&pool->sp_stats.loading);
+#endif /* MY_ABC_HERE */
 	spin_lock_init(&rqstp->rq_lock);
 	rqstp->rq_server = serv;
 	rqstp->rq_pool = pool;
@@ -853,6 +856,10 @@ svc_rqst_free(struct svc_rqst *rqstp)
 	kfree(rqstp->rq_argp);
 	kfree(rqstp->rq_auth_data);
 	kfree_rcu(rqstp, rq_rcu_head);
+#ifdef MY_ABC_HERE
+	if (rqstp->rq_pool)
+		atomic_long_dec(&rqstp->rq_pool->sp_stats.loading);
+#endif /* MY_ABC_HERE */
 }
 EXPORT_SYMBOL_GPL(svc_rqst_free);
 

@@ -80,6 +80,11 @@ extern int SYNO_CTRL_HDD_POWERON(int index, int value);
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_DEF_HERE
+extern int syno_acm_get_usb_port(const char **usb_path, int eunit_slot);
+extern struct syno_control_operations *syno_control_operation_get(const int slot_type, const int slot_index);
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
 #include <linux/random.h>
 #include <linux/synolib.h>
 #include <linux/synosata.h>
@@ -94,6 +99,10 @@ extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
 static int gCurrentSpinupGroupNum = 0;
 static int giNeedWakeAll = 0;
+
+#ifdef MY_DEF_HERE
+static int syno_ata_eunit_disk_delay_check(const struct ata_device *dev, const int spinup);
+#endif /* MY_DEF_HERE */
 #endif /* MY_DEF_HERE */
 
 #define ATA_SCSI_RBUF_SIZE	576
@@ -325,7 +334,6 @@ static void ata_scsi_set_invalid_parameter(struct ata_device *dev,
 				     field, 0xff, 0);
 }
 
-
 #if defined(MY_ABC_HERE) || defined (MY_ABC_HERE)
 /**
  * Query this ap support pm control capacity
@@ -355,10 +363,23 @@ int iIsSynoPmCtlSupport(const struct ata_port *ap)
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 	if (ap->nr_pmp_links && syno_is_synology_pm(ap)) {
+#ifdef MY_DEF_HERE
+		// do not control usb acm power while restarting
+		// power control may not be available immediately after system restart
+		if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique) && SYSTEM_RESTART == system_state) {
+			goto END;
+		}
+#endif /* MY_DEF_HERE */
 		ret = 1;
 		goto END;
 	}
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+		ret = 1;
+		goto END;
+	}
+#endif /* MY_DEF_HERE */
 
 END:
 	return ret;
@@ -1064,9 +1085,17 @@ struct ata_port* SynoEunitEnumPort(struct ata_port *pAp_master, struct klist_nod
 	for (ata_node = klist_next(&klist_iter); NULL != ata_node; ata_node = klist_next(&klist_iter)) {
 		pAp = container_of(ata_node, struct ata_port, ata_port_list);
 
+#ifdef MY_DEF_HERE
+		if (syno_is_synology_pci_eunit(pAp) && slotNumber == syno_external_libata_index_get(pAp)) {
+			break;
+		} else {
+#endif /* MY_DEF_HERE */
 		if (syno_is_synology_pm(pAp) && slotNumber == syno_external_libata_index_get(pAp)) {
 			break;	
 		}
+#ifdef MY_DEF_HERE
+		}
+#endif /* MY_DEF_HERE */
 
 		pAp = NULL;
 	}
@@ -1090,6 +1119,12 @@ struct ata_port *SynoEunitFindMaster(struct ata_port *pAp)
 	if (NULL == pAp) {
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(pAp)) {
+		pAp_master = pAp;
+		goto END;
+	}
+#endif /* MY_DEF_HERE */
 
 	/* if this port is master, we return itself immediately */
 	if (0 == pAp->PMSynoEMID) {
@@ -1129,9 +1164,16 @@ static void SynoEunitBindLock(struct ata_port *pAp_master, bool blset)
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(pAp_master)) {
+	} else {
+#endif /* MY_DEF_HERE */
 	if (!syno_is_synology_pm(pAp_master)) {
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	while (NULL != (ap = SynoEunitEnumPort(pAp_master, ap? &ap->ata_port_list: NULL))) {
 		/* This special lock is used to power on eunit in deep sleep state. */
@@ -1172,9 +1214,16 @@ static int SynoIsEunitPortActing(const struct ata_port *pAp_master)
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(pAp_master)) {
+	} else {
+#endif /* MY_DEF_HERE */
 	if (!syno_is_synology_pm(pAp_master)) {
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	slotNumber = syno_external_libata_index_get(pAp_master);
 	if (-1 == slotNumber) {
@@ -1241,9 +1290,16 @@ void SynoEunitFlagSet(struct ata_port *pAp_master, bool blset, unsigned int flag
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+	} else {
+#endif /* MY_DEF_HERE */
 	if (!syno_is_synology_pm(pAp_master)) {
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	slotNumber = syno_external_libata_index_get(pAp_master);
 	if (-1 == slotNumber) {
@@ -1298,13 +1354,19 @@ int syno_eunit_poweroff(struct ata_port *ap)
 		iRet = 0;
 		goto END;
 	}
-
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+	} else {
+#endif /* MY_DEF_HERE */
 	/* Only handle EUnit */
 	if(!ap->nr_pmp_links) {
 		DBGMESG("port %d is internal disk skip it\n", ap->print_id);
 		iRet = 0;
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	/* this host already irqoff by other hosts, we needn't poweroff it again */
 	if (iIsSynoIRQOff(ap)) {
@@ -1455,8 +1517,14 @@ syno_pm_info_show(struct device *dev, struct device_attribute *attr, char *buf)
 	int index = 0;
 	int NumOfPMPorts = 0;
 	char szPciePath[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
+#ifdef MY_DEF_HERE
+	const char *usb_path = NULL;
+#endif /* MY_DEF_HERE */
 
 	if (ap->nr_pmp_links &&
+#ifdef MY_DEF_HERE
+		0 > syno_acm_get_usb_port(&usb_path, syno_external_libata_index_get(ap)) &&
+#endif /* MY_DEF_HERE */
 		(syno_is_synology_pm(ap) ||
 		syno_pm_with_synology_magic(ap))) {
 		char szTmp[BDEVNAME_SIZE];
@@ -1912,6 +1980,13 @@ static int syno_libata_port_power_ctl(struct ata_port *ap, u8 pwrOp)
 		goto END;
 	}
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+		if (0 != syno_libata_pm_power_ctl(ap, pwrOp, 0)) {
+			goto END;
+		}
+	}
+#endif /* MY_DEF_HERE */
 
 	iRet = 0;
 END:
@@ -1942,8 +2017,12 @@ int SynoFlagSet(struct ata_port *ap, const unsigned int ulFlag, const u8 blSet)
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (!ap->nr_pmp_links && !syno_is_synology_pci_eunit(ap)) {
+#else /* MY_DEF_HERE */
 	/* Internal port flag set */
 	if (!ap->nr_pmp_links) {
+#endif /* MY_DEF_HERE */
 		spin_lock_irqsave(ap->lock, flags);
 		if(blSet) {
 			ap->pflags |= ulFlag;
@@ -2143,6 +2222,11 @@ syno_libata_set_deep_sleep(struct ata_port *ap, const u8 blSet)
 		SynoEunitBindLock(pAp_master, blSet);
 	}
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	else if (syno_is_synology_pci_eunit(ap)) {
+		SynoEunitBindLock(ap, blSet);
+	}
+#endif /* MY_DEF_HERE */
 
 	iRet = 0;
 
@@ -4288,6 +4372,10 @@ static void ata_scsi_qc_complete(struct ata_queued_cmd *qc)
 			/* reset giNeedWakeAll when no HDD waking*/
 			giNeedWakeAll = 0;
 		}
+
+#ifdef MY_DEF_HERE
+		syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
+#endif /* MY_DEF_HERE */
 	}
 #endif /* MY_DEF_HERE */
 
@@ -4462,6 +4550,14 @@ static int SynoIssueWakeUpCmd(struct ata_device *dev, struct scsi_cmnd *cmd)
 		}
 	}
 
+#ifdef MY_DEF_HERE
+	if (ap->nr_pmp_links) {
+		if (0 < giSynoSpinupGroupDebug) {
+			ata_link_info(dev->link, "Spining up\n");
+		}
+		goto ISSUE_CMD;
+	}
+#endif /* MY_DEF_HERE */
 	/* issue read and update gulLastWake */
 	spin_lock(&SYNOLastWakeLock);
 	gulLastWake = jiffies;
@@ -4483,21 +4579,115 @@ static int SynoIssueWakeUpCmd(struct ata_device *dev, struct scsi_cmnd *cmd)
 	}
 	spin_unlock(&SYNOLastWakeLock);
 	DBGMESG("port %d update gulLastWake %lu and issue read\n", ap->print_id, gulLastWake);
+#ifdef MY_DEF_HERE
+ISSUE_CMD:
+#endif /* MY_DEF_HERE */
 	dev->ulLastCmd = jiffies;
 	ata_qc_issue(qc);
 
 	return SCSI_MLQUEUE_HOST_BUSY;
 
 ERR_MEM:
+#ifdef MY_DEF_HERE
+	syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
+#endif /* MY_DEF_HERE */
 	dev->ulLastCmd = jiffies;
 	return SCSI_MLQUEUE_HOST_BUSY;
 DEFER:
+#ifdef MY_DEF_HERE
+	syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
+#endif /* MY_DEF_HERE */
 	ata_qc_free(qc);
 	if (rc == ATA_DEFER_LINK)
 		return SCSI_MLQUEUE_DEVICE_BUSY;
 	else
 		return SCSI_MLQUEUE_HOST_BUSY;
 }
+
+#ifdef MY_DEF_HERE
+static int syno_ata_eunit_disk_delay_check(const struct ata_device *dev, const int spinup)
+{
+	int eunit_index = 0;
+	struct syno_control_operations *ctrl_op = NULL;
+	struct ata_port *ap = NULL;
+	int ret = -1;
+
+	if (!dev || !dev->link || !dev->link->ap || 0 > spinup) {
+		return -EINVAL;
+	}
+
+	ap = dev->link->ap;
+
+	if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)){
+		eunit_index = syno_external_libata_index_get(ap);
+		ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index);
+		if (ctrl_op && ctrl_op->disk_delay_waiting) {
+			ret = ctrl_op->disk_delay_waiting(EUNIT_DEVICE, eunit_index, dev->link->pmp, spinup);
+		}
+	}
+	return ret;
+}
+
+static int syno_eunit_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd,
+			      ata_xlat_func_t xlat_func)
+{
+	struct ata_port *ap = dev->link->ap;
+	u8 *scsicmd = cmd->cmnd;
+
+	/* no insert command while frozen */
+	if (ap->pflags & ATA_PFLAG_FROZEN) {
+		if (printk_ratelimit()) {
+			DBGMESG("port %d ATA_PFLAG_FROZEN or ATA_FLAG_DISABLED, clear all bits\n", ap->print_id);
+		}
+		ata_port_schedule_eh(ap);
+		clear_bit(CHKPOWER_FIRST_CMD, &(dev->ulSpinupState));
+		clear_bit(CHKPOWER_FIRST_WAIT, &(dev->ulSpinupState));
+		goto PASS;
+	}
+
+#ifdef MY_ABC_HERE
+	if (dev->is_ssd) {
+		goto PASS;
+	}
+#endif /* MY_ABC_HERE */
+
+	if (ata_qc_from_tag(ap, cmd->request->tag)){
+		goto WAIT;
+	}
+
+	/* The ATA_CMD_CHK_POWER command won't wake up disk. So we don't check whether
+	 * DS is sleeping now.
+	 */
+	if (scsicmd[0] == ATA_16 && scsicmd[14] == ATA_CMD_CHK_POWER) {
+		goto PASS_ONCE;
+	} else {
+		/* we need insert read as the first cmd to wakeup disk */
+		if (dev->iCheckPwr || test_bit(CHKPOWER_FIRST_CMD, &(dev->ulSpinupState))) {
+			/* check if this port need wait other disks wakeup */
+
+			if (0 < syno_ata_eunit_disk_delay_check(dev, SPINUP_CHECK)) {
+				DBGMESG("port %d too close to last wakeup, wait again (%lu) (%lu) (%lu)\n",
+						ap->print_id, jiffies, gulLastWake, SynoWakeInterval());
+				goto WAIT;
+			}
+			goto ISSUE_READ;
+		}
+	}
+
+PASS:
+	dev->iCheckPwr = 0;
+PASS_ONCE:
+	/* update time-bookkeeping of last command */
+	dev->ulLastCmd = jiffies;
+	return ata_scsi_translate(dev, cmd, xlat_func);
+ISSUE_READ:
+	dev->iCheckPwr = 0;
+	dev->ulSpinupState = 0;
+	return SynoIssueWakeUpCmd(dev, cmd);
+WAIT:
+	return SCSI_MLQUEUE_HOST_BUSY;
+}
+#endif /* MY_DEF_HERE */
 
 static int syno_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd,
 			      ata_xlat_func_t xlat_func)
@@ -4508,6 +4698,11 @@ static int syno_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd
 
 	/* no insert comamnd while the device is derived from PM */
 	if (ap->nr_pmp_links) {
+#ifdef MY_DEF_HERE
+		if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)){
+			return syno_eunit_ata_scsi_translate(dev, cmd, xlat_func);
+		}
+#endif /* MY_DEF_HERE */
 		goto PASS;
 	}
 
@@ -7849,6 +8044,13 @@ int syno_external_libata_index_get(const struct ata_port *ap)
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+		index = syno_pci_eunit_index_get(ap);
+		goto END;
+	}
+#endif /* MY_DEF_HERE */
+
 	for_each_child_of_node(of_root, pDeviceNode) {
 		if (pDeviceNode->full_name
 			&& 0 == (strncmp(pDeviceNode->full_name, DT_ESATA_SLOT, strlen(DT_ESATA_SLOT)))) {
@@ -7896,6 +8098,9 @@ static void syno_ata_info_enum(struct ata_port *ap, struct scsi_device *sdev) {
 #ifdef MY_ABC_HERE
 	struct ata_device *dev = NULL;
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	struct syno_control_operations *ctrl_op = NULL;
+#endif /* MY_DEF_HERE */
 
 	if (NULL == ap || NULL == sdev || NULL == ap->host) {
 		return;
@@ -7924,10 +8129,60 @@ static void syno_ata_info_enum(struct ata_port *ap, struct scsi_device *sdev) {
 			snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sunique=%s\n", sdev->syno_block_info, EBOX_INFO_UNIQUE_DX1215II);
 		} else if (IS_SYNOLOGY_RX1223RP(ap->PMSynoUnique)) {
 			snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sunique=%s\n", sdev->syno_block_info, EBOX_INFO_UNIQUE_RX1223RP);
+#ifdef MY_DEF_HERE
+		} else if (NULL != (ctrl_op = syno_control_operation_get(EUNIT_DEVICE, syno_external_libata_index_get(ata_shost_to_port(sdev->host))))) {
+			snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sunique=%s\n", sdev->syno_block_info, ctrl_op->control_method);
+#endif /* MY_DEF_HERE */
 		}
+#ifdef MY_DEF_HERE
+	} else if (syno_is_ap_rx1224rp(ap)) {
+		snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%sunique=%s\n", sdev->syno_block_info, EBOX_INFO_UNIQUE_RX1224RP);
+#endif /* MY_DEF_HERE */
 	}
 #endif /* MY_ABC_HERE */
 }
+
+#ifdef MY_DEF_HERE
+extern void syno_pci_dev_device_list_set(struct pci_dev *pdev, int add, const char *disk_name);
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+extern void syno_acm_device_list_set(struct scsi_device *sdev, int add, const char* device_name);
+#endif /* MY_DEF_HERE */
+
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+void syno_libata_device_list_set(struct scsi_device *sdev, int add, const char *disk_name)
+{
+	struct ata_port *ap = NULL;
+#ifdef MY_DEF_HERE
+	struct device *dev = NULL;
+	struct pci_dev *pdev = NULL;
+#endif /* MY_DEF_HERE */
+
+	if (!sdev || !disk_name) {
+		return;
+	}
+
+	ap = ata_shost_to_port(sdev->host);
+	if (!ap) {
+		return;
+	}
+
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+		dev = ap->dev;
+		pdev = container_of(ap->dev, struct pci_dev, dev);
+		syno_pci_dev_device_list_set(pdev, add, disk_name);
+	}
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+	if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
+		syno_acm_device_list_set(sdev, add, disk_name);
+	}
+#endif /* MY_DEF_HERE */
+}
+#endif /* MY_DEF_HERE || MY_DEF_HERE */
 
 void syno_libata_info_enum(struct scsi_device *sdev) {
 	struct ata_port *ap = NULL;

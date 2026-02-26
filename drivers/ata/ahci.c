@@ -3431,6 +3431,87 @@ END:
 	return;
 }
 
+#ifdef MY_DEF_HERE
+extern void syno_pci_eunit_unique_fill(struct ata_port *ap);
+#endif /* MY_DEF_HERE */
+#ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
+static bool syno_asmedia_116x_eunit_init_and_signal_adjust_by_dts(struct ata_host *host)
+{
+	bool blRet = false;
+	struct pci_dev *pdev = NULL;
+	struct device_node *pSlotNode = NULL;
+	struct device_node *pAhciNode = NULL;
+	struct device_node *eunit_node = NULL;
+
+	unsigned int sigData[SYNO_SATA_MAX_GEN][SYNO_SATA_MAX_PORTS] = {{0}};
+	unsigned int sscOffTable[SYNO_SATA_MAX_PORTS] = {0};
+
+	u32 ata_port_no = U32_MAX;
+
+	char buf[MAX_NODENAME_LEN] = {0};
+	int i = 0;
+
+	if (NULL == of_root || NULL == (pdev = to_pci_dev(host->dev))) {
+		goto END;
+	}
+
+	if (0 != syno_asmedia_116x_check(pdev)) {
+		goto END;
+	}
+
+	eunit_node = syno_pci_dev_to_eunit_node(pci_upstream_bridge(pdev), NULL);
+	if (!eunit_node) {
+		goto END;
+	}
+	blRet = true;
+	/* Enum slot */
+	for_each_child_of_node(eunit_node, pSlotNode) {
+
+		/* Skip non-disk slot */
+		if ((0 != strncmp(pSlotNode->full_name, DT_STORAGE_SLOT, strlen(DT_STORAGE_SLOT)))) {
+			continue;
+		}
+
+		/* Get AHCI node */
+		if (NULL == (pAhciNode = of_get_child_by_name(pSlotNode, DT_AHCI))) {
+			printk("Can not get ahci node: %s\n", pSlotNode->full_name);
+			continue;
+		}
+
+		/* Match PCIe path */
+		if (0 != syno_compare_dts_eunit_pciepath(pdev, pAhciNode)) {
+			continue;
+		}
+
+		/* Get ATA port index */
+		if (0 != of_property_read_u32_index(pAhciNode, DT_ATA_PORT, 0, &ata_port_no)) {
+			continue;
+		}
+
+		/* Check ATA port index is vaild */
+		if (SYNO_SATA_MAX_PORTS <= ata_port_no) {
+			continue;
+		}
+
+		/* Get Singal data & store data */
+		for (i = 0; i < SYNO_SATA_MAX_GEN; i++) {
+			snprintf(buf, MAX_NODENAME_LEN, "signal_data_gen%d", i+1);
+			of_property_read_u32_index(pAhciNode, buf, 0, &sigData[i][ata_port_no]);
+		}
+
+		/* Read SSC OFF */
+		if(of_property_read_bool(pAhciNode, DT_SET_SSC_OFF)) {
+			sscOffTable[ata_port_no] = 1;
+		}
+	}
+
+	syno_set_signal(host, sigData, sscOffTable);
+END:
+	return blRet;
+
+}
+#endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
+
 static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 {
 	struct pci_dev *pdev = NULL;
@@ -3458,6 +3539,9 @@ static void syno_init_and_signal_adjust_by_dts(struct ata_host *host)
 #ifdef CONFIG_SYNO_SATA_ASM116X_CONTROL
 	if (0 == syno_asmedia_116x_check(pdev)) {
 		syno_asmedia_116x_fw_version_show(host);
+	}
+	if (syno_asmedia_116x_eunit_init_and_signal_adjust_by_dts(host)) {
+		goto END;
 	}
 #endif /* CONFIG_SYNO_SATA_ASM116X_CONTROL */
 
@@ -3761,6 +3845,9 @@ static int ahci_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
 		/* Fill internal slot index. 0 base, < 0 means error or not internal slot */
 		ap->syno_internal_slot_index = lookup_internal_slot(ap) - 1;
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+		syno_pci_eunit_unique_fill(ap);
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 		/* Have default syno_recover method, set max tries */

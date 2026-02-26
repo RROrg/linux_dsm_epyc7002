@@ -1756,6 +1756,11 @@ extern void syno_libata_info_enum(struct scsi_device *sdev);
 #define	SYNO_DISK_NAME_MACRO
 #endif /* MY_ABC_HERE */
 
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+extern void syno_libata_device_list_set(struct scsi_device *sdev, int add, const char *disk_name);
+#define MY_ABC_HERE .syno_device_list_set = syno_libata_device_list_set,
+#else /* MY_DEF_HERE || MY_DEF_HERE */
+#endif /* MY_DEF_HERE || MY_DEF_HERE */
 
 
 /*
@@ -1780,6 +1785,7 @@ extern void syno_libata_info_enum(struct scsi_device *sdev);
 	.slave_destroy		= ata_scsi_slave_destroy,	\
 	.bios_param		= ata_std_bios_param,		\
 	SYNO_DISK_NAME_MACRO \
+	MY_ABC_HERE \
 	.unlock_native_capacity	= ata_scsi_unlock_native_capacity
 
 #define ATA_BASE_SHT(drv_name)					\

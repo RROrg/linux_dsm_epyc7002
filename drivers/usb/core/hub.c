@@ -40,6 +40,11 @@
 #endif /* MY_ABC_HERE */
 #include <linux/kobject.h>
 
+#ifdef MY_ABC_HERE
+extern void syno_device_not_ready_set(const char *);
+extern void syno_device_not_ready_clear(const char *);
+#endif /* MY_ABC_HERE */
+
 #include <linux/uaccess.h>
 #include <asm/byteorder.h>
 
@@ -69,6 +74,10 @@ extern bool RTK_usb_disable_hub_autosuspend(void);
 
 #if defined(MY_DEF_HERE)
 #define SYNO_SERIAL_EXT_HUB "syno.ext.hub"
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+#define SYNO_SERIAL_USB_EUNIT "syno.usb.eunit"
 #endif /* MY_DEF_HERE */
 
 /* Protect struct usb_device->state and ->children members
@@ -1364,6 +1373,9 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 		 * for HUB_POST_RESET, but it's easier not to.
 		 */
 		if (type == HUB_INIT) {
+#ifdef MY_ABC_HERE
+			syno_device_not_ready_set(dev_name(hub->intfdev));
+#endif /* MY_ABC_HERE */
 			delay = hub_power_on_good_delay(hub);
 
 			hub_power_on(hub, false);
@@ -2945,7 +2957,12 @@ int usb_new_device(struct usb_device *udev)
 		}
 	}
 
+
+#ifdef MY_DEF_HERE
+	if (udev->parent && udev->serial && 0 != strncmp(udev->serial, SYNO_SERIAL_USB_EUNIT, strlen(SYNO_SERIAL_USB_EUNIT))) {
+#else /* MY_DEF_HERE */
 	if (udev->parent && udev->serial) {
+#endif /* MY_DEF_HERE */
 		int match, counter = 0;
 		int entered = 0;
 
@@ -6520,6 +6537,9 @@ static void hub_event(struct work_struct *work)
 		}
 	}
 
+#ifdef MY_ABC_HERE
+	syno_device_not_ready_clear(dev_name(hub->intfdev));
+#endif /* MY_ABC_HERE */
 out_autopm:
 	/* Balance the usb_autopm_get_interface() above */
 	usb_autopm_put_interface_no_suspend(intf);

@@ -512,12 +512,45 @@ nfsd4_getfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	return nfs_ok;
 }
 
+#ifdef MY_ABC_HERE
+static void get_pool_hint(struct svc_rqst *rqstp, const struct path *exp_path)
+{
+	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
+	struct svc_serv *xpt_serv = rq_xprt->xpt_server;
+	char *kbuf;
+	char *path;
+	int i;
+
+	kbuf = kmalloc(PAGE_SIZE, GFP_KERNEL);
+	if (!kbuf)
+		return;
+
+	path = d_path(exp_path, kbuf, PAGE_SIZE);
+	if (IS_ERR(path))
+		goto out;
+
+	for (i = 0; i < NFSD_POOL_HINT_MAX; i++) {
+		if (xpt_serv->pool_hint[i].name[0] &&
+				strstr(path, xpt_serv->pool_hint[i].name)) {
+			rq_xprt->xpt_pool_index = i;
+			break;
+		}
+	}
+
+out:
+	kfree(kbuf);
+}
+#endif /* MY_ABC_HERE */
+
 static __be32
 nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	    union nfsd4_op_u *u)
 {
 	struct nfsd4_putfh *putfh = &u->putfh;
 	__be32 ret;
+#ifdef MY_ABC_HERE
+	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
+#endif /* MY_ABC_HERE */
 
 	fh_put(&cstate->current_fh);
 	cstate->current_fh.fh_handle.fh_size = putfh->pf_fhlen;
@@ -530,6 +563,12 @@ nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 		ret = 0;
 	}
 #endif
+#ifdef MY_ABC_HERE
+	if (unlikely(rq_xprt && rq_xprt->xpt_pool_index == -1 &&
+			rq_xprt->xpt_server->has_pool_hint)) {
+		get_pool_hint(rqstp, &cstate->current_fh.fh_export->ex_path);
+	}
+#endif /* MY_ABC_HERE */
 	return ret;
 }
 
@@ -2476,6 +2515,9 @@ nfsd4_proc_compound(struct svc_rqst *rqstp)
 		if (op->opdesc->op_get_currentstateid)
 			op->opdesc->op_get_currentstateid(cstate, &op->u);
 		op->status = op->opdesc->op_func(rqstp, cstate, &op->u);
+#ifdef MY_ABC_HERE
+		trace_syno_nfsd4_dispatch(rqstp, cstate, op);
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 		// ignore internal error for udc.

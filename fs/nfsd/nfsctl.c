@@ -85,6 +85,9 @@ enum {
 	NFSD_SYNO_LATENCY_HISTOGRAM,
 	NFSD_SYNO_TOTAL_ERROR,
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+	NFSD_Pool_Hint,
+#endif /* MY_ABC_HERE */
 	NFSD_MaxReserved
 };
 
@@ -125,6 +128,9 @@ static ssize_t set_syno_nfsd_client_expire_time(struct file *file, char *buf,
 static ssize_t reset_syno_total_connection(struct file *file, char *buf, size_t size);
 static ssize_t syno_max_connection(struct file *file, char *buf, size_t size);
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+static ssize_t write_pool_hint(struct file *file, char *buf, size_t size);
+#endif /* MY_ABC_HERE */
 
 static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_Fh] = write_filehandle,
@@ -158,6 +164,9 @@ static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 #ifdef MY_ABC_HERE
 	[NFSD_SYNO_TOTAL_CONNECTION_RESET] = reset_syno_total_connection,
 	[NFSD_SYNO_MAX_CONNECTION] = syno_max_connection,
+#endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+	[NFSD_Pool_Hint] = write_pool_hint,
 #endif /* MY_ABC_HERE */
 };
 
@@ -1663,6 +1672,106 @@ static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size)
 
 #endif
 
+#ifdef MY_ABC_HERE
+static int __write_pool_hint(struct svc_serv *nfsd_serv, char *buf, size_t size)
+{
+	struct svc_pool_hint *pool_hint = NULL;
+	unsigned int affinity;
+	int i, node;
+	char name[16] = {0};
+
+	if (2 != sscanf(buf, "%15s %x", name, &affinity))
+		return -EINVAL;
+
+	if (sizeof(nfsd_serv->pool_hint[0].name) < sizeof(name))
+		return -EOVERFLOW;
+
+	// find a free slot or an existing volume.
+	for (i = 0; i < NFSD_POOL_HINT_MAX; i++) {
+		if (nfsd_serv->pool_hint[i].name[0] == 0) {
+			pool_hint = &nfsd_serv->pool_hint[i];
+			strncpy(pool_hint->name, name, sizeof(name));
+			break;
+		} else if (!strcmp(name, nfsd_serv->pool_hint[i].name)) {
+			pool_hint = &nfsd_serv->pool_hint[i];
+			break;
+		}
+	}
+
+	// no room in pool_hint.
+	if (!pool_hint)
+		return -ENOSPC;
+
+	// convert cpu bitmask to node bitmask.
+	memset(pool_hint->pool, 0, sizeof(pool_hint->pool));
+	for (i = 0; i < num_online_cpus() && affinity > 0; affinity >>= 1, i++) {
+		if (!(affinity & 1))
+			continue;
+
+		node = cpu_to_node(i);
+		if (node < NFSD_POOL_MASK_MAX)
+			pool_hint->pool[node] = 1;
+	}
+	nfsd_serv->has_pool_hint = true;
+
+	return 0;
+}
+
+static ssize_t write_pool_hint(struct file *file, char *buf, size_t size)
+{
+	char *mesg = buf;
+	int i, j;
+	int rv;
+	int len;
+	int ret = 0;
+	struct net *net = netns(file);
+	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
+	struct svc_serv *nfsd_serv;
+
+	mutex_lock(&nfsd_mutex);
+	nfsd_serv = nn->nfsd_serv;
+	if (!nfsd_serv) {
+		strcpy(buf, "0\n");
+		rv = strlen(buf);
+		goto out;
+	}
+
+	// To write.
+	if (size > 0) {
+		ret = __write_pool_hint(nfsd_serv ,buf, size);
+		if (ret < 0)
+			goto out;
+	}
+
+	// To read.
+	size = SIMPLE_TRANSACTION_LIMIT;
+	for (i = 0; i < NFSD_POOL_HINT_MAX; i++) {
+		struct svc_pool_hint *pool_hint = &nfsd_serv->pool_hint[i];
+		unsigned int affinity = 0;
+		int node;
+
+		if (!nfsd_serv->pool_hint[i].name[0])
+			continue;
+
+		for (j = 0; j < num_online_cpus(); j++) {
+			node = cpu_to_node(j);
+
+			if (node < NFSD_POOL_MASK_MAX && pool_hint->pool[node])
+				affinity |= (1 << j);
+		}
+
+		snprintf(mesg, size, "NFS pool hint: %s,  0x%08x\n", pool_hint->name, affinity);
+		len = strlen(mesg);
+		size -= len;
+		mesg += len;
+	}
+	rv = SIMPLE_TRANSACTION_LIMIT - size;
+out:
+	mutex_unlock(&nfsd_mutex);
+	return (ret < 0)? ret : rv;
+}
+#endif /* MY_ABC_HERE */
+
 /*----------------------------------------------------------------------------*/
 /*
  *	populating the filesystem.
@@ -1670,7 +1779,7 @@ static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size)
 
 /* Basically copying rpc_get_inode. */
 #ifdef MY_ABC_HERE
-#elif /* MY_ABC_HERE */
+#elif /* defined(MY_ABC_HERE) */
 static
 #endif /* MY_ABC_HERE */
 struct inode *nfsd_get_inode(struct super_block *sb, umode_t mode)
@@ -1918,6 +2027,9 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 		[NFSD_SYNO_LATENCY_HISTOGRAM] = {"syno_latency_histogram", &syno_latency_histogram_ops, S_IRUGO},
 		[NFSD_SYNO_TOTAL_ERROR] = {"syno_total_error", &syno_total_error_ops, S_IRUGO},
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+		[NFSD_Pool_Hint] = {"pool_hint", &transaction_ops, S_IWUSR|S_IRUSR},
+#endif /* MY_ABC_HERE */
 		/* last one */ {""}
 	};
 
@@ -1965,6 +2077,8 @@ static void nfsd_umount(struct super_block *sb)
 {
 	struct net *net = sb->s_fs_info;
 
+	nfsd_shutdown_threads(net);
+
 	kill_litter_super(sb);
 	put_net(net);
 }
@@ -1976,18 +2090,6 @@ static struct file_system_type nfsd_fs_type = {
 	.kill_sb	= nfsd_umount,
 };
 MODULE_ALIAS_FS("nfsd");
-
-int get_nfsdfs(struct net *net)
-{
-	struct nfsd_net *nn = net_generic(net, nfsd_net_id);
-	struct vfsmount *mnt;
-
-	mnt =  vfs_kern_mount(&nfsd_fs_type, SB_KERNMOUNT, "nfsd", NULL);
-	if (IS_ERR(mnt))
-		return PTR_ERR(mnt);
-	nn->nfsd_mnt = mnt;
-	return 0;
-}
 
 #ifdef CONFIG_PROC_FS
 static int create_proc_exports_entry(void)

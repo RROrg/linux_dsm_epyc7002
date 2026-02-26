@@ -505,7 +505,11 @@ build_encrypt_ctxt(struct smb2_encryption_neg_context *pneg_ctxt)
 static unsigned int
 build_netname_ctxt(struct smb2_netname_neg_context *pneg_ctxt, char *hostname)
 {
+#ifdef MY_ABC_HERE
+	struct nls_table *cp = load_nls("utf8");
+#else /* MY_ABC_HERE */
 	struct nls_table *cp = load_nls_default();
+#endif /* MY_ABC_HERE */
 
 	pneg_ctxt->ContextType = SMB2_NETNAME_NEGOTIATE_CONTEXT_ID;
 
@@ -2499,26 +2503,40 @@ alloc_path_with_tree_prefix(__le16 **out_path, int *out_size, int *out_len,
 
 	path_len = UniStrnlen((wchar_t *)path, PATH_MAX);
 
-	/*
-	 * make room for one path separator between the treename and
-	 * path
-	 */
-	*out_len = treename_len + 1 + path_len;
+	/* make room for one path separator only if @path isn't empty */
+	*out_len = treename_len + (path[0] ? 1 : 0) + path_len;
 
 	/*
-	 * final path needs to be null-terminated UTF16 with a
-	 * size aligned to 8
+	 * final path needs to be 8-byte aligned as specified in
+	 * MS-SMB2 2.2.13 SMB2 CREATE Request.
 	 */
-
-	*out_size = roundup((*out_len+1)*2, 8);
-	*out_path = kzalloc(*out_size, GFP_KERNEL);
+	*out_size = roundup(*out_len * sizeof(__le16), 8);
+	*out_path = kzalloc(*out_size + sizeof(__le16) /* null */, GFP_KERNEL);
 	if (!*out_path)
 		return -ENOMEM;
 
+#ifdef MY_ABC_HERE
+	cp = load_nls("utf8");
+#else /* MY_ABC_HERE */
 	cp = load_nls_default();
+#endif /* MY_ABC_HERE */
 	cifs_strtoUTF16(*out_path, treename, treename_len, cp);
-	UniStrcat(*out_path, sep);
-	UniStrcat(*out_path, path);
+
+	/* Do not append the separator if the path is empty */
+	if (path[0] != cpu_to_le16(0x0000)) {
+		UniStrcat(*out_path, sep);
+		UniStrcat(*out_path, path);
+	}
+#ifdef MY_ABC_HERE
+	/**
+	 * we need to calculate length after convert to UTF16
+	 * because source utf8 path length is differenct from UTF16
+	 *
+	 * @see DSM#156591
+	 */
+	*out_len = UniStrnlen((wchar_t *)*out_path, PATH_MAX);
+#endif /* MY_ABC_HERE */
+
 	unload_nls(cp);
 
 	return 0;

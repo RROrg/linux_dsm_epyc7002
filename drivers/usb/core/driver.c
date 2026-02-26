@@ -334,6 +334,23 @@ static int usb_unbind_device(struct device *dev)
 	return 0;
 }
 
+#ifdef MY_DEF_HERE
+/* called from driver core with dev locked */
+static void syno_usb_shutdown_device(struct device *dev)
+{
+	struct usb_device *udev = to_usb_device(dev);
+	int retval = 0;
+
+	if (!udev->parent || 0 < udev->maxchild)
+		return;
+
+	retval = usb_unbind_device(dev);
+	if (retval) {
+		dev_warn(dev, "Fail to unbind device driver, ret %d\n", retval);
+	}
+}
+#endif /* MY_DEF_HERE */
+
 #if defined(MY_DEF_HERE)
 #ifdef CONFIG_USB_PATCH_ON_RTK
 int RTK_usb_unbind_device(struct device *dev)
@@ -1051,6 +1068,9 @@ int usb_register_device_driver(struct usb_device_driver *new_udriver,
 	new_udriver->drvwrap.driver.remove = usb_unbind_device;
 	new_udriver->drvwrap.driver.owner = owner;
 	new_udriver->drvwrap.driver.dev_groups = new_udriver->dev_groups;
+#ifdef MY_DEF_HERE
+	new_udriver->drvwrap.driver.shutdown = syno_usb_shutdown_device;
+#endif /* MY_DEF_HERE */
 
 	retval = driver_register(&new_udriver->drvwrap.driver);
 

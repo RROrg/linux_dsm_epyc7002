@@ -3033,6 +3033,10 @@ int drop_caches_sysctl_handler(struct ctl_table *, int, void *, size_t *,
 		loff_t *);
 #endif
 
+#ifdef MY_ABC_HERE
+extern void syno_drop_caches(void);
+#endif /* MY_ABC_HERE */
+
 void drop_slab(void);
 void drop_slab_node(int nid);
 

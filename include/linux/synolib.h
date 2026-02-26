@@ -8,6 +8,8 @@
 #include <linux/bitops.h>
 #include <linux/blk-mq.h>
 
+#include <linux/genhd.h>
+
 #ifdef MY_ABC_HERE
 /* Maximum number of MAC addresses */
 #define SYNO_MAC_MAX_NUMBER 8
@@ -25,22 +27,25 @@ int syno_disk_get_device_index(struct block_device *bdev);
 #endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 int syno_pci_dev_to_i2c_bus(struct pci_dev*);
-struct syno_device_list {
-	char disk_name[DISK_NAME_LEN];
-	struct list_head device_list;
-};
+int syno_microp_hdd_auto_enable_manual_disable(int adapter, int address, int iEnable);
+struct device_node *syno_pci_dev_to_eunit_node(struct pci_dev *pdev, char *eunit_name);
+extern int syno_compare_dts_eunit_pciepath(struct pci_dev *, const struct device_node *);
 #endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 #define DT_INTERNAL_SLOT "internal_slot"
+#define DT_STORAGE_SLOT "storage_slot"
 #define DT_ESATA_SLOT "esata_port"
 #ifdef MY_DEF_HERE
 #define DT_EUNIT_SLOT "eunit_slot"
 #define DT_PCIE_EUNIT_MASTER_PORT "pcie_eunit_master_port"
 #define DT_PCIE_EUNIT_NEXT_PORT "pcie_eunit_next_port"
 #define DT_PCIE_EUNIT_SSID "pcie_eunit_ssid"
-#define DT_PCIE_EUNIT_SLOT "pcie_eunit_slot"
+#define DT_PCIE_EUNIT_PORT "pcie_eunit_port"
+#define DT_PCIE_EUNIT_DEPTH "pcie_eunit_depth"
 #endif /* MY_DEF_HERE */
+#define DT_PCIE_EUNIT_SLOT "pcie_eunit_slot"
+#define DT_PCIE_EUNIT_POSTFIX "pcie_postfix"
 #define DT_CX4_SLOT "cx4_port"
 #define DT_PCIE_SLOT "pcie_slot"
 #define DT_USB_SLOT "usb_slot"
@@ -70,6 +75,7 @@ struct syno_device_list {
 #define DT_USB3 "usb3"
 #define DT_USB_PORT "usb_port"
 #define DT_USB_HUB "usb_hub"
+#define DT_USB_TO_TTY "usb_to_tty"
 #define DT_USB_COPY "usb_copy"
 #define DT_VBUS "vbus"
 #define DT_SHARED "shared"
@@ -92,6 +98,10 @@ struct syno_device_list {
 #define DT_ACPI_UID "acpi_uid"
 #define DT_PHY_ID "phy_id"
 #define DT_SAS "sas"
+#define DT_PMP_SLOT "pmp_slot"
+#define DT_LIBATA "libata"
+#define DT_PMP_LINK "pmp_link"
+#define DT_POWER_SEQ "power_seq"
 
 #define DT_SYSTEM_SLOT "system_slot"
 #define DT_MV9XXX "mv9xxx"
@@ -110,6 +120,10 @@ struct syno_device_list {
 #define DT_SYNO_SMBUS_SWITCH_ADAPTERS "syno_smbus_switch_adapters"
 #define DT_SYNO_SMBUS_SWITCH_ADDRS "syno_smbus_switch_addrs"
 #define DT_SYNO_SMBUS_SWITCH_VALS "syno_smbus_switch_vals"
+#define DT_SYNO_HOST_PRESENT_ADAPTER "syno_host_present_adapter"
+#define DT_SYNO_HOST_PRESENT_ADDR "syno_host_present_addr"
+#define DT_SYNO_HOST_PRESENT_REG "syno_host_present_reg"
+#define DT_SYNO_HOST_PRESENT_VAL "syno_host_present_val"
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -221,7 +235,7 @@ typedef struct _synobios_evnet_action_tag {
 } SYNOBIOS_EVENT_ACTION_LIST;
 #endif /* MY_ABC_HERE || MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 /*
  * Notice
  * ------
@@ -246,7 +260,7 @@ static __always_inline bool syno_kexec_test(int test)
 {
 	return 0 != test_bit(test, &kexec_test_flags);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 /**
@@ -272,5 +286,95 @@ void syno_plugin_handle_put(void *hnd);
 #define EPIO_PLUGIN_MAGIC_NUMBER    0x20120815
 #define RODSP_PLUGIN_MAGIC_NUMBER    0x20141111
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+
+#define DT_EUNIT_STATUS_EXPSTATUS "expstatus"
+#define DT_EUNIT_STATUS_EXPCTRL "expctrl"
+#define DT_EUNIT_STATUS_FANPWM "fanpwm"
+#define DT_EUNIT_STATUS_FANSPEED "fanspeed"
+#define DT_EUNIT_STATUS_HDDCTRL "hddctrl"
+#define DT_EUNIT_STATUS_DISKLED "diskled"
+#define DT_EUNIT_STATUS_7SEGLED "7segled"
+#define DT_EUNIT_STATUS_EXPIDSET "expidset"
+#define DT_EUNIT_STATUS_EXPSNSET "expsnset"
+#define DT_EUNIT_STATUS_UPVERSION "upversion"
+#define DT_EUNIT_STATUS_HDDPRESENT "hddpresent"
+#define DT_EUNIT_STATUS_HDDENABLE "hddenable"
+#define DT_EUNIT_STATUS_MONCURRENT "moncurrent"
+#define DT_EUNIT_STATUS_MONVOLTAGE "monvoltage"
+#define DT_EUNIT_STATUS_MONTHERMAL "monthermal"
+#define DT_EUNIT_CONTROL_METHOD "control_method"
+#define DT_EUNIT_CONTROL_TYPE "control_type"
+#define DT_EUNIT_STATUS_POWERMODULE "powermodule"
+#define DT_EUNIT_STATUS_EXPBPSNSET "expbpsnset"
+#define DT_EUNIT_STATUS_HDDSEDSET "hddsedset"
+#define DT_EUNIT_STATUS_ACK "ack"
+#define DT_EUNIT_STATUS_HDDRESET "hddreset"
+
+#define DT_EUNIT_COMMAND "command"
+#define DT_EUNIT_OFFSET "offset"
+
+#define DT_EUNIT_DISK_PRESENT "disk_present"
+#define DT_EUNIT_DISK_POWER_ON "disk_power_on"
+
+typedef enum _tag_EUNIT_STATUS_INDEX {
+	EUNIT_STATUS_EXPCTRL = 0,
+	EUNIT_STATUS_FANPWM,
+	EUNIT_STATUS_FANSPEED,
+	EUNIT_STATUS_HDDCTRL,
+	EUNIT_STATUS_DISKLED,
+	EUNIT_STATUS_7SEGLED,
+	EUNIT_STATUS_EXPSNSET,
+	EUNIT_STATUS_EXPIDSET,
+	EUNIT_STATUS_UPVERSION,
+	EUNIT_STATUS_HDDPRESENT,
+	EUNIT_STATUS_HDDENABLE,
+	EUNIT_STATUS_MONCURRENT,
+	EUNIT_STATUS_MONVOLTAGE,
+	EUNIT_STATUS_MONTHERMAL,
+	EUNIT_STATUS_POWERMODULE,
+	EUNIT_STATUS_EXPBPSNSET,
+	EUNIT_STATUS_ACK,
+	EUNIT_STATUS_HDDSEDSET,
+	EUNIT_STATUS_UNKNOWN,
+	EUNIT_STATUS_INDEX_END,
+} EUNIT_STATUS_INDEX;
+#endif /* MY_DEF_HERE */
+
+typedef struct {
+
+	int iSlot;
+	int iContainer; /* 0: Internal, >0 : Eunit */
+
+} syno_nvme_disk_loc;
+
+#define SYNO_NVME_DISK_IS_INTERNAL(disk) ((disk.iContainer == 0))
+
+struct syno_device_list {
+	char disk_name[DISK_NAME_LEN];
+	struct list_head device_list;
+};
+
+#ifdef MY_DEF_HERE
+
+enum spinup_operation {
+	SPINDOWN = 0,
+	SPINUP_CHECK,
+	SPINUP_NODELAY,
+	SPINUP_DELAY,
+};
+
+struct syno_control_operations {
+	const char control_method[SYNO_DTS_PROPERTY_CONTENT_LENGTH];
+	int (*unique_get)(const int slot_type, const int slot_index, char *unique, int unique_size);
+	int (*container_index_get_by_diskname)(int *slot_index, const char* diskname);
+	int (*hdd_ctrl)(const int slot_type, const int slot_index, const int power_ctrl);
+	int (*deep_sleep_indicator_ctrl)(const int slot_type, const int slot_index, const int ctrl);
+	int (*power_control) (const int slot_type, const int slot_index);
+	int (*disk_delay_waiting) (const int slot_type, const int slot_index, const int disk_id, int action);
+	int (*disk_is_wait_power_on) (const int slot_type, const int slot_index, const int disk_slot_id);
+};
+#endif /* MY_DEF_HERE */
 
 #endif //__SYNOLIB_H_

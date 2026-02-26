@@ -415,7 +415,9 @@ int syno_k10cpu_temperature(struct _SynoCpuTemp *pCpuTemp)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M30H_DF_F3, NULL);
 #elif defined(MY_DEF_HERE)
 	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_19H_DF_F3, NULL);
-#endif /* MY_DEF_HERE || MY_DEF_HERE || MY_ABC_HERE || MY_DEF_HERE */
+#elif defined(MY_DEF_HERE)
+	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_17H_M70H_DF_F3, NULL);
+#endif /* MY_DEF_HERE || MY_DEF_HERE || MY_ABC_HERE || MY_DEF_HERE || MY_DEF_HERE */
 
 	if (!pdev)
 		return -ENODEV;

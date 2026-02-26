@@ -39,6 +39,11 @@
 #include <linux/synobios.h>
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_DEF_HERE
+#include <linux/sort.h>
+extern struct syno_control_operations *syno_control_operation_get(const int slot_type, const int slot_index);
+#endif /* MY_DEF_HERE */
+
 #ifdef MY_ABC_HERE
 extern struct list_head gSynoBiosEventHead;
 extern spinlock_t syno_sata_error_lock;
@@ -611,11 +616,18 @@ struct Scsi_Host * ata_scsi_is_eunit_deepsleep(struct Scsi_Host *host)
 	unsigned long flags;
 	int iRet = -1;
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_pci_eunit(ap)) {
+	} else {
+#endif /* MY_DEF_HERE */
 	if (!ap->nr_pmp_links) {
 		goto END;
 	} else if (!syno_is_synology_pm(ap)) {
 		goto END;
 	}
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	pAp_master = SynoEunitFindMaster(ap);
 
@@ -1158,6 +1170,12 @@ void SendPortDisEvent(struct work_struct *work)
 		slotNumber = syno_external_libata_index_get(ap);
 	}
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	else if (syno_is_synology_pci_eunit(ap)) {
+		diskType = EUNIT_DEVICE;
+		slotNumber = syno_external_libata_index_get(ap);
+	}
+#endif /* MY_DEF_HERE */
 	else {
 		diskType = EXTERNAL_SATA_DEVICE;
 		slotNumber = syno_external_libata_index_get(ap);
@@ -5005,6 +5023,197 @@ static int ata_eh_handle_dev_fail(struct ata_device *dev, int err)
 	}
 }
 
+#ifdef MY_DEF_HERE
+
+struct ata_link_power_seq {
+	int power_seq;
+	struct ata_link *link;
+};
+
+static int syno_get_power_seq_from_pmp_link(const char *eunit_unique, const int pmp_link)
+{
+	struct device_node *of_eunit = NULL;
+	struct device_node *pSlotNode = NULL, *pLibataNode = NULL;
+	int iDtsPmplink = -1;
+	int iPowerSeq = -1;
+
+	if (!eunit_unique || 0 > pmp_link) {
+		goto END;
+	}
+
+	if (NULL == (of_eunit = of_get_child_by_name(of_root, eunit_unique))) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_eunit, pSlotNode) {
+
+		if (!pSlotNode->full_name || NULL == strstr(pSlotNode->full_name, DT_PMP_SLOT)) {
+			continue;
+		}
+
+		for_each_child_of_node(pSlotNode, pLibataNode) {
+
+			if (!pLibataNode->full_name || NULL == strstr(pLibataNode->full_name, DT_LIBATA)) {
+				continue;
+			}
+			if (0 != of_property_read_u32_index(pLibataNode, DT_PMP_LINK, 0, &iDtsPmplink)) {
+				continue;
+			}
+			if (iDtsPmplink != pmp_link) {
+				continue;
+			}
+			if (0 != of_property_read_u32_index(pLibataNode, DT_POWER_SEQ, 0, &iPowerSeq)) {
+				continue;
+			}
+		}
+	}
+
+END:
+	if (of_eunit) {
+		of_node_put(of_eunit);
+	}
+	return iPowerSeq;
+}
+
+int syno_get_disk_slot_from_pmp_link(const char *eunit_unique, const int pmp_link)
+{
+	struct device_node *of_eunit = NULL;
+	struct device_node *pSlotNode = NULL, *pLibataNode = NULL;
+	const char *pPmpSlotName = NULL;
+	int iDtsPmplink = -1;
+	int iSlotIndex = -1;
+
+	if (!eunit_unique || 0 > pmp_link) {
+		goto END;
+	}
+
+	if (NULL == (of_eunit = of_get_child_by_name(of_root, eunit_unique))) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_eunit, pSlotNode) {
+
+		if (!pSlotNode->full_name || NULL == (pPmpSlotName = strstr(pSlotNode->full_name, DT_PMP_SLOT))) {
+			continue;
+		}
+
+		for_each_child_of_node(pSlotNode, pLibataNode) {
+
+			if (!pLibataNode->full_name || NULL == strstr(pLibataNode->full_name, DT_LIBATA)) {
+				continue;
+			}
+			if (0 != of_property_read_u32_index(pLibataNode, DT_PMP_LINK, 0, &iDtsPmplink)) {
+				continue;
+			}
+			if (iDtsPmplink != pmp_link) {
+				continue;
+			}
+			if (1 != sscanf(pPmpSlotName, DT_PMP_SLOT"@%d", &iSlotIndex)) {
+				continue;
+			}
+		}
+	}
+
+END:
+	if (of_eunit) {
+		of_node_put(of_eunit);
+	}
+	return iSlotIndex;
+}
+
+#define USB_EUNIT_PER_WAIT_MS 500
+#define USB_EUNIT_WAIT_MAX_COUNT 20
+static int syno_ata_eunit_disk_wait_power_on(const struct ata_link *link)
+{
+	struct syno_control_operations *ctrl_op = NULL;
+	int eunit_index = -1;
+	char eunit_unique[SYNO_EBOX_UNIQUE_MAX_LEN] = {0};
+	int ret = -1;
+	int iSlotIndex = -1;
+	int i = 0;
+
+	if (!link || !link->ap || !link->ap->nr_pmp_links) {
+		goto END;
+	}
+
+	if (0 >= (eunit_index = syno_external_libata_index_get(link->ap))) {
+		goto END;
+	}
+
+	ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index);
+	if (!ctrl_op || !ctrl_op->disk_is_wait_power_on || !ctrl_op->unique_get) {
+		goto END;
+	}
+	if (0 != ctrl_op->unique_get(EUNIT_DEVICE, eunit_index, eunit_unique, sizeof(eunit_unique))) {
+		goto END;
+	}
+
+	if (0 >= (iSlotIndex = syno_get_disk_slot_from_pmp_link(eunit_unique, link->pmp))) {
+		goto END;
+	}
+
+	for (i = 0; i < USB_EUNIT_WAIT_MAX_COUNT; i++) {
+		if (0 >= (ret = ctrl_op->disk_is_wait_power_on(EUNIT_DEVICE, eunit_index, iSlotIndex))) {
+			break;
+		}
+		msleep(USB_EUNIT_PER_WAIT_MS);
+	}
+
+END:
+	return ret;
+}
+
+static int syno_compare_power_seq(const void *a, const void *b) {
+    const struct ata_link_power_seq *node_a = (struct ata_link_power_seq *)a;
+    const struct ata_link_power_seq *node_b = (struct ata_link_power_seq *)b;
+    return node_a->power_seq - node_b->power_seq;
+}
+
+static int syno_link_seq_init(struct ata_port *ap, struct ata_link_power_seq *rgAtaLinkSeq, const int rbAtaLinkSeq) {
+	struct ata_link *link = NULL;
+	struct syno_control_operations *ctrl_op = NULL;
+	int eunit_index = -1;
+	char eunit_unique[SYNO_EBOX_UNIQUE_MAX_LEN] = {0};
+	int iRet = -1;
+	int index = 0;
+	int i = 0;
+
+	if (!ap || !rgAtaLinkSeq) {
+		goto END;
+	}
+
+	for (i = 0; i < rbAtaLinkSeq; i++) {
+		rgAtaLinkSeq[i].power_seq = 0;
+		rgAtaLinkSeq[i].link = NULL;
+	}
+
+	if (0 < (eunit_index = syno_external_libata_index_get(ap))) {
+		ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index);
+		if (ctrl_op && ctrl_op->unique_get) {
+			ctrl_op->unique_get(EUNIT_DEVICE, eunit_index, eunit_unique, sizeof(eunit_unique));
+		}
+		ata_for_each_link(link, ap, EDGE) {
+			rgAtaLinkSeq[index].power_seq = syno_get_power_seq_from_pmp_link(eunit_unique, link->pmp);
+			rgAtaLinkSeq[index].link = link;
+			index += 1;
+		}
+		// sort : having ata_link and power_seq lower first
+		sort(rgAtaLinkSeq, index, sizeof(struct ata_link_power_seq), syno_compare_power_seq, NULL);
+	} else {
+		ata_for_each_link(link, ap, EDGE) {
+			rgAtaLinkSeq[index].power_seq = 0;
+			rgAtaLinkSeq[index].link = link;
+			index += 1;
+		}
+	}
+
+	iRet = 0;
+END:
+	return iRet;
+}
+
+#endif /* MY_DEF_HERE */
+
 /**
  *	ata_eh_recover - recover host port after error
  *	@ap: host port to recover
@@ -5039,6 +5248,10 @@ int ata_eh_recover(struct ata_port *ap, ata_prereset_fn_t prereset,
 #ifdef MY_ABC_HERE
 	bool blCleanFlags = 0;
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	int iAtaLinkSeqIndex = 0;
+	struct ata_link_power_seq rgAtaLinkSeq[SATA_PMP_MAX_PORTS] = {{0}};
+#endif /* MY_DEF_HERE */
 
 	DPRINTK("ENTER\n");
 
@@ -5110,8 +5323,18 @@ int ata_eh_recover(struct ata_port *ap, ata_prereset_fn_t prereset,
 #endif /* MY_ABC_HERE */
 
 	/* reset */
+
+#ifdef MY_DEF_HERE
+	syno_link_seq_init(ap, rgAtaLinkSeq, SATA_PMP_MAX_PORTS);
+	for (iAtaLinkSeqIndex = 0; (iAtaLinkSeqIndex < SATA_PMP_MAX_PORTS) && (link = rgAtaLinkSeq[iAtaLinkSeqIndex].link); iAtaLinkSeqIndex++) {
+#else /* MY_DEF_HERE */
 	ata_for_each_link(link, ap, EDGE) {
+#endif /* MY_DEF_HERE */
 		struct ata_eh_context *ehc = &link->eh_context;
+
+#ifdef MY_DEF_HERE
+		syno_ata_eunit_disk_wait_power_on(link);
+#endif /* MY_DEF_HERE */
 
 		if (!(ehc->i.action & ATA_EH_RESET))
 			continue;

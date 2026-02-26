@@ -28,6 +28,641 @@
 #include "volumes.h"
 #include "misc.h"
 
+#ifdef MY_ABC_HERE
+// return -1 means that type is not in a fixed size
+static s32 get_fixed_item_size(__u8 key_type) {
+	switch (key_type) {
+	case BTRFS_BLOCK_GROUP_ITEM_KEY:
+		return sizeof(struct btrfs_block_group_item);
+	case BTRFS_DEV_ITEM_KEY:
+		return sizeof(struct btrfs_dev_item);
+	case BTRFS_INODE_ITEM_KEY:
+		return sizeof(struct btrfs_inode_item);
+	case BTRFS_ROOT_ITEM_KEY:
+		return sizeof(struct btrfs_root_item);
+	case BTRFS_SHARED_DATA_REF_KEY:
+		return sizeof(struct btrfs_shared_data_ref);
+	case BTRFS_TREE_BLOCK_REF_KEY:
+	case BTRFS_SHARED_BLOCK_REF_KEY:
+		return 0;
+	}
+
+	return -1;
+}
+
+static bool is_continuous_key_type(__u8 key_type) {
+	switch (key_type) {
+	case BTRFS_XATTR_ITEM_KEY:
+	case BTRFS_INODE_REF_KEY:
+	case BTRFS_DIR_INDEX_KEY:
+	case BTRFS_DIR_ITEM_KEY:
+#ifdef MY_ABC_HERE
+	case BTRFS_DIR_ITEM_CASELESS_KEY:
+#endif /* MY_ABC_HERE */
+	case BTRFS_EXTENT_DATA_KEY:
+		return true;
+	}
+
+	return false;
+}
+
+static bool is_continuous_ino_type(__u8 key_type) {
+	switch (key_type) {
+	case BTRFS_XATTR_ITEM_KEY:
+	case BTRFS_INODE_REF_KEY:
+	case BTRFS_DIR_INDEX_KEY:
+	case BTRFS_DIR_ITEM_KEY:
+#ifdef MY_ABC_HERE
+	case BTRFS_DIR_ITEM_CASELESS_KEY:
+#endif /* MY_ABC_HERE */
+	case BTRFS_EXTENT_DATA_KEY:
+		return true;
+	}
+
+	return false;
+}
+
+static void fix_leaf_key_type(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf,
+		int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+
+#ifdef MY_ABC_HERE
+	if (!leaf->can_retry)
+		return;
+#endif /* MY_ABC_HERE */
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are continuous key type
+	if (!is_continuous_key_type(prev_key.type) || prev_key.type != next_key.type)
+		return;
+
+	// key type is correct
+	if (bad_key->type == prev_key.type)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad leaf key type, "
+			"block=%llu, root=%llu, slot=%d, from %u to %u",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->type, prev_key.type);
+	bad_key->type = prev_key.type;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+
+/*
+ * We can fix slot item if:
+ * 1. There exists slot+1 item.
+ * 2. slot+1 item is correct.
+ */
+static void fix_item_offset_size(struct btrfs_root *root, struct extent_buffer *leaf, int slot)
+{
+	u32 offset, size;
+	s32 item_size;
+	const struct btrfs_fs_info *fs_info = leaf->fs_info;
+	struct btrfs_item *item = btrfs_item_nr(slot);
+	struct btrfs_key next_key;
+
+#ifdef MY_ABC_HERE
+	if (!leaf->can_retry)
+		return;
+#endif /* MY_ABC_HERE */
+
+	// May be handled by item type. For now we just skip this case.
+	if (slot >= btrfs_header_nritems(leaf) - 1)
+		return;
+
+	// We must ensure slot+1 is correct if we want to use slot+1 to fix slot
+	if (btrfs_item_offset_nr(leaf, slot + 1) > BTRFS_LEAF_DATA_SIZE(fs_info) ||
+			btrfs_item_size_nr(leaf, slot + 1) > BTRFS_LEAF_DATA_SIZE(fs_info))
+		return;
+
+	// double check slot + 2
+	if (slot + 2 < btrfs_header_nritems(leaf) &&
+			btrfs_item_offset_nr(leaf, slot + 1) != btrfs_item_end_nr(leaf, slot + 2))
+		return;
+
+	// check key types with fixed item size
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+	item_size = get_fixed_item_size(next_key.type);
+	if (0 <= item_size && item_size != btrfs_item_size_nr(leaf, slot + 1))
+		return;
+
+	offset = btrfs_item_end_nr(leaf, slot + 1);
+	if (slot != 0) {
+		if (offset >= btrfs_item_offset_nr(leaf, slot - 1))
+			return;
+		size = btrfs_item_offset_nr(leaf, slot - 1) - offset;
+	} else {
+		if (offset >= BTRFS_LEAF_DATA_SIZE(fs_info))
+			return;
+		size = BTRFS_LEAF_DATA_SIZE(fs_info) - offset;
+	}
+
+	// no error
+	if (offset == btrfs_item_offset_nr(leaf, slot) &&
+			size == btrfs_item_size_nr(leaf, slot))
+		return;
+
+	btrfs_warn(root->fs_info, "[try to fix] corrupt leaf, unexpected item end, "
+			"block=%llu, root=%llu, slot=%d, (offset size) from (%u %u) to (%u %u)",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			btrfs_item_offset_nr(leaf, slot), btrfs_item_size_nr(leaf, slot),
+			offset, size);
+	btrfs_set_item_offset(leaf, item, offset);
+	btrfs_set_item_size(leaf, item, size);
+
+	return;
+}
+
+// Note we don't really trust the "type" field of the key
+static void fix_extent_item_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf, int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_extent_item *ei;
+	struct btrfs_extent_inline_ref *iref;
+	struct btrfs_extent_data_ref *dref;
+	struct btrfs_root *root;
+	struct btrfs_key key;
+	struct btrfs_key fixed_key;
+	struct btrfs_path *path = NULL;
+	struct extent_buffer *buf;
+	struct btrfs_file_extent_item *item;
+	struct btrfs_disk_key disk_key;
+	u64 flags;
+	int type;
+	int ret;
+
+#ifdef MY_ABC_HERE
+	if (btrfs_header_owner(leaf) != 2 || !leaf->can_retry)
+#else
+	if (btrfs_header_owner(leaf) != 2)
+#endif /* MY_ABC_HERE */
+		return;
+
+	ei = btrfs_item_ptr(leaf, slot, struct btrfs_extent_item);
+	flags = btrfs_extent_flags(leaf, ei);
+
+	if (flags != BTRFS_EXTENT_FLAG_DATA)
+		return;
+
+	iref = (struct btrfs_extent_inline_ref *)(ei + 1);
+	type = btrfs_extent_inline_ref_type(leaf, iref);
+
+	if (type != BTRFS_EXTENT_DATA_REF_KEY)
+		return;
+
+	if (cmpxchg(&fs_info->can_fix_meta_key, CAN_FIX_META_KEY, DOING_FIX_META_KEY) != CAN_FIX_META_KEY)
+		return;
+
+	dref = (struct btrfs_extent_data_ref *)(&iref->offset);
+	key.objectid = btrfs_extent_data_ref_root(leaf, dref);
+	key.type = BTRFS_ROOT_ITEM_KEY;
+	key.offset = 0;
+	root = btrfs_get_fs_root(fs_info, key.objectid, true);
+	if (IS_ERR(root))
+		goto err;
+
+	path = btrfs_alloc_path();
+	if (!path)
+		goto err;
+
+	// search for the corresponding extent data item in fs tree
+	key.objectid = btrfs_extent_data_ref_objectid(leaf, dref);
+	key.offset = btrfs_extent_data_ref_offset(leaf, dref);
+	key.type = BTRFS_EXTENT_DATA_KEY;
+	ret = btrfs_search_slot(NULL, root, &key, path, 0, 0);
+	if (ret)
+		goto err;
+
+	buf = path->nodes[0];
+	item = btrfs_item_ptr(buf, path->slots[0], struct btrfs_file_extent_item);
+	type = btrfs_file_extent_type(buf, item);
+	if (type != BTRFS_FILE_EXTENT_REG && type != BTRFS_FILE_EXTENT_PREALLOC)
+		goto err;
+
+	fixed_key.objectid = btrfs_file_extent_disk_bytenr(buf, item);
+	fixed_key.type = BTRFS_EXTENT_ITEM_KEY;
+	fixed_key.offset = btrfs_file_extent_disk_num_bytes(buf, item);
+
+	// no error
+	if (btrfs_comp_cpu_keys(&fixed_key, bad_key) == 0)
+		goto err;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad extent item key, "
+			"block=%llu, root=%llu, slot=%d, from (%llu %u %llu) to (%llu %u %llu)",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->objectid, bad_key->type, bad_key->offset,
+			fixed_key.objectid, fixed_key.type, fixed_key.offset);
+
+	btrfs_cpu_key_to_disk(&disk_key, &fixed_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+err:
+	fs_info->can_fix_meta_key = CAN_FIX_META_KEY;
+	btrfs_free_path(path);
+	return;
+}
+
+// Note we don't really trust the "type" field of the key
+static void fix_metadata_item_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf, int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+
+#ifdef MY_ABC_HERE
+	if (btrfs_header_owner(leaf) != 2 || !leaf->can_retry)
+#else
+	if (btrfs_header_owner(leaf) != 2)
+#endif /* MY_ABC_HERE */
+		return;
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are all metadata items
+	if (bad_key->type != BTRFS_METADATA_ITEM_KEY ||
+	    prev_key.type != BTRFS_METADATA_ITEM_KEY ||
+	    next_key.type != BTRFS_METADATA_ITEM_KEY)
+		return;
+
+	// check if these are adjacent in logical address
+	if (next_key.objectid - prev_key.objectid != fs_info->nodesize * 2)
+		return;
+
+	// logical address is valid
+	if (bad_key->objectid == prev_key.objectid + fs_info->nodesize)
+		return;
+
+	// in case of the key type is wrong, double check the level
+	if (bad_key->offset >= BTRFS_MAX_LEVEL)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad metadata item objectid, "
+			"block=%llu, root=%llu, slot=%d, from %llu to %llu",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->objectid, prev_key.objectid + fs_info->nodesize);
+	bad_key->objectid = prev_key.objectid + fs_info->nodesize;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+
+#ifdef MY_ABC_HERE
+// Note we don't really trust the "type" field of the key
+static void fix_qgroup_info_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf, int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+
+#ifdef MY_ABC_HERE
+	if ((btrfs_header_owner(leaf) != BTRFS_QUOTA_TREE_OBJECTID &&
+	     btrfs_header_owner(leaf) != BTRFS_SYNO_QUOTA_V2_TREE_OBJECTID) ||
+	    !leaf->can_retry)
+#else
+	if (btrfs_header_owner(leaf) != BTRFS_QUOTA_TREE_OBJECTID &&
+	    btrfs_header_owner(leaf) != BTRFS_SYNO_QUOTA_V2_TREE_OBJECTID)
+#endif /* MY_ABC_HERE */
+		return;
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are continuous qgroup info items
+	if (bad_key->type != BTRFS_QGROUP_INFO_KEY ||
+	    prev_key.type != BTRFS_QGROUP_INFO_KEY ||
+	    next_key.type != BTRFS_QGROUP_INFO_KEY)
+		return;
+
+	// bad_key->objectid is valid
+	if (bad_key->objectid == 0)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad qgroup info objectid, "
+			"block=%llu, root=%llu, slot=%d, from %llu to 0",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->objectid);
+	bad_key->objectid = 0;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+#endif /* MY_ABC_HERE */
+
+// Note we don't really trust the "type" field of the key
+static void fix_dir_index_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf,
+		int slot, struct btrfs_key *bad_key)
+{
+	int cur_slot;
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+	struct btrfs_dir_item *di;
+	struct btrfs_key location_key;
+	struct btrfs_inode_ref *iref;
+	u64 iref_index;
+	u16 iref_name_len;
+
+#ifdef MY_ABC_HERE
+	if (!is_fstree(btrfs_header_owner(leaf)) || !leaf->can_retry)
+#else
+	if (!is_fstree(btrfs_header_owner(leaf)))
+#endif /* MY_ABC_HERE */
+		return;
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are continuous dir index items
+	if (bad_key->type != BTRFS_DIR_INDEX_KEY ||
+	    prev_key.type != BTRFS_DIR_INDEX_KEY ||
+	    next_key.type != BTRFS_DIR_INDEX_KEY)
+		return;
+
+	// offsets are valid. no need to fix
+	if (prev_key.offset < bad_key->offset && bad_key->offset < next_key.offset)
+		return;
+
+	// inode numbers are invalid
+	if (bad_key->objectid != prev_key.objectid ||
+	    bad_key->objectid != next_key.objectid)
+		return;
+
+	// check other slots for corresponding inode ref
+	di = btrfs_item_ptr(leaf, slot, struct btrfs_dir_item);
+	btrfs_dir_item_key_to_cpu(leaf, di, &location_key);
+
+	for (cur_slot = slot + 1 ; slot < btrfs_header_nritems(leaf) - 1; ++cur_slot) {
+		struct btrfs_key cur_key;
+
+		btrfs_item_key_to_cpu(leaf, &cur_key, cur_slot);
+		if (cur_key.objectid == location_key.objectid &&
+		    cur_key.type == BTRFS_INODE_REF_KEY &&
+		    cur_key.offset == bad_key->objectid)
+			break;
+	}
+
+	// not found
+	if (cur_slot >= btrfs_header_nritems(leaf) - 1)
+		return;
+
+	// check if index is valid
+	iref = btrfs_item_ptr(leaf, cur_slot, struct btrfs_inode_ref);
+	iref_index = btrfs_inode_ref_index(leaf, iref);
+	iref_name_len = btrfs_inode_ref_name_len(leaf, iref);
+
+	if (iref_index <= prev_key.offset || next_key.offset <= iref_index)
+		return;
+
+	// check name len
+	if (btrfs_dir_name_len(leaf, di) != iref_name_len)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad dir index, "
+			"block=%llu, root=%llu, slot=%d, from %llu to %llu",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->offset, iref_index);
+	bad_key->offset = iref_index;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+
+// Note we don't really trust the "type" field of the key
+static void fix_extent_csum_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf, int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+
+#ifdef MY_ABC_HERE
+	if (btrfs_header_owner(leaf) != BTRFS_CSUM_TREE_OBJECTID ||
+	    !leaf->can_retry)
+#else
+	if (btrfs_header_owner(leaf) != BTRFS_CSUM_TREE_OBJECTID)
+#endif /* MY_ABC_HERE */
+		return;
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are continuous qgroup info items
+	if (bad_key->type != BTRFS_EXTENT_CSUM_KEY ||
+	    prev_key.type != BTRFS_EXTENT_CSUM_KEY ||
+	    next_key.type != BTRFS_EXTENT_CSUM_KEY)
+		return;
+
+	// bad_key->objectid is valid
+	if (bad_key->objectid == BTRFS_EXTENT_CSUM_OBJECTID)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, invalid key objectid for csum item, "
+			"block=%llu, root=%llu, slot=%d, from %llu to %llu",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->objectid, BTRFS_EXTENT_CSUM_OBJECTID);
+	bad_key->objectid = BTRFS_EXTENT_CSUM_OBJECTID;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+
+void static fix_ino_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf,
+		int slot, struct btrfs_key *bad_key)
+{
+	struct btrfs_key prev_key;
+	struct btrfs_key next_key;
+	struct btrfs_disk_key disk_key;
+
+#ifdef MY_ABC_HERE
+	if (!is_fstree(btrfs_header_owner(leaf)) || !leaf->can_retry)
+#else
+	if (!is_fstree(btrfs_header_owner(leaf)))
+#endif /* MY_ABC_HERE */
+		return;
+
+	if (slot - 1 < 0 || slot + 1 >= btrfs_header_nritems(leaf))
+		return;
+
+	btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+	btrfs_item_key_to_cpu(leaf, &next_key, slot + 1);
+
+	// check if these are continuous ino types
+	if (!is_continuous_ino_type(prev_key.type) ||
+	    !is_continuous_ino_type(bad_key->type) ||
+	    !is_continuous_ino_type(next_key.type))
+		return;
+
+	// inode numbers should be the same
+	if (prev_key.objectid != next_key.objectid)
+		return;
+
+	// inode number is correct.
+	if (bad_key->objectid == prev_key.objectid)
+		return;
+
+	btrfs_warn(fs_info, "[try to fix] corrupt leaf, bad ino objectid, "
+			"block=%llu, root=%llu, slot=%d, from %llu to %llu",
+			btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot,
+			bad_key->objectid, prev_key.objectid);
+	bad_key->objectid = prev_key.objectid;
+	btrfs_cpu_key_to_disk(&disk_key, bad_key);
+	btrfs_set_item_key(leaf, &disk_key, slot);
+
+	return;
+}
+
+// Note we don't really trust the "type" field of the key
+static void fix_item_key(struct btrfs_fs_info *fs_info, struct extent_buffer *leaf, int slot, struct btrfs_key *bad_key) {
+	fix_leaf_key_type(fs_info, leaf, slot, bad_key);
+
+	switch (bad_key->type) {
+	case BTRFS_EXTENT_ITEM_KEY:
+		fix_extent_item_key(fs_info, leaf, slot, bad_key);
+		break;
+	case BTRFS_METADATA_ITEM_KEY:
+		fix_metadata_item_key(fs_info, leaf, slot, bad_key);
+		break;
+#ifdef MY_ABC_HERE
+	case BTRFS_QGROUP_INFO_KEY:
+		fix_qgroup_info_key(fs_info, leaf, slot, bad_key);
+		break;
+#endif /* MY_ABC_HERE */
+	case BTRFS_DIR_INDEX_KEY:
+		fix_dir_index_key(fs_info, leaf, slot, bad_key);
+		break;
+	case BTRFS_EXTENT_CSUM_KEY:
+		fix_extent_csum_key(fs_info, leaf, slot, bad_key);
+		break;
+	}
+
+	if (is_continuous_ino_type(bad_key->type))
+		fix_ino_key(fs_info, leaf, slot, bad_key);
+
+	return;
+}
+
+static void fix_node_key(struct btrfs_root *root, struct extent_buffer *node, int slot, struct btrfs_key *key)
+{
+	struct extent_buffer *eb = NULL;
+	struct btrfs_key first_child_key;
+	struct btrfs_disk_key disk_key;
+	u64 bytenr;
+	u64 generation;
+
+	// double check generation
+	generation = btrfs_node_ptr_generation(node, slot);
+	if (generation > btrfs_header_generation(node))
+		return;
+
+	if (cmpxchg(&root->fs_info->can_fix_meta_key, CAN_FIX_META_KEY, DOING_FIX_META_KEY) != CAN_FIX_META_KEY)
+		return;
+
+	// get the key of first child
+	bytenr = btrfs_node_blockptr(node, slot);
+	generation = btrfs_node_ptr_generation(node, slot);
+	eb = read_tree_block(root->fs_info, bytenr, generation, btrfs_header_level(node) - 1, NULL);
+	if (IS_ERR(eb))
+		goto restore_key;
+	else if (!extent_buffer_uptodate(eb))
+		goto free_eb;
+
+	btrfs_item_key_to_cpu(eb, &first_child_key, 0);
+
+	// no error
+	if (btrfs_comp_cpu_keys(key, &first_child_key) == 0)
+		goto free_eb;
+
+	btrfs_warn(root->fs_info, "[try to fix] corrupt node, bad key order, "
+			"block=%llu, root=%llu, slot=%d, from (%llu %u %llu) to (%llu %u %llu)",
+			btrfs_header_bytenr(node), btrfs_header_owner(node), slot,
+			key->objectid, key->type, key->offset, first_child_key.objectid,
+			first_child_key.type, first_child_key.offset);
+	btrfs_cpu_key_to_disk(&disk_key, &first_child_key);
+	btrfs_set_node_key(node, &disk_key, slot);
+
+free_eb:
+	free_extent_buffer(eb);
+restore_key:
+	root->fs_info->can_fix_meta_key = CAN_FIX_META_KEY;
+	return;
+}
+
+static void fix_node_blockptr(struct btrfs_root *root, struct extent_buffer *node, int slot, struct btrfs_key *key)
+{
+	struct extent_buffer *eb = NULL;
+	struct btrfs_key first_child_key;
+	u64 orig_bytenr;
+	u64 fixed_bytenr;
+	u64 generation;
+
+	orig_bytenr = btrfs_node_blockptr(node, slot);
+	fixed_bytenr = orig_bytenr & ~(u64)(root->fs_info->sectorsize - 1);
+
+	// no error
+	if (orig_bytenr == fixed_bytenr)
+		return;
+
+	// double check generation
+	generation = btrfs_node_ptr_generation(node, slot);
+	if (generation > btrfs_header_generation(node))
+		return;
+
+	if (cmpxchg(&root->fs_info->can_fix_meta_key, CAN_FIX_META_KEY, DOING_FIX_META_KEY) != CAN_FIX_META_KEY)
+		return;
+
+	// get the key of first child
+	eb = read_tree_block(root->fs_info, fixed_bytenr, generation, btrfs_header_level(node) - 1, NULL);
+	if (IS_ERR(eb))
+		goto restore_key;
+	else if (!extent_buffer_uptodate(eb))
+		goto free_eb;
+
+	btrfs_item_key_to_cpu(eb, &first_child_key, 0);
+
+	// check if keys are matched
+	if (btrfs_comp_cpu_keys(key, &first_child_key) != 0)
+		goto free_eb;
+
+	btrfs_warn(root->fs_info, "[try to fix] corrupt node, bad node blockptr, "
+			"block=%llu, root=%llu, slot=%d, from %llu to %llu",
+			btrfs_header_bytenr(node), btrfs_header_owner(node), slot,
+			orig_bytenr, fixed_bytenr);
+	btrfs_set_node_blockptr(node, slot, fixed_bytenr);
+
+free_eb:
+	free_extent_buffer(eb);
+restore_key:
+	root->fs_info->can_fix_meta_key = CAN_FIX_META_KEY;
+	return;
+}
+#endif /* MY_ABC_HERE */
+
 /*
  * Error message should follow the following format:
  * corrupt <type>: <identifier>, <reason>[, <bad_value>]
@@ -63,7 +698,11 @@ static void generic_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+		"[cannot fix] corrupt %s: root=%llu block=%llu slot=%d, %pV",
+#else
 		"corrupt %s: root=%llu block=%llu slot=%d, %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		btrfs_header_owner(eb), btrfs_header_bytenr(eb), slot, &vaf);
 	va_end(args);
@@ -90,7 +729,11 @@ static void file_extent_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+	"[cannot fix] corrupt %s: root=%llu block=%llu slot=%d ino=%llu file_offset=%llu, %pV",
+#else
 	"corrupt %s: root=%llu block=%llu slot=%d ino=%llu file_offset=%llu, %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		btrfs_header_owner(eb), btrfs_header_bytenr(eb), slot,
 		key.objectid, key.offset, &vaf);
@@ -149,7 +792,11 @@ static void dir_item_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+		"[cannot fix] corrupt %s: root=%llu block=%llu slot=%d ino=%llu, %pV",
+#else
 		"corrupt %s: root=%llu block=%llu slot=%d ino=%llu, %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		btrfs_header_owner(eb), btrfs_header_bytenr(eb), slot,
 		key.objectid, &vaf);
@@ -191,6 +838,16 @@ static bool check_prev_ino(struct extent_buffer *leaf,
 		return true;
 
 	/* Error found */
+#ifdef MY_ABC_HERE
+	fix_ino_key(leaf->fs_info, leaf, slot, key);
+	if (key->objectid == prev_key->objectid) {
+		btrfs_warn(leaf->fs_info, "[auto fix] corrupt leaf, invalid previous key objectid, "
+				"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot);
+		// Need this, so we fix it in repair_eb_io_failure().
+		set_bit(EXTENT_BUFFER_CORRUPT, &leaf->bflags);
+		return true;
+	}
+#endif /* MY_ABC_HERE */
 	dir_item_err(leaf, slot,
 		"invalid previous key objectid, have %llu expect %llu",
 		prev_key->objectid, key->objectid);
@@ -342,10 +999,25 @@ static int check_csum_item(struct extent_buffer *leaf, struct btrfs_key *key,
 	u32 csumsize = btrfs_super_csum_size(fs_info->super_copy);
 
 	if (key->objectid != BTRFS_EXTENT_CSUM_OBJECTID) {
+#ifdef MY_ABC_HERE
+		fix_extent_csum_key(fs_info, leaf, slot, key);
+		btrfs_item_key_to_cpu(leaf, key, slot);
+		if (key->objectid != BTRFS_EXTENT_CSUM_OBJECTID) {
+			generic_err(leaf, slot,
+			"invalid key objectid for csum item, have %llu expect %llu",
+				key->objectid, BTRFS_EXTENT_CSUM_OBJECTID);
+			return -EUCLEAN;
+		}
+		btrfs_warn(fs_info, "[auto fix] corrupt leaf, invalid key objectid for csum item, "
+				"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot);
+		// Need this, so we fix it in repair_eb_io_failure().
+		set_bit(EXTENT_BUFFER_CORRUPT, &leaf->bflags);
+#else
 		generic_err(leaf, slot,
 		"invalid key objectid for csum item, have %llu expect %llu",
 			key->objectid, BTRFS_EXTENT_CSUM_OBJECTID);
 		return -EUCLEAN;
+#endif /* MY_ABC_HERE */
 	}
 	if (!IS_ALIGNED(key->offset, sectorsize)) {
 		generic_err(leaf, slot,
@@ -625,7 +1297,11 @@ static void block_group_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+	"[cannot fix] corrupt %s: root=%llu block=%llu slot=%d bg_start=%llu bg_len=%llu, %pV",
+#else
 	"corrupt %s: root=%llu block=%llu slot=%d bg_start=%llu bg_len=%llu, %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		btrfs_header_owner(eb), btrfs_header_bytenr(eb), slot,
 		key.objectid, key.offset, &vaf);
@@ -736,11 +1412,19 @@ static void chunk_err(const struct extent_buffer *leaf,
 
 	if (is_sb)
 		btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+		"[cannot fix] corrupt superblock syschunk array: chunk_start=%llu, %pV",
+#else
 		"corrupt superblock syschunk array: chunk_start=%llu, %pV",
+#endif /* MY_ABC_HERE */
 			   logical, &vaf);
 	else
 		btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+	"[cannot fix] corrupt leaf: root=%llu block=%llu slot=%d chunk_start=%llu, %pV",
+#else
 	"corrupt leaf: root=%llu block=%llu slot=%d chunk_start=%llu, %pV",
+#endif /* MY_ABC_HERE */
 			   BTRFS_CHUNK_TREE_OBJECTID, leaf->start, slot,
 			   logical, &vaf);
 	va_end(args);
@@ -939,7 +1623,11 @@ static void dev_item_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(eb->fs_info,
+#ifdef MY_ABC_HERE
+	"[cannot fix] corrupt %s: root=%llu block=%llu slot=%d devid=%llu %pV",
+#else
 	"corrupt %s: root=%llu block=%llu slot=%d devid=%llu %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		btrfs_header_owner(eb), btrfs_header_bytenr(eb), slot,
 		key.objectid, &vaf);
@@ -1179,7 +1867,11 @@ static void extent_err(const struct extent_buffer *eb, int slot,
 	vaf.va = &args;
 
 	btrfs_crit(eb->fs_info,
+#ifdef MY_ABC_HERE
+	"[cannot fix] corrupt %s: block=%llu slot=%d extent bytenr=%llu len=%llu %pV",
+#else
 	"corrupt %s: block=%llu slot=%d extent bytenr=%llu len=%llu %pV",
+#endif /* MY_ABC_HERE */
 		btrfs_header_level(eb) == 0 ? "leaf" : "node",
 		eb->start, slot, bytenr, len, &vaf);
 	va_end(args);
@@ -1207,10 +1899,25 @@ static int check_extent_item(struct extent_buffer *leaf,
 	}
 	/* key->objectid is the bytenr for both key types */
 	if (!IS_ALIGNED(key->objectid, fs_info->sectorsize)) {
+#ifdef MY_ABC_HERE
+		fix_metadata_item_key(fs_info, leaf, slot, key);
+		btrfs_item_key_to_cpu(leaf, key, slot);
+		if (!IS_ALIGNED(key->objectid, fs_info->sectorsize)) {
+			generic_err(leaf, slot,
+			"invalid key objectid, have %llu expect to be aligned to %u",
+					key->objectid, fs_info->sectorsize);
+			return -EUCLEAN;
+		}
+		btrfs_warn(fs_info, "[auto fix] corrupt leaf, invalid key objectid, "
+				"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot);
+		// Need this, so we fix it in repair_eb_io_failure().
+		set_bit(EXTENT_BUFFER_CORRUPT, &leaf->bflags);
+#else
 		generic_err(leaf, slot,
 		"invalid key objectid, have %llu expect to be aligned to %u",
 			   key->objectid, fs_info->sectorsize);
 		return -EUCLEAN;
+#endif /* MY_ABC_HERE */
 	}
 
 	/* key->offset is tree level for METADATA_ITEM_KEY */
@@ -1647,6 +2354,12 @@ static int check_leaf(struct extent_buffer *leaf, bool check_item_data)
 
 		btrfs_item_key_to_cpu(leaf, &key, slot);
 
+#ifdef MY_ABC_HERE
+		/*
+		 * Check item offset/size first, so we can correctly locate the content of item,
+		 * and fix key order accordingly.
+		 */
+#else
 		/* Make sure the keys are in the right order */
 		if (btrfs_comp_cpu_keys(&prev_key, &key) >= 0) {
 			generic_err(leaf, slot,
@@ -1656,6 +2369,7 @@ static int check_leaf(struct extent_buffer *leaf, bool check_item_data)
 				key.offset);
 			return -EUCLEAN;
 		}
+#endif /* MY_ABC_HERE */
 
 		/*
 		 * Make sure the offset and ends are right, remember that the
@@ -1667,6 +2381,22 @@ static int check_leaf(struct extent_buffer *leaf, bool check_item_data)
 		else
 			item_end_expected = btrfs_item_offset_nr(leaf,
 								 slot - 1);
+#ifdef MY_ABC_HERE
+		if (btrfs_item_end_nr(leaf, slot) != item_end_expected) {
+			fix_item_offset_size(fs_info->tree_root, leaf, slot);
+			if (btrfs_item_end_nr(leaf, slot) != item_end_expected) {
+				generic_err(leaf, slot,
+					"unexpected item end, have %u expect %u",
+					btrfs_item_end_nr(leaf, slot),
+					item_end_expected);
+				return -EUCLEAN;
+			}
+			btrfs_warn(fs_info, "[auto fix] corrupt leaf, unexpected item end, "
+					"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot);
+			// Need this, so we fix it in repair_eb_io_failure().
+			set_bit(EXTENT_BUFFER_CORRUPT, &leaf->bflags);
+		}
+#else
 		if (btrfs_item_end_nr(leaf, slot) != item_end_expected) {
 			generic_err(leaf, slot,
 				"unexpected item end, have %u expect %u",
@@ -1688,6 +2418,7 @@ static int check_leaf(struct extent_buffer *leaf, bool check_item_data)
 				BTRFS_LEAF_DATA_SIZE(fs_info));
 			return -EUCLEAN;
 		}
+#endif /* MY_ABC_HERE */
 
 		/* Also check if the item pointer overlaps with btrfs item. */
 		if (btrfs_item_nr_offset(slot) + sizeof(struct btrfs_item) >
@@ -1699,6 +2430,32 @@ static int check_leaf(struct extent_buffer *leaf, bool check_item_data)
 				btrfs_item_ptr_offset(leaf, slot));
 			return -EUCLEAN;
 		}
+
+#ifdef MY_ABC_HERE
+		/* Make sure the keys are in the right order */
+		if (btrfs_comp_cpu_keys(&prev_key, &key) >= 0) {
+			/*
+			 * We don't know who has the wrong key.
+			 * We just try to fix both of them and see if things become better.
+			 */
+			if (slot > 0) {
+				fix_item_key(fs_info, leaf, slot - 1, &prev_key);
+				fix_item_key(fs_info, leaf, slot, &key);
+
+				btrfs_item_key_to_cpu(leaf, &prev_key, slot - 1);
+				btrfs_item_key_to_cpu(leaf, &key, slot);
+			}
+
+			if (btrfs_comp_cpu_keys(&prev_key, &key) >= 0) {
+				generic_err(leaf, slot, "bad key order");
+				return -EUCLEAN;
+			}
+			btrfs_warn(fs_info, "[auto fix] corrupt leaf, bad key order, "
+					"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(leaf), btrfs_header_owner(leaf), slot);
+			// Need this, so we fix it in repair_eb_io_failure().
+			set_bit(EXTENT_BUFFER_CORRUPT, &leaf->bflags);
+		}
+#endif /* MY_ABC_HERE */
 
 		if (check_item_data) {
 			/*
@@ -1738,6 +2495,9 @@ int btrfs_check_node(struct extent_buffer *node)
 	int level = btrfs_header_level(node);
 	u64 bytenr;
 	int ret = 0;
+#ifdef MY_ABC_HERE
+	int fix_second;
+#endif
 
 	if (level <= 0 || level >= BTRFS_MAX_LEVEL) {
 		generic_err(node, 0,
@@ -1747,7 +2507,11 @@ int btrfs_check_node(struct extent_buffer *node)
 	}
 	if (nr == 0 || nr > BTRFS_NODEPTRS_PER_BLOCK(fs_info)) {
 		btrfs_crit(fs_info,
+#ifdef MY_ABC_HERE
+"[cannot fix] corrupt node: root=%llu block=%llu, nritems too %s, have %lu expect range [1,%u]",
+#else
 "corrupt node: root=%llu block=%llu, nritems too %s, have %lu expect range [1,%u]",
+#endif /* MY_ABC_HERE */
 			   btrfs_header_owner(node), node->start,
 			   nr == 0 ? "small" : "large", nr,
 			   BTRFS_NODEPTRS_PER_BLOCK(fs_info));
@@ -1766,14 +2530,55 @@ int btrfs_check_node(struct extent_buffer *node)
 			goto out;
 		}
 		if (!IS_ALIGNED(bytenr, fs_info->sectorsize)) {
+#ifdef MY_ABC_HERE
+			fix_node_blockptr(fs_info->tree_root, node, slot, &key);
+
+			bytenr = btrfs_node_blockptr(node, slot);
+			if (!IS_ALIGNED(bytenr, fs_info->sectorsize)) {
+				generic_err(node, slot,
+				"unaligned pointer, have %llu should be aligned to %u",
+					bytenr, fs_info->sectorsize);
+				ret = -EUCLEAN;
+				goto out;
+			}
+			btrfs_warn(fs_info, "[auto fix] corrupt node, unaligned pointer, "
+					"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(node), btrfs_header_owner(node), slot);
+			set_bit(EXTENT_BUFFER_CORRUPT, &node->bflags);
+#else
 			generic_err(node, slot,
 			"unaligned pointer, have %llu should be aligned to %u",
 				bytenr, fs_info->sectorsize);
 			ret = -EUCLEAN;
 			goto out;
+#endif /* MY_ABC_HERE */
 		}
 
 		if (btrfs_comp_cpu_keys(&key, &next_key) >= 0) {
+#ifdef MY_ABC_HERE
+			fix_node_key(fs_info->tree_root, node, slot, &key);
+			fix_second = 0;
+fix_next:
+			btrfs_node_key_to_cpu(node, &key, slot);
+			btrfs_node_key_to_cpu(node, &next_key, slot + 1);
+
+			if (btrfs_comp_cpu_keys(&key, &next_key) >= 0) {
+				if (!fix_second) {
+					fix_second = 1;
+					fix_node_key(fs_info->tree_root, node, slot + 1, &next_key);
+					goto fix_next;
+				} else {
+					generic_err(node, slot,
+						"bad key order, current (%llu %u %llu) next (%llu %u %llu)",
+						key.objectid, key.type, key.offset,
+						next_key.objectid, next_key.type,
+						next_key.offset);
+					return -EIO;
+				}
+			}
+			btrfs_warn(fs_info, "[auto fix] corrupt node, bad key order, "
+					"block=%llu, root=%llu, slot=%d", btrfs_header_bytenr(node), btrfs_header_owner(node), slot);
+			set_bit(EXTENT_BUFFER_CORRUPT, &node->bflags);
+#else
 			generic_err(node, slot,
 	"bad key order, current (%llu %u %llu) next (%llu %u %llu)",
 				key.objectid, key.type, key.offset,
@@ -1781,6 +2586,7 @@ int btrfs_check_node(struct extent_buffer *node)
 				next_key.offset);
 			ret = -EUCLEAN;
 			goto out;
+#endif /* MY_ABC_HERE */
 		}
 	}
 out:

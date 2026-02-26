@@ -298,6 +298,11 @@ typedef enum __tag_SYNO_JMB575_VENDOR_COMMAND {
 } SYNO_JMB575_VENDOR_COMMAND;
 int syno_sata_jmb575_custom_cmd(struct ata_port *ap, SYNO_JMB575_VENDOR_COMMAND cmd, int *var);
 int syno_sata_jmb575_disk_led_set_with_scmnd(struct ata_link *link, u8 ledIdx, u8 blLightOn);
+#define SYNO_JMB575_SPI_GET_INFO_HOB_FEATURE 0xE9;
+#define SYNO_JMB575_SPI_GET_INFO_HOB_NSECT 0x10;
+#define SYNO_JMB575_SPI_GET_INFO_FEATURE 0x3;
+#define SYNO_JMB575_SPI_GET_INFO_DEVICE 0x62;
+#define SYNO_JMB575_SPI_GET_INFO_COMMAND 0xF7;
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -344,5 +349,16 @@ extern void SendLinkDownEvent(struct work_struct *work);
 #ifdef MY_ABC_HERE
 extern void SendDiskPowerShortBreakEvent(struct work_struct *work);
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+extern int syno_ap_to_port_index(const struct ata_port *ap);
+extern struct device_node *syno_ap_to_eunit_node(struct ata_port *ap);
+extern int syno_pci_eunit_i2c_write(int iBus, SYNO_JMB575_I2C_DEV_INFO *pI2C, int blSet);
+extern int syno_ap_to_pci_eunit_i2c_bus(const struct ata_port *ap);
+extern int syno_pci_eunit_slot_power_ctl(struct ata_port *ap, u8 pwrOp);
+extern int syno_pci_eunit_index_get(const struct ata_port *ap);
+extern bool syno_is_ap_rx1224rp(struct ata_port *ap);
+extern u8 syno_is_synology_pci_eunit(const struct ata_port *ap);
+#endif /* MY_DEF_HERE */
 
 #endif /* __LIBATA_H__ */

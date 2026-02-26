@@ -3747,6 +3747,12 @@ static int sd_revalidate_disk(struct gendisk *disk)
 	}
 #endif /* MY_DEF_HERE */
 
+#ifdef MY_DEF_HERE
+	if (sdp->host->hostt->syno_uas_delay_revalidate) {
+		msleep(100);
+	}
+#endif /* MY_DEF_HERE */
+
 	/*
 	 * Without media there is no reason to ask; moreover, some devices
 	 * react badly if we do.
@@ -4341,6 +4347,13 @@ static int sd_probe(struct device *dev)
 	if (NULL != sdp->host->hostt->syno_sdev_info_enum) {
 		sdp->host->hostt->syno_sdev_info_enum(sdp);
 	}
+
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+	if (NULL != sdp->host->hostt->syno_device_list_set) {
+		sdp->host->hostt->syno_device_list_set(sdp, 1, gd->disk_name);
+	}
+#endif /* MY_DEF_HERE || MY_DEF_HERE*/
+
 #else /* MY_ABC_HERE */
 	error = sd_format_disk_name("sd", index, gd->disk_name, DISK_NAME_LEN);
 	if (error) {
@@ -4485,6 +4498,12 @@ static int sd_remove(struct device *dev)
 	sdkp = dev_get_drvdata(dev);
 	devt = disk_devt(sdkp->disk);
 	scsi_autopm_get_device(sdkp->device);
+
+#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+	if (NULL != sdkp->device->host->hostt->syno_device_list_set) {
+		sdkp->device->host->hostt->syno_device_list_set(sdkp->device, 0, sdkp->disk->disk_name);
+	}
+#endif /* MY_DEF_HERE || MY_DEF_HERE*/
 
 	async_synchronize_full_domain(&scsi_sd_pm_domain);
 	device_del(&sdkp->dev);

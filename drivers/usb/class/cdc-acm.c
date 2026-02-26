@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0+
 /*
  * cdc-acm.c
@@ -18,6 +21,30 @@
 #undef DEBUG
 #undef VERBOSE_DEBUG
 
+#ifdef MY_DEF_HERE
+//TODO:check headers dependency, move the segment to below
+#include <linux/libata.h>
+#include <scsi/scsi_device.h>
+#include <linux/synolib.h>
+#include <linux/synobios.h>
+#include <linux/string.h>
+#define SYNO_EUNIT_READY_RETRY 5
+#define SYNO_EUNIT_ACM_WAITING_READY 100
+#define SYNO_EUNIT_STATUS_REPORT_DELIM ','
+#define SYNO_EUNIT_COMMAND_DELIM '/'
+#define SYNO_EUNIT_STATUS_BUFFER_SIZE 1024
+
+struct acm_device_temp {
+	char disk_name[DISK_NAME_LEN];
+	char usb_path[SYNO_DTS_PROPERTY_CONTENT_LENGTH];
+	struct list_head device_list;
+};
+
+static LIST_HEAD(acm_temp_device_list);
+
+extern void syno_disk_not_ready_count_increase(void);
+extern void syno_disk_not_ready_count_decrease(void);
+#endif /* MY_DEF_HERE */
 #include <linux/kernel.h>
 #include <linux/sched/signal.h>
 #include <linux/errno.h>
@@ -40,6 +67,10 @@
 
 #include "cdc-acm.h"
 
+#ifdef MY_DEF_HERE
+#define CREATE_TRACE_POINTS
+#include "cdc-acm-trace.h"
+#endif /* MY_DEF_HERE */
 
 #define DRIVER_AUTHOR "Armin Fuerst, Pavel Machek, Johannes Erdfelt, Vojtech Pavlik, David Kubicek, Johan Hovold"
 #define DRIVER_DESC "USB Abstract Control Model driver for USB modems and ISDN adapters"
@@ -52,6 +83,23 @@ static DEFINE_MUTEX(acm_minors_lock);
 
 static void acm_tty_set_termios(struct tty_struct *tty,
 				struct ktermios *termios_old);
+
+#ifdef MY_DEF_HERE
+static DEFINE_SPINLOCK(acm_list_lock);
+struct syno_acm_list {
+	struct acm* acm;
+	struct list_head device_list;
+};
+static LIST_HEAD(syno_acm_list_head);
+
+static bool syno_is_synology_acm(struct acm *acm)
+{
+	if (acm && 0 == strncmp(interface_to_usbdev(acm->control)->product, SYNO_EUNIT_NAME_HEAD, strlen(SYNO_EUNIT_NAME_HEAD))) {
+		return true;
+	}
+	return false;
+}
+#endif /* MY_DEF_HERE */
 
 /*
  * acm_minors accessors
@@ -483,6 +531,183 @@ static void acm_process_read_urb(struct acm *acm, struct urb *urb)
 	tty_flip_buffer_push(&acm->port);
 }
 
+#ifdef MY_DEF_HERE
+static const char * const syno_usb_eunit_names[] = {
+	[EUNIT_STATUS_EXPCTRL] = DT_EUNIT_STATUS_EXPCTRL,
+	[EUNIT_STATUS_FANPWM] = DT_EUNIT_STATUS_FANPWM,
+	[EUNIT_STATUS_FANSPEED] = DT_EUNIT_STATUS_FANSPEED,
+	[EUNIT_STATUS_HDDCTRL] =DT_EUNIT_STATUS_HDDCTRL,
+	[EUNIT_STATUS_DISKLED] = DT_EUNIT_STATUS_DISKLED,
+	[EUNIT_STATUS_7SEGLED] = DT_EUNIT_STATUS_7SEGLED,
+	[EUNIT_STATUS_EXPSNSET] = DT_EUNIT_STATUS_EXPSNSET,
+	[EUNIT_STATUS_EXPIDSET] = DT_EUNIT_STATUS_EXPIDSET,
+	[EUNIT_STATUS_UPVERSION] = DT_EUNIT_STATUS_UPVERSION,
+	[EUNIT_STATUS_HDDPRESENT] = DT_EUNIT_STATUS_HDDPRESENT,
+	[EUNIT_STATUS_HDDENABLE] = DT_EUNIT_STATUS_HDDENABLE,
+	[EUNIT_STATUS_MONCURRENT] = DT_EUNIT_STATUS_MONCURRENT,
+	[EUNIT_STATUS_MONVOLTAGE] = DT_EUNIT_STATUS_MONVOLTAGE,
+	[EUNIT_STATUS_MONTHERMAL] = DT_EUNIT_STATUS_MONTHERMAL,
+	[EUNIT_STATUS_POWERMODULE] = DT_EUNIT_STATUS_POWERMODULE,
+	[EUNIT_STATUS_EXPBPSNSET] = DT_EUNIT_STATUS_EXPBPSNSET,
+	[EUNIT_STATUS_HDDSEDSET] = DT_EUNIT_STATUS_HDDSEDSET,
+	[EUNIT_STATUS_ACK] = DT_EUNIT_STATUS_ACK,
+	[EUNIT_STATUS_UNKNOWN] = "Unknown"
+};
+
+static int parsing_key(char *key)
+{
+	int i = 0;
+
+	if (NULL == key) {
+		return EUNIT_STATUS_UNKNOWN;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(syno_usb_eunit_names); i++) {
+		const char *pszEunitName = NULL;
+
+		if (NULL == (pszEunitName = syno_usb_eunit_names[i])){
+			continue;
+		}
+
+		if (!strcmp(pszEunitName, key)) {
+			return i;
+		}
+	}
+
+	return EUNIT_STATUS_UNKNOWN;
+}
+
+static bool syno_eunit_resched_queue_work(struct acm *acm, int ackId)
+{
+	bool bRet = false;
+
+	if (!acm) {
+		goto END;
+	}
+
+	/* issue_work is on */
+	if (!delayed_work_pending(&acm->cmd_issue_work)) {
+		goto END;
+	}
+
+	if ((ackId % SYNO_EUNIT_QUEUE_SIZE) + 1 != acm->cmd_idx_tail) {
+		goto END;
+	}
+
+
+	bRet = true;
+END:
+	return bRet;
+}
+
+static void syno_eunit_status_callback(struct acm *acm, EUNIT_STATUS_INDEX key, const char *sepptr)
+{
+	int ackId = 0;
+	unsigned long flags;
+
+	if (!acm || !sepptr)
+		goto END;
+
+	switch (key) {
+
+		case EUNIT_STATUS_ACK:
+			if (kstrtoint(sepptr, 10, &ackId)) {
+				goto END;
+			}
+
+			trace_syno_eunit_ack_status(acm, ackId);
+
+			spin_lock_irqsave(&acm->syno_acm_q_lock, flags); /* Lock */
+			if (acm->syno_acm_ack_to_cmpl[ackId-1]) {
+				complete_all(acm->syno_acm_ack_to_cmpl[ackId-1]);
+				acm->syno_acm_ack_to_cmpl[ackId-1] = NULL;
+			}
+			spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+
+			if (syno_eunit_resched_queue_work(acm, ackId)) {
+				mod_delayed_work(system_wq, &acm->cmd_issue_work, 0);
+			}
+			break;
+
+		default:
+			break;
+	}
+END:
+	return;
+}
+
+static void parse_single_status(char *input, struct acm *acm)
+{
+	char *sepptr = input;
+	EUNIT_STATUS_INDEX key = EUNIT_STATUS_UNKNOWN;
+
+	if (NULL == input || NULL == acm) {
+		goto END;
+	}
+
+	sepptr = strchr(input, ':');
+	if (!sepptr) {
+		goto END;
+	}
+	*sepptr = 0;
+	sepptr++;
+	key = parsing_key(input);
+	snprintf(acm->cached_expstatus[key], SYNO_DTS_PROPERTY_CONTENT_LENGTH, "%s", sepptr);
+
+	/* Additional operations */
+	syno_eunit_status_callback(acm, key, sepptr);
+
+END:
+	return;
+}
+
+// must get acm->status_lock
+static void parsing_input(char *input, struct acm *acm)
+{
+	char *status = input;
+	char *commaptr = NULL;
+	int input_len = 0;
+
+	if (NULL == input || NULL == acm) {
+		return;
+	}
+	input_len = strlen(input);
+
+	while(commaptr <= input + input_len) {
+		commaptr = strchr(status, SYNO_EUNIT_STATUS_REPORT_DELIM);
+		if (commaptr) {
+			*commaptr = 0;
+		}
+		parse_single_status(status, acm);
+		if (!commaptr) {
+			break;
+		}
+		status = commaptr + 1;
+	}
+
+	return;
+}
+
+static void syno_expstatus_parsing(struct acm *acm)
+{
+	char acm_buffer[SYNO_EUNIT_STATUS_BUFFER_SIZE] = {0};
+
+	if (!acm || acm->disconnected) {
+		return;
+	}
+
+	if (strchr(acm->acm_buffer, SYNO_EUNIT_STATUS_REPORT_DELIM)) {
+		snprintf(acm_buffer, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s", acm->acm_buffer);
+		memset(acm->acm_buffer, 0, SYNO_EUNIT_STATUS_BUFFER_SIZE);
+		snprintf(acm->acm_buffer, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s", strrchr(acm_buffer, SYNO_EUNIT_STATUS_REPORT_DELIM)+1);
+		*strrchr(acm_buffer, SYNO_EUNIT_STATUS_REPORT_DELIM) = '\0';
+		parsing_input(acm_buffer, acm);
+	}
+
+	return;
+}
+#endif /* MY_DEF_HERE */
+
 static void acm_read_bulk_callback(struct urb *urb)
 {
 	struct acm_rb *rb = urb->context;
@@ -491,9 +716,29 @@ static void acm_read_bulk_callback(struct urb *urb)
 	bool stopped = false;
 	bool stalled = false;
 	bool cooldown = false;
+#ifdef MY_DEF_HERE
+	unsigned long flags;
+#endif /* MY_DEF_HERE */
 
-	dev_vdbg(&acm->data->dev, "got urb %d, len %d, status %d\n",
-		rb->index, urb->actual_length, status);
+	dev_vdbg(&acm->data->dev, "%s - urb %d, len %d\n", __func__,
+					rb->index, urb->actual_length);
+
+	if (!acm->dev) {
+		set_bit(rb->index, &acm->read_urbs_free);
+		dev_dbg(&acm->data->dev, "%s - disconnected\n", __func__);
+		return;
+	}
+
+#ifdef MY_DEF_HERE
+	if (acm->acm_buffer && urb->actual_length) {
+		write_lock_irqsave(&acm->status_lock, flags);
+		strncat(acm->acm_buffer, urb->transfer_buffer,
+				(SYNO_EUNIT_STATUS_BUFFER_SIZE > strlen(acm->acm_buffer) + urb->actual_length)?
+				urb->actual_length : SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(acm->acm_buffer) - 1);
+		syno_expstatus_parsing(acm);
+		write_unlock_irqrestore(&acm->status_lock, flags);
+	}
+#endif /* MY_DEF_HERE */
 
 	switch (status) {
 	case 0:
@@ -792,11 +1037,26 @@ static int acm_tty_write(struct tty_struct *tty,
 	unsigned long flags;
 	int wbn;
 	struct acm_wb *wb;
+#ifdef MY_DEF_HERE
+	int iWaitTime = 0;
+#endif /* MY_DEF_HERE */
 
 	if (!count)
 		return 0;
 
 	dev_vdbg(&acm->data->dev, "%d bytes from tty layer\n", count);
+#ifdef MY_DEF_HERE
+	trace_acm_tty_write(acm, buf, count);
+
+	if (syno_is_synology_acm(acm)) {
+		for (iWaitTime = 0; iWaitTime < SYNO_EUNIT_READY_RETRY; iWaitTime++) {
+			if (0 == acm->transmitting) {
+				break;
+			}
+			msleep(SYNO_EUNIT_ACM_WAITING_READY);
+		}
+	}
+#endif /* MY_DEF_HERE */
 
 	spin_lock_irqsave(&acm->write_lock, flags);
 	wbn = acm_wb_alloc(acm);
@@ -1147,6 +1407,1249 @@ static int acm_write_buffers_alloc(struct acm *acm)
 	return 0;
 }
 
+#ifdef MY_DEF_HERE
+
+int syno_acm_slotindex_get(int *slot_index, struct acm *acm) {
+	int ret = -1;
+	const char *control_string = NULL, *usb_port_string = NULL;
+	struct device_node *device_node = NULL, *control_method = NULL, *usb_port = NULL;
+	int eunit_index = 0;
+
+	if (NULL == acm || NULL == slot_index) {
+		goto END;
+	}
+	for_each_child_of_node(of_root, device_node) {
+		if (!device_node->full_name) {
+			continue;
+		}
+
+		if (strstr(device_node->full_name, DT_ESATA_SLOT)) {
+			sscanf(device_node->full_name, DT_ESATA_SLOT"@%d", &eunit_index);
+		} else if (strstr(device_node->full_name, DT_CX4_SLOT)) {
+			sscanf(device_node->full_name, DT_CX4_SLOT"@%d", &eunit_index);
+		} else if (strstr(device_node->full_name, DT_PCIE_EUNIT_SLOT)) {
+			sscanf(device_node->full_name, DT_PCIE_EUNIT_SLOT"@%d", &eunit_index);
+		} else {
+			continue;
+		}
+
+		for_each_child_of_node(device_node, control_method) {
+			if (!control_method->name || strcmp(DT_EUNIT_CONTROL_METHOD, control_method->name)) {
+				continue;
+			}
+			if (0 > of_property_read_string(control_method, DT_EUNIT_CONTROL_TYPE, &control_string)) {
+				continue;
+			}
+			if (0 != strcmp(DT_USB_TO_TTY, control_string)) {
+				continue;
+			}
+			for_each_child_of_node(control_method, usb_port) {
+				if (usb_port->name && 0 == strcmp(usb_port->name, DT_USB2)) {
+					if (0 > of_property_read_string(usb_port, DT_USB_PORT, &usb_port_string)) {
+						continue;
+					}
+					if (0 == strcmp(dev_name(&acm->dev->dev), usb_port_string)) {
+						*slot_index = eunit_index;
+						ret = 0;
+					}
+					//TODO: do early break
+				}
+			}
+		}
+	}
+
+END:
+	return ret;
+}
+
+int syno_usb_acm_container_index_get_by_diskname(int *slot_index, const char *disk_name)
+{
+	struct acm *acm;
+	int ret = -1;
+	struct syno_device_list *sdl = NULL, *tmp = NULL;
+	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
+	unsigned long flags = 0;
+
+	spin_lock_irqsave(&acm_list_lock, flags);
+	list_for_each_entry_safe(sal, sal_tmp, &syno_acm_list_head, device_list) {
+		acm = sal->acm;
+		list_for_each_entry_safe(sdl, tmp, &acm->syno_device_list, device_list) {
+			if (0 == strcmp(sdl->disk_name, disk_name)) {
+				if (0 <= syno_acm_slotindex_get(slot_index, acm)){
+					ret = 0;
+				}
+			}
+		}
+	}
+	spin_unlock_irqrestore(&acm_list_lock, flags);
+	return ret;
+}
+
+typedef struct __syno_acm_work {
+	struct list_head acm_list;
+	char *szCmd;
+	int tagId;
+	struct completion cmpl;
+	struct kref refcount;
+	bool blocking;
+	bool aborted;
+} syno_acm_work;
+
+#define SYNO_EUNIT_POSTFIX "\xd\x0"
+static syno_acm_work* init_syno_acm_work(void)
+{
+	syno_acm_work *work = NULL;
+
+	if (NULL == (work = kzalloc(sizeof(syno_acm_work), GFP_ATOMIC))) {
+		printk(KERN_ERR "%s: Alloc work failed\n", __FUNCTION__);
+		goto END;
+	}
+
+	/* Alloc & assign szCmd */	
+	if (NULL == (work->szCmd = kzalloc(sizeof(char)*SYNO_EUNIT_STATUS_BUFFER_SIZE, GFP_ATOMIC))) {
+		printk(KERN_ERR "%s: Alloc szCmd failed\n", __FUNCTION__);
+		goto FAIL;
+	}
+
+	/* Init reference count */
+	kref_init(&work->refcount);
+
+	/* Init completion */
+	init_completion(&work->cmpl);
+
+	/* Default: non-blocking */
+	work->blocking = false;
+
+	work->aborted = false;
+END:
+	return work;
+
+FAIL:
+	if (work) {
+		kfree(work);
+		work = NULL;
+	}
+	return NULL;
+}
+
+static void free_syno_acm_work(syno_acm_work *acm_work)
+{
+	if (!acm_work)
+		return;
+
+	if (acm_work->szCmd) {
+		kfree(acm_work->szCmd);
+	}
+	
+	kfree(acm_work);
+	return;
+}
+
+static bool syno_eunit_queue_full(struct acm *acm)
+{
+	return ((acm->cmd_idx_head % SYNO_EUNIT_QUEUE_SIZE) + 1 == acm->cmd_idx_tail);
+}
+
+static int syno_eunit_queue_head_get_then_increase(struct acm *acm)
+{
+	int ret = acm->cmd_idx_head;
+
+	acm->cmd_idx_head = (acm->cmd_idx_head % SYNO_EUNIT_QUEUE_SIZE) + 1;
+	
+	return ret;
+}
+
+static void syno_eunit_queue_tail_set_and_increse(struct acm *acm, int tagId)
+{
+	acm->cmd_idx_tail = (tagId % SYNO_EUNIT_QUEUE_SIZE) + 1;
+}
+
+/*
+ * Try to merge work2 into work1
+ *
+ * @work1: work1
+ * @work2: work2
+ *
+ * Return: 1: merged
+ *         0: not merged
+ */
+
+static bool syno_eunit_merge_cmd(syno_acm_work *work1, syno_acm_work *work2)
+{
+	bool bMerged = false;
+
+	char *szCmd = NULL; /* Merged command */
+	char *szHead1 = NULL, *szHead2 = NULL; /* Heads for duplicated command */
+	char *szToken1 = NULL, *szToken2 = NULL; /* Parsing tokens */
+	char *szTmp1 = NULL, *szTmp2 = NULL; /* Temporary tokens */
+
+	if (!work1 || !work2) {
+		goto END;
+	}
+
+	if (NULL == (szCmd = kzalloc(sizeof(char)*SYNO_EUNIT_STATUS_BUFFER_SIZE, GFP_ATOMIC))) {
+		goto END;
+	}
+
+	/* Duplicate commands */
+	if (NULL == (szHead1 = kstrdup(work1->szCmd, GFP_ATOMIC)) ||
+			NULL == (szHead2 = kstrdup(work2->szCmd, GFP_ATOMIC))) {
+		goto END;
+	}
+
+	/* Assign parsing token */
+	szToken1 = szHead1;
+	szToken2 = szHead2;
+
+	/* Compare then skip command name */
+	if (NULL == (szTmp1 = strsep(&szToken1, ":")) ||
+			NULL == (szTmp2 = strsep(&szToken2, ":")) ||
+			0 != strcmp(szTmp1, szTmp2)) {
+		goto END;
+	}
+
+	snprintf(szCmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s:", szTmp1);
+
+	if (0 == strcmp(szTmp1, DT_EUNIT_STATUS_EXPSTATUS)) {
+		/* expstatus has differnt format */
+		goto SKIP_CHECK;
+	}
+
+	/* Replace last '/' with '\0' */
+	if (NULL == (szTmp1 = strrchr(szToken1, SYNO_EUNIT_COMMAND_DELIM)) ||
+			NULL == (szTmp2 = strrchr(szToken2, SYNO_EUNIT_COMMAND_DELIM))) {
+		goto END;
+	}
+	szTmp1[0] = '\0';
+	szTmp2[0] = '\0';
+
+	/* Compare and replace */
+	szTmp1 = strsep(&szToken1, "/");
+	szTmp2 = strsep(&szToken2, "/");
+	
+	while (szTmp1 || szTmp2) {
+
+		if (NULL == szTmp1) {
+			snprintf(szCmd + strlen(szCmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(szCmd), "%s/", szTmp2);
+		} else if (NULL == szTmp2) {
+			snprintf(szCmd + strlen(szCmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(szCmd), "%s/", szTmp1);
+		} else if ('R' == szTmp1[0]) {
+			snprintf(szCmd + strlen(szCmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(szCmd), "%s/", szTmp2);
+		} else if ('R' == szTmp2[0]) {
+			snprintf(szCmd + strlen(szCmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(szCmd), "%s/", szTmp1);
+		} else if (0 == strcmp(szTmp1, szTmp2)) {
+			snprintf(szCmd + strlen(szCmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(szCmd), "%s/", szTmp1);
+		} else {
+			goto END;
+		}
+
+		szTmp1 = strsep(&szToken1, "/");
+		szTmp2 = strsep(&szToken2, "/");
+	}
+
+SKIP_CHECK:
+	/* Append ACK ID */
+	strncpy(work1->szCmd, szCmd, SYNO_EUNIT_STATUS_BUFFER_SIZE);
+
+	bMerged = true;
+END:
+	kfree(szHead1);
+	kfree(szHead2);
+	kfree(szCmd);
+	return bMerged;
+}
+
+static bool syno_eunit_is_same_command(syno_acm_work *work1, syno_acm_work *work2)
+{
+	bool bRet = false;
+	int i = 0;
+
+	if (!work1 || !work2) {
+		goto END;
+	}
+
+	for (i = 0; i < SYNO_EUNIT_STATUS_BUFFER_SIZE; i++) {
+		if (':' == work1->szCmd[i] && ':' == work2->szCmd[i]) {
+			bRet = true;
+			break;
+		} else if (work1->szCmd[i] != work2->szCmd[i]) {
+			break;
+		}
+	}
+
+END:
+	return bRet;
+}
+
+static syno_acm_work *syno_acm_try_merge_work(struct acm *acm, syno_acm_work *work)
+{
+	syno_acm_work *iter = NULL;
+	bool bMerge = false;
+
+	list_for_each_entry_reverse(iter, &acm->syno_acm_q, acm_list) {
+		if (syno_eunit_is_same_command(iter, work)) {
+			bMerge = syno_eunit_merge_cmd(iter, work);
+			break;
+		}
+	}
+	
+	return bMerge ? iter : NULL;
+}
+
+static void syno_acm_completion_release(struct kref *ref)
+{
+	syno_acm_work *work = container_of(ref, syno_acm_work, refcount);
+	free_syno_acm_work(work);
+}
+
+static int syno_samd_tty_write_raw(struct acm *acm, const char *command)
+{
+	char *buffer = NULL;
+	struct tty_struct *tty = NULL;
+	int iRet = 0;
+
+	if (!acm || !command) {
+		iRet = -EINVAL;
+		goto END;
+	}
+
+	tty = kzalloc(sizeof(struct tty_struct), GFP_ATOMIC);
+	if (!tty) {
+		iRet = -ENOMEM;
+		goto END;
+	}
+	tty->driver_data = acm;
+	buffer = kzalloc(sizeof(char)*SYNO_EUNIT_STATUS_BUFFER_SIZE, GFP_ATOMIC);
+	if (!buffer) {
+		iRet = -ENOMEM;
+		goto END;
+	}
+	snprintf(buffer, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s%s", command, SYNO_EUNIT_POSTFIX);
+	iRet = acm_tty_write(tty, buffer, strlen(buffer));
+
+END:
+	kfree(tty);
+	kfree(buffer);
+
+	return iRet;
+}
+
+static int syno_samd_tty_write(struct acm *acm, const char *command, bool high_priority, bool blocking)
+{
+	int ret = 0;
+
+	unsigned long flags; /* For lock */
+	syno_acm_work *work = NULL;
+	syno_acm_work *workMerge = NULL;
+
+	if (!acm || !command) {
+		printk(KERN_ERR "%s: Invalid parameter\n", __FUNCTION__);
+		ret = -EINVAL;
+		goto END;
+	}
+
+	if (NULL == (work = init_syno_acm_work())) {
+		printk(KERN_ERR "%s: Init syno_acm_work failed\n", __FUNCTION__);
+		ret = -ENOMEM;
+		goto END;
+	}	
+
+	spin_lock_irqsave(&acm->syno_acm_q_lock, flags); /* Lock */
+
+	if (syno_eunit_queue_full(acm)) {
+		printk(KERN_ERR "%s: Queue is full\n", __FUNCTION__);
+		ret = -ENOMEM;
+		spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+		goto END;
+	}
+
+	snprintf(work->szCmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s", command);
+	
+	/* Try to merge commands */
+	if (NULL != (workMerge = syno_acm_try_merge_work(acm, work))) {
+		/* Success */
+		kref_put(&work->refcount, syno_acm_completion_release);
+		work = workMerge;
+	} else {
+		/* Failed to merge, add command into queue */
+		if (high_priority) {
+			list_add(&work->acm_list, &acm->syno_acm_q);
+		} else {
+			list_add_tail(&work->acm_list, &acm->syno_acm_q);
+		}
+		syno_eunit_queue_head_get_then_increase(acm);
+	}
+
+	if (blocking) {
+		kref_get(&work->refcount);
+		work->blocking = true;
+	}
+
+	spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+
+	if (blocking) {
+		if (0 == wait_for_completion_timeout(&work->cmpl, msecs_to_jiffies(4000))) {
+			printk(KERN_ERR "%s: Timeout\n", __FUNCTION__);
+			ret = -ETIMEDOUT;
+		}
+
+		spin_lock_irqsave(&acm->syno_acm_q_lock, flags); /* Lock */
+		work->aborted = true; /* Abort */
+		if (work->tagId) {
+			acm->syno_acm_ack_to_cmpl[work->tagId-1] = NULL;
+		}
+		spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+
+		kref_put(&work->refcount, syno_acm_completion_release);
+	}
+
+END:
+	return ret;
+}
+
+static ssize_t syno_eunit_info_show(struct device *dev,
+					 struct device_attribute *attr,
+					 char *buf)
+{
+	struct syno_device_list *sdl = NULL, *tmp = NULL;
+	char szTmp[SYNO_EUNIT_STATUS_BUFFER_SIZE] = {0};
+	char *szTmp1 = NULL;
+	struct usb_interface *intf = to_usb_interface(dev);
+	struct acm *acm = usb_get_intfdata(intf);
+	struct usb_device *usb_dev = interface_to_usbdev(acm->control);
+	unsigned long flags = 0;
+
+	if (acm->disconnected) {
+		return 0;
+	}
+
+	szTmp1 = (char*) kzalloc(PAGE_SIZE, GFP_KERNEL);
+
+	if (NULL == szTmp1) {
+		printk(KERN_WARNING "%s kzalloc failed\n", __FUNCTION__);
+		return 0;
+	}
+
+	spin_lock_irqsave(&acm_list_lock, flags);
+	list_for_each_entry_safe(sdl, tmp, &acm->syno_device_list, device_list) {
+		snprintf(szTmp1, BDEVNAME_SIZE, "/dev/%s,", sdl->disk_name);
+		strncat(szTmp, szTmp1, BDEVNAME_SIZE);
+	}
+	spin_unlock_irqrestore(&acm_list_lock, flags);
+	if (strlen(szTmp)) {
+		szTmp[strlen(szTmp)-1] = '\0';
+	}
+
+	snprintf(szTmp1, PAGE_SIZE, "%s%s%s%s", EBOX_INFO_DEV_LIST_KEY, "=\"", szTmp, "\"\n");
+
+	/* vendor id and device id */
+	snprintf(szTmp,
+			BDEVNAME_SIZE,
+			"%s=%s0x%x%s", EBOX_INFO_VENDOR_KEY, "\"",
+			usb_dev->descriptor.idVendor,
+			"\"\n");
+	strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+	snprintf(szTmp,
+			BDEVNAME_SIZE,
+			"%s=%s0x%x%s", EBOX_INFO_DEVICE_KEY, "\"",
+			usb_dev->descriptor.idProduct,
+			"\"\n");
+	strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+	snprintf(szTmp, BDEVNAME_SIZE,
+			EBOX_INFO_USB_PATH"=\"%s\"\n",
+			dev_name(&acm->dev->dev));
+	strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+
+
+	/* deepsleep support */
+	snprintf(szTmp,
+			BDEVNAME_SIZE,
+			"%s=\"%s\"\n", EBOX_INFO_DEEP_SLEEP, "yes");
+	strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+
+	if (NULL != acm->cached_expstatus[EUNIT_STATUS_EXPIDSET] && 0 < strlen(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET])) {
+		snprintf(szTmp,
+			BDEVNAME_SIZE,
+			"%s=\"%s\"\n%s=\"%d\"\n",
+			EBOX_INFO_UNIQUE_KEY,
+			acm->cached_expstatus[EUNIT_STATUS_EXPIDSET],
+			EBOX_INFO_EMID_KEY,
+			0);
+		strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+	} else {
+		snprintf(szTmp,
+			BDEVNAME_SIZE,
+			"%s=\"%s\"\n%s=\"%d\"\n",
+			EBOX_INFO_UNIQUE_KEY,
+			"Unknown",
+			EBOX_INFO_EMID_KEY,
+			0);
+		strncat(szTmp1, szTmp, BDEVNAME_SIZE);
+	}
+
+	/* put it together */
+	snprintf(buf, PAGE_SIZE, "%s", szTmp1);
+	kfree(szTmp1);
+
+	return strlen(buf);
+}
+
+static DEVICE_ATTR(syno_eunit_info, S_IRUGO, syno_eunit_info_show, NULL);
+
+#define syno_usb_eunit_actconfig_show(field)		\
+	static ssize_t syno_eunit_##field##_show(struct device *dev,					\
+			struct device_attribute *attr, char *buf)				\
+{										\
+	struct acm *acm = usb_get_intfdata(to_usb_interface(dev));		\
+	unsigned long flags = 0; 										\
+	int len = 0; 	\
+	read_lock_irqsave(&acm->status_lock, flags);	\
+	len = snprintf(buf, PAGE_SIZE, "%s", acm->cached_expstatus[parsing_key(#field)]);	\
+	read_unlock_irqrestore(&acm->status_lock, flags);		\
+	return len;		\
+}					\
+
+#define syno_usb_eunit_actconfig_attr(field)        \
+	syno_usb_eunit_actconfig_show(field)        \
+	static DEVICE_ATTR_RO(syno_eunit_##field)
+
+syno_usb_eunit_actconfig_attr(upversion);
+syno_usb_eunit_actconfig_attr(hddenable);
+syno_usb_eunit_actconfig_attr(hddpresent);
+syno_usb_eunit_actconfig_attr(monthermal);
+syno_usb_eunit_actconfig_attr(moncurrent);
+syno_usb_eunit_actconfig_attr(monvoltage);
+syno_usb_eunit_actconfig_attr(expctrl);
+syno_usb_eunit_actconfig_attr(fanpwm);
+syno_usb_eunit_actconfig_attr(fanspeed);
+syno_usb_eunit_actconfig_attr(hddctrl);
+syno_usb_eunit_actconfig_attr(diskled);
+syno_usb_eunit_actconfig_attr(7segled);
+syno_usb_eunit_actconfig_attr(expidset);
+syno_usb_eunit_actconfig_attr(expsnset);
+syno_usb_eunit_actconfig_attr(powermodule);
+syno_usb_eunit_actconfig_attr(expbpsnset);
+syno_usb_eunit_actconfig_attr(hddsedset);
+
+static ssize_t syno_eunit_write_store(struct device *dev,
+					struct device_attribute *attr,
+					const char *buf,
+					size_t len)
+{
+	struct acm *acm = usb_get_intfdata(to_usb_interface(dev));
+	if (strstr(buf, "hddsedset")) {
+		if (syno_samd_tty_write(acm, buf, false, true)) {
+			return -1;
+		}
+	} else {
+		if (syno_samd_tty_write(acm, buf, false, false)) {
+			return -1;
+		}
+	}
+	return len;
+}
+static DEVICE_ATTR(syno_eunit_write, S_IWUSR, NULL, syno_eunit_write_store);
+
+static void syno_remove_eunit_files(struct device *dev)
+{
+	device_remove_file(dev, &dev_attr_syno_eunit_expctrl);
+	device_remove_file(dev, &dev_attr_syno_eunit_fanpwm);
+	device_remove_file(dev, &dev_attr_syno_eunit_fanspeed);
+	device_remove_file(dev, &dev_attr_syno_eunit_hddctrl);
+	device_remove_file(dev, &dev_attr_syno_eunit_diskled);
+	device_remove_file(dev, &dev_attr_syno_eunit_7segled);
+	device_remove_file(dev, &dev_attr_syno_eunit_expidset);
+	device_remove_file(dev, &dev_attr_syno_eunit_expsnset);
+	device_remove_file(dev, &dev_attr_syno_eunit_info);
+	device_remove_file(dev, &dev_attr_syno_eunit_upversion);
+	device_remove_file(dev, &dev_attr_syno_eunit_hddenable);
+	device_remove_file(dev, &dev_attr_syno_eunit_hddpresent);
+	device_remove_file(dev, &dev_attr_syno_eunit_monthermal);
+	device_remove_file(dev, &dev_attr_syno_eunit_moncurrent);
+	device_remove_file(dev, &dev_attr_syno_eunit_monvoltage);
+	device_remove_file(dev, &dev_attr_syno_eunit_powermodule);
+	device_remove_file(dev, &dev_attr_syno_eunit_expbpsnset);
+	device_remove_file(dev, &dev_attr_syno_eunit_write);
+	device_remove_file(dev, &dev_attr_syno_eunit_hddsedset);
+}
+
+int syno_acm_get_usb_port(const char **usb_port_string, int eunit_slot) {
+	int ret = -1;
+	const char *control_string = NULL;
+	struct device_node *device_node = NULL, *control_method = NULL, *usb_port = NULL;
+	int eunit_index = 0;
+
+	if (NULL == usb_port_string || 0 >= eunit_slot) {
+		goto END;
+	}
+	for_each_child_of_node(of_root, device_node) {
+		if (!device_node->full_name) {
+			continue;
+		}
+
+		if (strstr(device_node->full_name, DT_ESATA_SLOT)) {
+			sscanf(device_node->full_name, DT_ESATA_SLOT"@%d", &eunit_index);
+		} else if (strstr(device_node->full_name, DT_CX4_SLOT)) {
+			sscanf(device_node->full_name, DT_CX4_SLOT"@%d", &eunit_index);
+		} else if (strstr(device_node->full_name, DT_PCIE_EUNIT_SLOT)) {
+			sscanf(device_node->full_name, DT_PCIE_EUNIT_SLOT"@%d", &eunit_index);
+		} else {
+			continue;
+		}
+
+		if (eunit_index != eunit_slot) {
+			continue;
+		}
+
+		for_each_child_of_node(device_node, control_method) {
+			if (!control_method->name || strcmp(DT_EUNIT_CONTROL_METHOD, control_method->name)) {
+				continue;
+			}
+			if (0 > of_property_read_string(control_method, DT_EUNIT_CONTROL_TYPE, &control_string)) {
+				continue;
+			}
+			if (0 != strcmp(DT_USB_TO_TTY, control_string)) {
+				continue;
+			}
+			for_each_child_of_node(control_method, usb_port) {
+				if (usb_port->name && 0 == strcmp(usb_port->name, DT_USB2)) {
+					if (0 > of_property_read_string(usb_port, DT_USB_PORT, usb_port_string)) {
+						continue;
+					}
+					ret = 0;
+					//TODO: do early break
+				}
+			}
+		}
+	}
+
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_acm_get_usb_port);
+
+static void syno_create_eunit_files(struct device *dev)
+{
+	int retval = 0;
+	//TODO: receive return error code
+	retval = device_create_file(dev, &dev_attr_syno_eunit_expctrl);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_fanpwm);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_fanspeed);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_hddctrl);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_diskled);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_7segled);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_expidset);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_expsnset);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_info);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_monthermal);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_monvoltage);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_moncurrent);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_upversion);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_hddenable);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_hddpresent);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_powermodule);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_expbpsnset);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_write);
+	retval = device_create_file(dev, &dev_attr_syno_eunit_hddsedset);
+}
+
+void syno_acm_device_list_add(int slot_index, const char* device_name)
+{
+	const char *usb_port_string = NULL;
+	struct acm *acm = NULL;
+	struct syno_device_list *sdl = NULL;
+	struct acm_device_temp *adt = NULL;
+	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
+	unsigned long flags = 0;
+
+	if (0 >= slot_index || !device_name) {
+		goto END;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port_string, slot_index)) {
+		goto END;
+	}
+
+	spin_lock_irqsave(&acm_list_lock, flags);
+	list_for_each_entry_safe(sal, sal_tmp, &syno_acm_list_head, device_list) {
+		acm = sal->acm;
+		if (!acm->disconnected && 0 == strcmp(usb_port_string, dev_name(&acm->dev->dev))) {
+			sdl = kzalloc(sizeof(*sdl), GFP_ATOMIC);
+			if (!sdl) {
+				continue;
+			}
+			snprintf(sdl->disk_name, DISK_NAME_LEN, "%s", device_name);
+			list_add(&sdl->device_list, &acm->syno_device_list);
+
+			if (0 < acm->initial_disk_not_ready_check) {
+				syno_disk_not_ready_count_decrease();
+				acm->initial_disk_not_ready_check -= 1;
+			}
+		}
+	}
+	adt = kzalloc(sizeof(*adt), GFP_ATOMIC);
+	if (!adt) {
+		spin_unlock_irqrestore(&acm_list_lock, flags);
+		goto END;
+	}
+	snprintf(adt->disk_name, DISK_NAME_LEN, "%s", device_name);
+	snprintf(adt->usb_path, SYNO_DTS_PROPERTY_CONTENT_LENGTH, "%s", usb_port_string);
+	list_add(&adt->device_list, &acm_temp_device_list);
+	spin_unlock_irqrestore(&acm_list_lock, flags);
+
+END:
+	return;
+}
+
+void syno_acm_device_list_delete(const char* device_name)
+{
+	struct acm *acm;
+	struct syno_device_list *sdl = NULL, *tmp = NULL;
+	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
+	unsigned long flags = 0;
+	struct acm_device_temp *adt = NULL, *adt_tmp = NULL;
+
+	spin_lock_irqsave(&acm_list_lock, flags);
+	list_for_each_entry_safe(sal, sal_tmp, &syno_acm_list_head, device_list) {
+		acm = sal->acm;
+		list_for_each_entry_safe(sdl, tmp, &acm->syno_device_list, device_list) {
+			if (0 == strcmp(sdl->disk_name, device_name)) {
+				list_del(&sdl->device_list);
+				kfree(sdl);
+			}
+		}
+	}
+
+	list_for_each_entry_safe(adt, adt_tmp, &acm_temp_device_list, device_list) {
+		if (0 == strcmp(adt->disk_name, device_name)) {
+			list_del(&adt->device_list);
+			kfree(adt);
+		}
+	}
+
+	spin_unlock_irqrestore(&acm_list_lock, flags);
+	return;
+}
+
+void syno_acm_device_list_set(struct scsi_device *sdev, int add, const char* device_name)
+{
+	struct ata_port *ap = NULL;
+	int slot_index = -1;
+
+	if (add) {
+
+		/* Check scsi_device */
+		if (!sdev) {
+			goto END;
+		}
+
+		/* Get ATA port */
+		if (NULL == (ap = ata_shost_to_port(sdev->host))) {
+			goto END;
+		}
+
+		/* Get Slot Index */		
+		if (0 >= (slot_index = syno_external_libata_index_get(ap))) {
+			goto END;
+		}
+
+		syno_acm_device_list_add(slot_index, device_name);
+	}
+	else
+		syno_acm_device_list_delete(device_name);
+
+END:
+
+}
+
+EXPORT_SYMBOL(syno_acm_device_list_set);
+EXPORT_SYMBOL(syno_acm_device_list_add);
+EXPORT_SYMBOL(syno_acm_device_list_delete);
+
+#define SYNO_EUNIT_PERIODIC_CACHE_UPDATE_INTERVAL 4000
+#define SYNO_EUNIT_PERIODIC_CACHE_CHECK_INTERVAL  1000
+
+static void syno_period_cache_update(struct work_struct *work)
+{
+	struct acm *acm = container_of(to_delayed_work(work), struct acm, cache_update_work);
+	
+	if (acm->disconnected)
+		return;
+
+	/* Queue Polling Command */
+	if (time_after(jiffies, 
+				acm->last_poll_jiffies + msecs_to_jiffies(SYNO_EUNIT_PERIODIC_CACHE_UPDATE_INTERVAL))) {
+		syno_samd_tty_write(acm, DT_EUNIT_STATUS_EXPSTATUS":", false, false);
+	}
+
+	schedule_delayed_work(&acm->cache_update_work, SYNO_EUNIT_PERIODIC_CACHE_CHECK_INTERVAL);
+	return;
+}
+
+#define SYNO_EUNIT_PERIODIC_CMD_ISSUE_INTERVAL 1000
+static void syno_period_cmd_issue(struct work_struct *work)
+{
+	struct acm *acm = container_of(to_delayed_work(work), struct acm, cmd_issue_work);
+	unsigned long flags = 0; /* For Locking */
+	syno_acm_work *acm_work = NULL;
+
+
+	spin_lock_irqsave(&acm->syno_acm_q_lock, flags); /* Lock */
+	if (NULL == (acm_work = list_first_entry_or_null(&acm->syno_acm_q, typeof(*acm_work), acm_list))) {
+		spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+		goto END;
+	}
+
+	list_del_init(&acm_work->acm_list); /* Delete entry */
+	acm_work->tagId = acm->cmd_idx_tail;
+	syno_eunit_queue_tail_set_and_increse(acm, acm_work->tagId);
+
+
+	/* Timeout, abort command */
+	if (acm_work->aborted) {
+		spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+		goto END;
+	}
+
+	/* Assign */
+	if (acm_work->blocking)
+		acm->syno_acm_ack_to_cmpl[acm_work->tagId-1] = &acm_work->cmpl;
+
+	spin_unlock_irqrestore(&acm->syno_acm_q_lock, flags); /* Unlock */
+
+	snprintf(acm_work->szCmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s%d;", acm_work->szCmd, acm_work->tagId);
+
+	/* Update last poll time */
+	if (0 == strncmp(acm_work->szCmd, DT_EUNIT_STATUS_EXPSTATUS, strlen(DT_EUNIT_STATUS_EXPSTATUS))) {
+		acm->last_poll_jiffies = jiffies;
+	}
+
+	syno_samd_tty_write_raw(acm, acm_work->szCmd);
+
+END:
+	if (acm_work)
+		kref_put(&acm_work->refcount, syno_acm_completion_release);
+	schedule_delayed_work(&acm->cmd_issue_work, SYNO_EUNIT_PERIODIC_CMD_ISSUE_INTERVAL);
+}
+
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+static struct acm *syno_acm_get_by_usbport(const char *usb_port)
+{
+	struct acm *acm = NULL;
+	struct acm *acm_tmp = NULL;
+	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
+	unsigned long flags = 0;
+
+	if (!usb_port) {
+		return acm;
+	}
+
+	spin_lock_irqsave(&acm_list_lock, flags);
+	list_for_each_entry_safe(sal, sal_tmp, &syno_acm_list_head, device_list) {
+		acm_tmp = sal->acm;
+		if (!acm_tmp->disconnected) {
+			if (0 == strcmp(usb_port, dev_name(&acm_tmp->dev->dev))) {
+				acm = acm_tmp;
+			}
+		}
+		if (acm) {
+			break;
+		}
+	}
+	spin_unlock_irqrestore(&acm_list_lock, flags);
+
+	return acm;
+}
+
+int syno_usb_acm_unique_get(const int slot_type, const int slot_index, char *unique, int unique_size)
+{
+	const char *usb_port = NULL;
+	int ret = -1;
+	struct acm *acm = NULL;
+
+	if (EUNIT_DEVICE != slot_type || 0 >= slot_index || !unique || 0 >= unique_size) {
+		goto END;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port, slot_index)) {
+		goto END;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		goto END;
+	}
+
+	if (NULL == acm->cached_expstatus || NULL == acm->cached_expstatus[EUNIT_STATUS_EXPIDSET] ||
+		strlen(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]) >= unique_size) {
+		goto END;
+	}
+	snprintf(unique, unique_size, "%s", acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]);
+
+	ret = 0;
+
+END:
+	return ret;
+}
+
+static int syno_usb_get_hdd_count(const char *eunit_model_name) {
+	int iCount = 0;
+	struct device_node *device_node = NULL, *pmp_slot_node = NULL;
+
+	if (!eunit_model_name) {
+		return iCount;
+	}
+
+	for_each_child_of_node(of_root, device_node) {
+		if (NULL == device_node->full_name || NULL == (strstr(device_node->full_name, eunit_model_name))) {
+			continue;
+		}
+		for_each_child_of_node(device_node, pmp_slot_node) {
+			if (pmp_slot_node->name && 0 == (strcmp(DT_PMP_SLOT, pmp_slot_node->name))) {
+				iCount += 1;
+			}
+		}
+	}
+
+	return iCount;
+}
+
+int syno_usb_eunit_hdd_ctrl(const int slot_type, const int slot_index, int hdd_ctrl) {
+	int ret = -1, i = 0, disk_count = 0;
+	char hdd_cmd[SYNO_EUNIT_STATUS_BUFFER_SIZE] = {0};
+	struct acm *acm = NULL;
+	const char *usb_port = NULL;
+
+	if (0 >= slot_type || 0 >= slot_index || (0 != hdd_ctrl && 1 != hdd_ctrl)) {
+		goto END;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port, slot_index)) {
+		goto END;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		goto END;
+	}
+
+	if (NULL == acm->cached_expstatus || NULL == acm->cached_expstatus[EUNIT_STATUS_EXPIDSET] ||
+		0 >= (disk_count = syno_usb_get_hdd_count(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]))) {
+		goto END;
+	}
+
+	// set hdd to manual mode
+	if (hdd_ctrl) {
+		if (0 >= snprintf(hdd_cmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s:A/", DT_EUNIT_STATUS_HDDCTRL)) {
+			goto END;
+		}
+	} else {
+		if (0 >= snprintf(hdd_cmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s:M/", DT_EUNIT_STATUS_HDDCTRL)) {
+			goto END;
+		}
+		for (i = 0; i < disk_count; i++) {
+			if (0 >= snprintf(hdd_cmd + strlen(hdd_cmd) , SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(hdd_cmd), "%d/", hdd_ctrl)) {
+				goto END;
+			}
+		}
+	}
+	syno_samd_tty_write(acm, hdd_cmd, false, false);
+	ret = 0;
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_usb_eunit_hdd_ctrl);
+
+int syno_usb_eunit_hdd_reset(syno_nvme_disk_loc diskLoc)
+{
+	int ret = -1, i = 0;
+	char hdd_cmd[SYNO_EUNIT_STATUS_BUFFER_SIZE] = {0};
+	struct acm *acm = NULL;
+	const char *usb_port = NULL;
+
+	if (0 > syno_acm_get_usb_port(&usb_port, diskLoc.iContainer)) {
+		printk(KERN_ERR "%s: syno_acm_get_usb_port failed\n", __FUNCTION__);
+		goto END;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		printk(KERN_ERR "%s: syno_acm_get_by_usbport failed\n", __FUNCTION__);
+		goto END;
+	}
+
+	if (0 >= snprintf(hdd_cmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s:", DT_EUNIT_STATUS_HDDRESET)) {
+		printk(KERN_ERR "%s: snprintf failed\n", __FUNCTION__);
+		goto END;
+	}
+
+	for (i = 0; i < diskLoc.iSlot - 1; i++) {
+		if (0 >= snprintf(hdd_cmd + strlen(hdd_cmd) , SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(hdd_cmd), "R/")) {
+			printk(KERN_ERR "%s: snprintf failed\n", __FUNCTION__);
+			goto END;
+		}
+	}
+	snprintf(hdd_cmd + strlen(hdd_cmd) , SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(hdd_cmd), "0/");
+
+	syno_samd_tty_write(acm, hdd_cmd, true, false);
+
+	msleep(500);
+	ret = 0;
+
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_usb_eunit_hdd_reset);
+
+int syno_usb_eunit_deep_sleep_indicator(const int slot_type, const int slot_index, const int control) {
+	int ret = -1, offset = 0;
+	char indicator_cmd[SYNO_EUNIT_STATUS_BUFFER_SIZE] = {0};
+	int i = 0;
+	struct acm *acm = NULL;
+	struct device_node *device_node = NULL, *deep_sleep_indicator = NULL;
+	const char *command = NULL, *eunit_model_name = NULL, *usb_port = NULL;
+
+	if (0 >= slot_type || 0 >= slot_index || (1 != control && 0 != control)) {
+		goto END;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port, slot_index)) {
+		goto END;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		goto END;
+	}
+
+	if (NULL == acm->cached_expstatus || NULL == acm->cached_expstatus[EUNIT_STATUS_EXPIDSET] ||
+		NULL == (eunit_model_name = acm->cached_expstatus[EUNIT_STATUS_EXPIDSET])) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_root, device_node) {
+		if (NULL == device_node->full_name || NULL == (strstr(device_node->full_name, eunit_model_name))) {
+			continue;
+		}
+		for_each_child_of_node(device_node, deep_sleep_indicator) {
+			if (!deep_sleep_indicator->name || strcmp(SZ_DTS_EBOX_I2C_DEEPSELLP_INDICATOR, deep_sleep_indicator->name)) {
+				continue;
+			}
+			if (0 > of_property_read_string(deep_sleep_indicator, DT_EUNIT_COMMAND, &command)) {
+				continue;
+			}
+			if (0 > of_property_read_u32(deep_sleep_indicator, SZ_DTS_EBOX_I2C_OFFSET, &offset)) {
+				continue;
+			}
+			snprintf(indicator_cmd, SYNO_EUNIT_STATUS_BUFFER_SIZE, "%s:", command);
+			for (i = 0; i < offset; i++) {
+				strncat(indicator_cmd, "R/", SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(indicator_cmd) - 1);
+			}
+			snprintf(indicator_cmd + strlen(indicator_cmd), SYNO_EUNIT_STATUS_BUFFER_SIZE - strlen(indicator_cmd),
+					"%d/", control);
+		}
+	}
+
+	if (acm && strlen(indicator_cmd)) {
+		syno_samd_tty_write(acm, indicator_cmd, false, false);
+		ret = 0;
+	}
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_usb_eunit_deep_sleep_indicator);
+
+static int syno_initial_not_ready_disk_count(struct acm *acm) {
+	int iRet = -1;
+	int disk_count = 0;
+	int i = 0;
+
+	if (NULL == acm || NULL == acm->cached_expstatus ||
+		NULL == acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT] ||
+		NULL == acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]) {
+		goto END;
+	}
+
+	if (0 >= (disk_count = syno_usb_get_hdd_count(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]))) {
+		goto END;
+	}
+	/* hddpresent string format ex: 0/1/1/1/1/ */
+	if ((2 * disk_count) != strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT])) {
+		goto END;
+	}
+
+	for (i = 0; i < strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT]); i++) {
+		if ('1' == acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT][i]) {
+			syno_disk_not_ready_count_increase();
+			acm->initial_disk_not_ready_check += 1;
+		}
+	}
+
+	iRet = 0;
+END:
+	return iRet;
+}
+
+int syno_usb_eunit_disk_delay_waiting(const int slot_type, const int slot_index, const int disk_id, int spinup)
+{
+	struct device_node *of_eunit = NULL;
+	int spinup_group_delay = 0, spinup_group = 0, group_num = 0, spinup_group_size = 0;
+	int accum_waking_disks_available = 0, waken_disk_count = 0;
+	const char *usb_port = NULL;
+	struct acm *acm = NULL;
+	int need_waiting = 0;
+	unsigned long flags = 0;
+
+	if (0 > slot_type || 0 >= slot_index || 0 > disk_id || 0 > spinup) {
+		return -EINVAL;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port, slot_index)) {
+		return -ENOENT;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		return -ENOENT;
+	}
+
+	if (NULL == (of_eunit = of_get_child_by_name(of_root, acm->cached_expstatus[EUNIT_STATUS_EXPIDSET]))) {
+		return -ENODEV;
+	}
+
+	if (of_property_read_u32_index(of_eunit, DT_SYNO_SPINUP_GROUP_DELAY, 0, &spinup_group_delay)) {
+		// do not support spinup_group_delay, no waiting need
+		return need_waiting;
+	}
+
+	if (0 > (spinup_group_size = of_property_count_elems_of_size(of_eunit, DT_SYNO_SPINUP_GROUP, sizeof(u32)))) {
+		// do not support spinup_group, no waiting need
+		return need_waiting;
+	}
+
+	write_lock_irqsave(&acm->status_lock, flags);
+	if (SPINUP_CHECK == spinup) {
+		if (time_before(jiffies, acm->last_waking_time + spinup_group_delay*HZ) && 0 == (acm->waken_disks & (1 << disk_id))) {
+			waken_disk_count = get_count_order(acm->waken_disks);
+			for (group_num = 0; group_num < spinup_group_size && spinup == SPINUP_CHECK; group_num++) {
+				of_property_read_u32_index(of_eunit, DT_SYNO_SPINUP_GROUP, group_num, &spinup_group);
+
+				accum_waking_disks_available += spinup_group;
+				if (accum_waking_disks_available == waken_disk_count) {
+					// all previous waking up disks have occupy entire available waking up group
+					// the previous group is full, this disk need to wait for delay
+					spinup = SPINUP_DELAY;
+				} else if (accum_waking_disks_available > waken_disk_count) {
+					// this disk is in a waking up group, do not need delay
+					spinup = SPINUP_NODELAY;
+				}
+			}
+		} else {
+			spinup = SPINUP_NODELAY;
+		}
+	}
+
+	switch (spinup) {
+	case SPINDOWN:
+		acm->waken_disks &= ~(1 << disk_id);
+		break;
+	case SPINUP_CHECK:
+		dev_info(&acm->control->dev, "waken disks status not checked, status should be SPINUP_NODELAY or SPINUP_DELAY\n");
+		break;
+	case SPINUP_NODELAY:
+		acm->waken_disks |= (1 << disk_id);
+		acm->last_waking_time = jiffies;
+		break;
+	case SPINUP_DELAY:
+		need_waiting = 1;
+		break;
+	default:
+		dev_info(&acm->control->dev, "%x is not a spinup opertion\n", spinup);
+		break;
+	}
+	write_unlock_irqrestore(&acm->status_lock, flags);
+	if (of_eunit) {
+		of_node_put(of_eunit);
+	}
+	return need_waiting;
+}
+
+static int syno_get_command_offset(const char *eunit_unique, const char *dt_property, const int disk_slot) {
+	struct device_node *of_eunit = NULL;
+	struct device_node *pNode = NULL;
+	int iOffset = -1;
+
+	if (!eunit_unique || !dt_property || 0 >= disk_slot) {
+		goto END;
+	}
+
+	if (NULL == (of_eunit = of_get_child_by_name(of_root, eunit_unique))) {
+		goto END;
+	}
+
+	for_each_child_of_node(of_eunit, pNode) {
+		if (!pNode->full_name || NULL == strstr(pNode->full_name, dt_property)) {
+			continue;
+		}
+		if (0 == of_property_read_u32_index(pNode, DT_EUNIT_OFFSET, disk_slot - 1, &iOffset)) {
+			break;
+		}
+	}
+
+END:
+	if (of_eunit) {
+		of_node_put(of_eunit);
+	}
+	if (pNode) {
+		of_node_put(pNode);
+	}
+	return iOffset;
+}
+
+int syno_usb_eunit_disk_is_wait_power_on(const int eunit_slot_type, const int eunit_slot_index, const int disk_slot_index)
+{
+	const char *usb_port = NULL;
+	struct acm *acm = NULL;
+	int iHddenableOffset = -1;
+	int iHddpresentOffset = -1;
+	int iNeedWait = -1;
+
+	if (0 > eunit_slot_type || 0 >= eunit_slot_index || 0 >= disk_slot_index) {
+		iNeedWait = -EINVAL;
+		goto END;
+	}
+
+	if (0 > syno_acm_get_usb_port(&usb_port, eunit_slot_index)) {
+		iNeedWait = -ENOENT;
+		goto END;
+	}
+
+	if (NULL == (acm = syno_acm_get_by_usbport(usb_port))) {
+		iNeedWait = -ENOENT;
+		goto END;
+	}
+
+	if (0 > (iHddpresentOffset = syno_get_command_offset(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET], DT_EUNIT_DISK_PRESENT, disk_slot_index))) {
+		iNeedWait = -ENXIO;
+		goto END;
+	}
+	if (0 > (iHddenableOffset = syno_get_command_offset(acm->cached_expstatus[EUNIT_STATUS_EXPIDSET], DT_EUNIT_DISK_POWER_ON, disk_slot_index))) {
+		iNeedWait = -ENXIO;
+		goto END;
+	}
+
+	if ((acm->cached_expstatus[EUNIT_STATUS_HDDENABLE] && (iHddenableOffset * 2) < strlen(acm->cached_expstatus[EUNIT_STATUS_HDDENABLE])) &&
+		(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT] && (iHddpresentOffset * 2) < strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT]))) {
+		if (('1' == acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT][iHddpresentOffset * 2]) &
+			('0' == acm->cached_expstatus[EUNIT_STATUS_HDDENABLE][iHddenableOffset * 2])) {
+			iNeedWait = 1;
+		} else {
+			iNeedWait = 0;
+		}
+	}
+
+END:
+	return iNeedWait;
+}
+#endif /* MY_DEF_HERE */
+
 static int acm_probe(struct usb_interface *intf,
 		     const struct usb_device_id *id)
 {
@@ -1174,6 +2677,12 @@ static int acm_probe(struct usb_interface *intf,
 	struct device *tty_dev;
 	int rv = -ENOMEM;
 	int res;
+#ifdef MY_DEF_HERE
+	struct syno_device_list *sdl = NULL;
+	struct acm_device_temp *adt = NULL, *tmp = NULL;
+	struct syno_acm_list *sal = NULL;
+	unsigned long flags = 0;
+#endif /* MY_DEF_HERE */
 
 	/* normal quirks */
 	quirks = (unsigned long)id->driver_info;
@@ -1492,6 +3001,80 @@ skip_countries:
 	usb_driver_claim_interface(&acm_driver, data_interface, acm);
 	usb_set_intfdata(data_interface, acm);
 
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_acm(acm)) {
+		rwlock_init(&acm->status_lock);
+		acm->initial_disk_not_ready_check = 0;
+
+		spin_lock_init(&acm->syno_acm_q_lock);
+		acm->last_poll_jiffies = 0;
+		acm->cmd_idx_head = 1;
+		acm->cmd_idx_tail = 1;
+
+		spin_lock_irqsave(&acm_list_lock, flags);
+		INIT_LIST_HEAD(&acm->syno_device_list);
+		sal = kzalloc(sizeof(*sal), GFP_ATOMIC);
+		if (!sal) {
+			spin_unlock_irqrestore(&acm_list_lock, flags);
+			goto alloc_fail6;
+		}
+		sal->acm = acm;
+		list_add(&sal->device_list, &syno_acm_list_head);
+		spin_unlock_irqrestore(&acm_list_lock, flags);
+
+		acm->acm_buffer = kzalloc(sizeof(char)*SYNO_EUNIT_STATUS_BUFFER_SIZE, GFP_KERNEL);
+		if (!acm->acm_buffer) {
+			goto alloc_fail6;
+		}
+		acm->cached_expstatus = kzalloc(sizeof(char *) * EUNIT_STATUS_INDEX_END, GFP_KERNEL);
+		if (!acm->cached_expstatus) {
+			goto alloc_fail6;
+		}
+
+		for (i = 0; i < EUNIT_STATUS_INDEX_END; i++) {
+			acm->cached_expstatus[i] = kzalloc(sizeof(char)*SYNO_DTS_PROPERTY_CONTENT_LENGTH, GFP_KERNEL);
+			if (!acm->cached_expstatus[i]) {
+				goto alloc_fail6;
+			}
+		}
+		INIT_DELAYED_WORK(&acm->cache_update_work, syno_period_cache_update);
+		INIT_DELAYED_WORK(&acm->cmd_issue_work, syno_period_cmd_issue);
+		INIT_LIST_HEAD(&acm->syno_acm_q); /* Init queue for commands */
+
+		acm_submit_read_urbs(acm, GFP_KERNEL);
+		//TODO: macro
+		syno_samd_tty_write(acm, DT_EUNIT_STATUS_EXPCTRL":1/", false, false);
+
+		syno_period_cache_update(&acm->cache_update_work.work);
+		syno_period_cmd_issue(&acm->cmd_issue_work.work);
+
+		syno_create_eunit_files(&intf->dev);
+
+		/* Retry! wait for usb return hddpresent and parse usb string*/
+		for (i = 0; i < SYNO_EUNIT_READY_RETRY; i++) {
+			msleep(SYNO_EUNIT_ACM_WAITING_READY);
+			if (0 != strlen(acm->cached_expstatus[EUNIT_STATUS_HDDPRESENT])) {
+				break;
+			}
+		}
+
+		syno_initial_not_ready_disk_count(acm);
+
+		spin_lock_irqsave(&acm_list_lock, flags);
+		list_for_each_entry_safe(adt, tmp, &acm_temp_device_list, device_list) {
+			if (0 == strcmp(adt->usb_path, dev_name(&acm->dev->dev))) {
+				sdl = kzalloc(sizeof(*sdl), GFP_ATOMIC);
+				if (!sdl) {
+					continue;
+				}
+				snprintf(sdl->disk_name, DISK_NAME_LEN, "%s", adt->disk_name);
+				list_add(&sdl->device_list, &acm->syno_device_list);
+			}
+		}
+		spin_unlock_irqrestore(&acm_list_lock, flags);
+	}
+#endif /* MY_DEF_HERE */
+
 	tty_dev = tty_port_register_device(&acm->port, acm_tty_driver, minor,
 			&control_interface->dev);
 	if (IS_ERR(tty_dev)) {
@@ -1511,6 +3094,35 @@ alloc_fail6:
 		usb_set_intfdata(data_interface, NULL);
 		usb_driver_release_interface(&acm_driver, data_interface);
 	}
+
+#ifdef MY_DEF_HERE
+	if (syno_is_synology_acm(acm)) {
+		cancel_delayed_work_sync(&acm->cache_update_work);
+		cancel_delayed_work_sync(&acm->cmd_issue_work);
+		syno_remove_eunit_files(&acm->control->dev);
+
+		spin_lock_irqsave(&acm_list_lock, flags);
+		if (sal) {
+			list_del(&sal->device_list);
+			kfree(sal);
+		}
+		spin_unlock_irqrestore(&acm_list_lock, flags);
+
+		if (acm->acm_buffer) {
+			kfree(acm->acm_buffer);
+		}
+
+		if (acm->cached_expstatus) {
+			for (i = 0; i < EUNIT_STATUS_INDEX_END; i++) {
+				if (acm->cached_expstatus[i]) {
+					kfree(acm->cached_expstatus[i]);
+				}
+			}
+			kfree(acm->cached_expstatus);
+		}
+	}
+#endif /* MY_DEF_HERE */
+
 	if (acm->country_codes) {
 		device_remove_file(&acm->control->dev,
 				&dev_attr_wCountryCodes);
@@ -1542,12 +3154,57 @@ static void acm_disconnect(struct usb_interface *intf)
 	struct acm *acm = usb_get_intfdata(intf);
 	struct tty_struct *tty;
 	int i;
+#ifdef MY_DEF_HERE
+	struct syno_acm_list *sal = NULL, *sal_tmp = NULL;
+	unsigned long flags = 0;
+#endif /* MY_DEF_HERE */
 
 	/* sibling interface is already cleaning up */
 	if (!acm)
 		return;
 
 	acm->disconnected = true;
+
+#ifdef MY_DEF_HERE
+	mutex_lock(&acm->mutex);
+	if (syno_is_synology_acm(acm)) {
+		spin_lock_irqsave(&acm_list_lock, flags);
+		list_for_each_entry_safe(sal, sal_tmp, &syno_acm_list_head, device_list) {
+			if (sal->acm == acm) {
+				list_del(&sal->device_list);
+				kfree(sal);
+			}
+		}
+		spin_unlock_irqrestore(&acm_list_lock, flags);
+
+		if (acm->acm_buffer) {
+			kfree(acm->acm_buffer);
+		}
+		cancel_delayed_work_sync(&acm->cache_update_work);
+		cancel_delayed_work_sync(&acm->cmd_issue_work);
+		syno_remove_eunit_files(&acm->control->dev);
+		for (i = 0; i < EUNIT_STATUS_INDEX_END; i++) {
+			if (acm->cached_expstatus[i]) {
+				kfree(acm->cached_expstatus[i]);
+			}
+		}
+		if (acm->cached_expstatus) {
+			kfree(acm->cached_expstatus);
+		}
+		//TODO: macro
+		if (SYSTEM_POWER_OFF == system_state) {
+			syno_samd_tty_write_raw(acm, DT_EUNIT_STATUS_EXPCTRL":0/");
+			for (i = 0; i < SYNO_EUNIT_READY_RETRY; i++) {
+				if (0 == acm->transmitting) {
+					break;
+				}
+				msleep(SYNO_EUNIT_ACM_WAITING_READY);
+			}
+		}
+	}
+	mutex_unlock(&acm->mutex);
+#endif /* MY_DEF_HERE */
+
 	/*
 	 * there is a circular dependency. acm_softint() can resubmit
 	 * the URBs in error handling so we need to block any
@@ -1952,6 +3609,12 @@ static const struct usb_device_id acm_ids[] = {
 	{ USB_DEVICE(0x32a7, 0x0000),
 	.driver_info = IGNORE_DEVICE,
 	},
+
+#ifdef MY_DEF_HERE
+	{ USB_DEVICE(0x4d8, 0xa),
+	.driver_info = DISABLE_ECHO, /* DISABLE ECHO in termios flag */
+	},
+#endif /* MY_DEF_HERE */
 
 	/* control interfaces without any protocol set */
 	{ USB_INTERFACE_INFO(USB_CLASS_COMM, USB_CDC_SUBCLASS_ACM,

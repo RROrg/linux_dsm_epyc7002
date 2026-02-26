@@ -32,8 +32,6 @@
 #include "uas-detect.h"
 #include "scsiglue.h"
 
-#ifdef MY_ABC_HERE
-#else
 #define MAX_CMNDS 256
 
 struct uas_dev_info {
@@ -52,7 +50,6 @@ struct uas_dev_info {
 	struct work_struct work;
 	struct work_struct scan_work;      /* for async scanning */
 };
-#endif
 
 enum {
 	SUBMIT_STATUS_URB	= BIT(1),
@@ -99,6 +96,27 @@ static void uas_log_cmd_state(struct scsi_cmnd *cmnd, const char *prefix,
  * Hence we cannot share a queue and need our own.
  */
 static struct workqueue_struct *workqueue;
+
+#ifdef MY_ABC_HERE
+static void syno_uas_usb_info_enum(struct scsi_device *sdev) {
+	struct uas_dev_info *uasdevinfo = NULL;
+	struct usb_device *udev = NULL;
+
+	if (NULL == sdev || NULL == sdev->host) {
+		return;
+	}
+
+	if (strncmp(sdev->host->hostt->name, "uas", 3) == 0) {
+		uasdevinfo = (struct uas_dev_info *)sdev->host->hostdata;
+		if (NULL == uasdevinfo || NULL == uasdevinfo->intf) {
+			return;
+		}
+		udev = uasdevinfo->udev;
+	}
+
+	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%susb_path=%s\n", sdev->syno_block_info, dev_name(&udev->dev));
+}
+#endif /* MY_ABC_HERE */
 
 static void uas_do_work(struct work_struct *work)
 {
@@ -920,7 +938,11 @@ static struct scsi_host_template uas_host_template = {
 	.dma_boundary = PAGE_SIZE - 1,
 #ifdef MY_ABC_HERE
 	.syno_port_type = SYNO_PORT_TYPE_USB,
+	.syno_sdev_info_enum = syno_uas_usb_info_enum,
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	.syno_uas_delay_revalidate = false,
+#endif /* MY_DEF_HERE */
 };
 
 #define UNUSUAL_DEV(id_vendor, id_product, bcdDeviceMin, bcdDeviceMax, \
@@ -1020,6 +1042,12 @@ static int uas_probe(struct usb_interface *intf, const struct usb_device_id *id)
 	shost->max_lun = 256;
 	shost->max_channel = 0;
 	shost->sg_tablesize = udev->bus->sg_tablesize;
+#ifdef MY_DEF_HERE
+	if (0 == strncmp("Synology", udev->manufacturer, 8) &&
+		0 == strncmp("BeeDrive", udev->product, 8)) {
+		shost->hostt->syno_uas_delay_revalidate = true;
+	}
+#endif /* MY_DEF_HERE */
 
 	devinfo = (struct uas_dev_info *)shost->hostdata;
 	devinfo->intf = intf;
@@ -1051,7 +1079,6 @@ static int uas_probe(struct usb_interface *intf, const struct usb_device_id *id)
 
 	/* Submit the delayed_work for SCSI-device scanning */
 	schedule_work(&devinfo->scan_work);
-
 	return result;
 
 free_streams:

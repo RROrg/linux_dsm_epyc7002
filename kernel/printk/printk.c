@@ -50,6 +50,9 @@
 #include <linux/sched/clock.h>
 #include <linux/sched/debug.h>
 #include <linux/sched/task_stack.h>
+#ifdef MY_ABC_HERE
+#include <linux/serial.h>
+#endif /* MY_ABC_HERE */
 
 #include <linux/uaccess.h>
 #include <asm/sections.h>
@@ -2758,6 +2761,17 @@ static int try_enable_new_console(struct console *newcon, bool user_specified)
 	return -ENOENT;
 }
 
+#ifdef MY_ABC_HERE
+static int syno_is_oob_console(struct console *newcon)
+{
+	int ret = 0;
+	if (0 == strcmp(newcon->name, "ttyS") && SYNO_OOB_TTY == newcon->index) {
+		ret = 1;
+	}
+	return ret;
+}
+#endif /* MY_ABC_HERE */
+
 /*
  * The console driver calls this routine during kernel initialization
  * to register the console printing procedure with printk() and to
@@ -2814,7 +2828,11 @@ void register_console(struct console *newcon)
 	 *	didn't select a console we take the first one
 	 *	that registers here.
 	 */
+#ifdef MY_ABC_HERE
+	if (!has_preferred_console && (!syno_is_oob_console(newcon))) {
+#else
 	if (!has_preferred_console) {
+#endif /* MY_ABC_HERE */
 		if (newcon->index < 0)
 			newcon->index = 0;
 		if (newcon->setup == NULL ||

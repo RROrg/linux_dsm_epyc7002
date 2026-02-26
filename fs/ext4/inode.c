@@ -1333,6 +1333,18 @@ static int ext4_write_end(struct file *file,
 	if (i_size_changed || inline_data)
 		ret = ext4_mark_inode_dirty(handle, inode);
 
+#ifdef MY_ABC_HERE
+	/*
+	 * Updating i_disksize when extending file without block
+	 * allocation, the newly written data where should be visible
+	 * after transaction commit must be on transaction's ordered
+	 * data list.
+	 */
+	if (copied && (i_size_changed & 0x2) &&
+	    ext4_should_order_data(inode))
+		ext4_jbd2_inode_add_write(handle, inode, pos, len);
+#endif /* MY_ABC_HERE */
+
 	if (pos + len > inode->i_size && !verity && ext4_can_truncate(inode))
 		/* if we have allocated more blocks and copied
 		 * less. We will have blocks allocated outside
@@ -3110,6 +3122,17 @@ static int ext4_da_write_end(struct file *file,
 			 * bu greater than i_disksize.(hint delalloc)
 			 */
 			ret = ext4_mark_inode_dirty(handle, inode);
+
+#ifdef MY_ABC_HERE
+			/*
+			 * Updating i_disksize when extending file without
+			 * block allocation, the newly written data where
+			 * should be visible after transaction commit must
+			 * be on transaction's ordered data list.
+			 */
+			if (ext4_should_order_data(inode))
+				ext4_jbd2_inode_add_write(handle, inode, pos, len);
+#endif /* MY_ABC_HERE */
 		}
 	}
 

@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  *  Copyright (C) 2007
@@ -241,8 +244,11 @@ static int __init ipc_sysctl_init(void)
 }
 
 device_initcall(ipc_sysctl_init);
-
+#ifdef MY_ABC_HERE
+int __init ipc_mni_extend(char *str)
+#else /* MY_ABC_HERE */
 static int __init ipc_mni_extend(char *str)
+#endif /* MY_ABC_HERE */
 {
 	ipc_mni = IPCMNI_EXTEND;
 	ipc_mni_shift = IPCMNI_EXTEND_SHIFT;

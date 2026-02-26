@@ -155,6 +155,14 @@ int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchAddrs);
 int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
 EXPORT_SYMBOL(gSynoSmbusSwitchVals);
+int gSynoHostPresentAdapter = -1;
+EXPORT_SYMBOL(gSynoHostPresentAdapter);
+int gSynoHostPresentAddr = -1;
+EXPORT_SYMBOL(gSynoHostPresentAddr);
+int gSynoHostPresentReg = -1;
+EXPORT_SYMBOL(gSynoHostPresentReg);
+int gSynoHostPresentVal = -1;
+EXPORT_SYMBOL(gSynoHostPresentVal);
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE

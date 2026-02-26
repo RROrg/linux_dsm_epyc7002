@@ -65,7 +65,7 @@ void hfsplus_fill_defaults(struct hfsplus_sb_info *opts)
  */
 	opts->creator = 0;
 	opts->type = 0;
-#elif /* MY_ABC_HERE */
+#elif /* defined(MY_ABC_HERE) */
 	opts->creator = HFSPLUS_DEF_CR_TYPE;
 	opts->type = HFSPLUS_DEF_CR_TYPE;
 #endif /* MY_ABC_HERE */

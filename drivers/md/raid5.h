@@ -842,6 +842,7 @@ struct r5conf {
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 	int syno_dummy_read;
+	int syno_dummy_read_allow_sector_min;
 	struct bio *syno_dummy_bio;
 	struct page *syno_dummy_page;
 #endif /* MY_ABC_HERE */

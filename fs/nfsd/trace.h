@@ -800,6 +800,39 @@ TRACE_EVENT(nfsd_cb_done,
 		__entry->status)
 );
 
+#ifdef MY_ABC_HERE
+#include "xdr4.h"
+
+TRACE_EVENT(syno_nfsd4_dispatch,
+	TP_PROTO(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate, struct nfsd4_op *op),
+	TP_ARGS(rqstp, cstate, op),
+	TP_STRUCT__entry(
+		__field(int, opnum)
+	),
+	TP_fast_assign(
+		__entry->opnum = op->opnum;
+	),
+	TP_printk("dispatch %d",
+		__entry->opnum)
+);
+
+#include "xdr3.h"
+
+TRACE_EVENT(syno_nfsd_dispatch,
+	TP_PROTO(struct svc_rqst *rqstp),
+	TP_ARGS(rqstp),
+	TP_STRUCT__entry(
+		__field(u32, rq_proc)
+	),
+	TP_fast_assign(
+		__entry->rq_proc = rqstp->rq_proc;
+	),
+	TP_printk("dispatch %u",
+		__entry->rq_proc)
+);
+#endif /* MY_ABC_HERE */
+
+
 #endif /* _NFSD_TRACE_H */
 
 #undef TRACE_INCLUDE_PATH

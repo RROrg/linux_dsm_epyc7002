@@ -25,6 +25,8 @@ install_dev_image()
     install -Dm644 "vmlinux"        "$DebDevBuild/image/synodebug/vmlinux"
     install -Dm644 "System.map"     "$DebDevBuild/image/synodebug/System.map"
     install -Dm644 "Module.symvers" "$DebDevBuild/image/synodebug/Module.symvers"
+
+    gzip -f9 "$DebDevBuild/image/synodebug/vmlinux"
 }
 
 install_dev_modules()

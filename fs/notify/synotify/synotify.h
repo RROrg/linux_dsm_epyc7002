@@ -30,7 +30,6 @@ struct synotify_event_info {
 	const char *file_path;
 	bool path_ready;
 	bool overflow_event;
-	int event_version;
 
 	// v2 event
 	pid_t pid;

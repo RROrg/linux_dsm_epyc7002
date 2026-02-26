@@ -51,9 +51,9 @@
 #include <asm/unwind.h>
 #include <asm/vsyscall.h>
 #include <linux/vmalloc.h>
-#ifdef MY_ABC_HERE
+#ifdef CONFIG_SYNO_KEXEC_TEST
 #include <linux/synolib.h>
-#endif /* MY_ABC_HERE */
+#endif /* CONFIG_SYNO_KEXEC_TEST */
 
 /*
  * max_low_pfn_mapped: highest directly mapped pfn < 4 GB

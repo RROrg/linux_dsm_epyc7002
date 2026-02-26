@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * (C) Copyright 2002-2004 Greg Kroah-Hartman <greg@kroah.com>
@@ -28,6 +31,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/of.h>
 #include "pci.h"
+#ifdef MY_DEF_HERE
+#include <linux/synobios.h>
+#endif /* MY_DEF_HERE */
 
 static int sysfs_initialized;	/* = 0 */
 
@@ -1329,6 +1335,90 @@ error:
 	return retval;
 }
 
+#ifdef MY_DEF_HERE
+extern bool syno_is_pci_dev_eunit_entry(struct pci_dev *pdev);
+extern bool syno_is_pci_dev_rx1224rp(struct pci_dev *pdev);
+extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
+static ssize_t syno_eunit_info_show(struct device *dev,
+					 struct device_attribute *attr,
+					 char *buf)
+{
+	struct syno_device_list *sdl = NULL;
+	struct pci_dev *pdev = NULL;
+	char *szTmp = NULL;
+	if (!dev || !attr || !buf) {
+		return 0;
+	}
+	pdev = to_pci_dev(dev);
+	if (!pdev) {
+		return 0;
+	}
+	szTmp = (char*) kzalloc(PAGE_SIZE, GFP_KERNEL);
+	if (NULL == szTmp) {
+		printk(KERN_WARNING "%s kzalloc failed\n", __FUNCTION__);
+		return 0;
+	}
+
+	list_for_each_entry(sdl, &pdev->syno_device_list, device_list) {
+		if (0 == szTmp[0]) {
+			snprintf(szTmp, PAGE_SIZE, "/dev/%s", sdl->disk_name);
+			continue;
+		}
+		snprintf(szTmp, PAGE_SIZE, "%s,/dev/%s", szTmp, sdl->disk_name);
+	}
+	snprintf(buf, PAGE_SIZE, "%s%s%s%s", EBOX_INFO_DEV_LIST_KEY, "=\"", szTmp, "\"\n");
+
+	/* vendor id and device id */
+	snprintf(szTmp, PAGE_SIZE,
+			"%s=%s0x%x%s", EBOX_INFO_VENDOR_KEY, "\"",
+			pdev->subsystem_vendor,
+			"\"\n");
+	strncat(buf, szTmp, PAGE_SIZE);
+	snprintf(szTmp, PAGE_SIZE,
+			"%s=%s0x%x%s", EBOX_INFO_DEVICE_KEY, "\"",
+			pdev->subsystem_device,
+			"\"\n");
+	strncat(buf, szTmp, PAGE_SIZE);
+
+	/* deepsleep support */
+	snprintf(szTmp, PAGE_SIZE,
+			"%s=\"%s\"\n", EBOX_INFO_DEEP_SLEEP, "yes");
+	strncat(buf, szTmp, PAGE_SIZE);
+
+	if (syno_is_pci_dev_rx1224rp(pdev)) {
+		snprintf(szTmp, PAGE_SIZE,
+			"%s=\"%s\"\n%s=\"%d\"\n",
+			EBOX_INFO_UNIQUE_KEY,
+			EBOX_INFO_UNIQUE_RX1224RP,
+			EBOX_INFO_EMID_KEY,
+			0);
+		strncat(buf, szTmp, PAGE_SIZE);
+	} else {
+		snprintf(szTmp, PAGE_SIZE,
+			"%s=\"%s\"\n%s=\"%d\"\n",
+			EBOX_INFO_UNIQUE_KEY,
+			"Unknown",
+			EBOX_INFO_EMID_KEY,
+			0);
+		strncat(buf, szTmp, PAGE_SIZE);
+	}
+	/* eunit layer */
+	snprintf(szTmp, PAGE_SIZE,
+			"%s=\"%d\"\n", EBOX_INFO_LAYER_KEY, pdev->syno_eunit_layer);
+	strncat(buf, szTmp, PAGE_SIZE);
+
+	strncat(buf, EBOX_INFO_PCIEPATH_KEY"=\"", PAGE_SIZE);
+	memset (szTmp, 0, PAGE_SIZE);
+	syno_pciepath_dts_pattern_get(pdev, szTmp, SYNO_DTS_PROPERTY_CONTENT_LENGTH);
+	strncat(buf, szTmp, PAGE_SIZE);
+	strncat(buf, "\"\n", PAGE_SIZE);
+	kfree(szTmp);
+
+	return strlen(buf);
+}
+DEVICE_ATTR(syno_eunit_info, 0444, syno_eunit_info_show, NULL);
+#endif /* MY_DEF_HERE */
+
 int __must_check pci_create_sysfs_dev_files(struct pci_dev *pdev)
 {
 	int retval;
@@ -1337,7 +1427,12 @@ int __must_check pci_create_sysfs_dev_files(struct pci_dev *pdev)
 
 	if (!sysfs_initialized)
 		return -EACCES;
-
+#ifdef MY_DEF_HERE
+	if (syno_is_pci_dev_eunit_entry(pdev))  {
+		retval = device_create_file(&pdev->dev, &dev_attr_syno_eunit_info);
+		dev_info(&pdev->dev, "syno_eunit_info created\n");
+	}
+#endif /* MY_DEF_HERE */
 	if (pdev->cfg_size > PCI_CFG_SPACE_SIZE)
 		retval = sysfs_create_bin_file(&pdev->dev.kobj, &pcie_config_attr);
 	else

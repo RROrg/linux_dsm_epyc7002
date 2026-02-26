@@ -1268,12 +1268,17 @@ static int extent_same_check_offsets(struct inode *inode, u64 off, u64 *plen,
 	u64 len = *plen;
 	u64 bs = BTRFS_I(inode)->root->fs_info->sb->s_blocksize;
 
-	if (off + olen > inode->i_size || off + olen < off)
+	if (off + olen < off)
 		return -EINVAL;
 
-	/* if we extend to eof, continue to block boundary */
-	if (off + len == inode->i_size)
+	if (off + olen >= inode->i_size) {
+		if (off >= inode->i_size) { /* out of range */
+			*plen = len = 0;
+			return -EINVAL;
+		}
+		/* if we extend to eof, continue to block boundary */
 		*plen = len = ALIGN(inode->i_size, bs) - off;
+	}
 
 	/* Check that we are block aligned - btrfs_clone() requires this */
 	if (!IS_ALIGNED(off, bs) || !IS_ALIGNED(off + len, bs))
@@ -1299,7 +1304,7 @@ static int syno_extent_same_check_offset(struct inode *src, u64 loff,
 		/* extent_same_check_offsets may extend len over i_size(align bs).
 		 * it is no sense to do it in the same inode.
 		 */
-		if (*len != olen) {
+		if (!IS_ALIGNED(*len, BTRFS_I(src)->root->fs_info->sb->s_blocksize)) {
 			ret = -EINVAL;
 			goto out;
 		}
@@ -1576,8 +1581,14 @@ static int __syno_extent_same(struct inode *src, u64 src_off, u64 olen,
 again:
 	lock_two_nondirectories(src, dst);
 	ret = syno_extent_same_check_offset(src, src_off, dst, dst_off, &len);
-	if (ret)
+	if (ret) {
+		if (len == 0) {
+			*diff_offset = dst_off;
+			*diff_len = olen;
+			ret = 0;
+		}
 		goto out_unlock;
+	}
 
 	ret = btrfs_cmp_data_prepare(src, src_off, dst, dst_off, olen, &cmp);
 	if (ret)
@@ -2087,9 +2098,9 @@ static void syno_inode_clone_change_flags(struct inode *src,
 	struct btrfs_trans_handle *trans = NULL;
 	u64 oldflags;
 
-	if ((BTRFS_I(src)->flags & BTRFS_INODE_NODATASUM) ==
-		(BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM) ||
-	    (remap_flags && (remap_flags & ~REMAP_FILE_CAN_SHORTEN)) ||
+	if ((BTRFS_I(src)->flags   & BTRFS_INODE_NODATASUM) ==
+	    (BTRFS_I(inode)->flags & BTRFS_INODE_NODATASUM) ||
+	    (remap_flags && (remap_flags & ~REMAP_FILE_ADVISORY)) ||
 	     0 != destoff)
 		return;
 

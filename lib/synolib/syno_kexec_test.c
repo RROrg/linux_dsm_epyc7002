@@ -3,7 +3,7 @@
 #endif
 /* Copyright (c) 2000-2020 Synology Inc. All rights reserved. */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 
 #include <linux/efi.h>
 #include <linux/printk.h>
@@ -210,4 +210,4 @@ void __init syno_kexec_test_init(void)
 	remove_decompression_setup_data();
 }
 
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */

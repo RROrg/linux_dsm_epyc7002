@@ -54,20 +54,21 @@ struct ctl_table synotify_table[] = {
 #endif /* CONFIG_SYSCTL */
 
 // Not including name !
-static int get_event_fixed_size(struct synotify_event_info *event)
+static int get_event_fixed_size(struct fsnotify_group *group)
 {
-	if (event->event_version == 2)
+	if (group->synotify_data.event_version == 2)
 		return sizeof(struct synotify_event_v2);
 	else
 		return sizeof(struct synotify_event);
 }
 
-static int round_event_name_len(struct synotify_event_info *event)
+static int round_event_name_len(struct fsnotify_group *group,
+		struct synotify_event_info *event)
 {
 	if (!event->full_path_len)
 		return 0;
 
-	if (event->event_version == 2)
+	if (group->synotify_data.event_version == 2)
 		return roundup(event->full_path_len + 1, sizeof(struct synotify_event_v2));
 	else
 		return roundup(event->full_path_len + 1, sizeof(struct synotify_event));
@@ -97,8 +98,8 @@ static struct synotify_event_info *get_one_event(struct fsnotify_group *group,
 		goto out;
 	}
 
-	event_size = get_event_fixed_size(event);
-	event_size += round_event_name_len(event);
+	event_size = get_event_fixed_size(group);
+	event_size += round_event_name_len(group, event);
 	if (event_size > count) {
 		event = ERR_PTR(-EINVAL);
 		goto out;
@@ -128,12 +129,12 @@ static ssize_t copy_event_to_user(struct fsnotify_group *group,
 	 * round up event->name_len so it is a multiple of event_size
 	 * plus an extra byte for the terminating '\0'.
 	 */
-	pad_name_len = round_event_name_len(event);
+	pad_name_len = round_event_name_len(group, event);
 	synotify_event.len = pad_name_len;
 	synotify_event.mask = synotify_mask_to_arg(event->mask);
 	synotify_event.cookie = event->sync_cookie;
 
-	if (event->event_version == 2) {
+	if (group->synotify_data.event_version == 2) {
 		event_size = sizeof(struct synotify_event_v2);
 		synotify_event.pid = (u32)event->pid;
 		synotify_event.uid = (u32)event->uid;
@@ -166,6 +167,18 @@ static ssize_t copy_event_to_user(struct fsnotify_group *group,
 	return event_size;
 }
 
+/* return true if the notify queue is empty, false otherwise */
+static bool synotify_queue_is_empty(struct fsnotify_group *group)
+{
+	struct synotify_event_info *event = NULL;
+
+	if (fsnotify_notify_queue_is_empty(group))
+		return true;
+
+	event = SYNOTIFY_E(fsnotify_peek_first_event(group));
+	return (event->path_ready || event->overflow_event) ? false : true;
+}
+
 /* synotifiy userspace file descriptor functions */
 static __poll_t synotify_poll(struct file *file, poll_table *wait)
 {
@@ -174,7 +187,7 @@ static __poll_t synotify_poll(struct file *file, poll_table *wait)
 
 	poll_wait(file, &group->notification_waitq, wait);
 	spin_lock(&group->notification_lock);
-	if (!fsnotify_notify_queue_is_empty(group))
+	if (!synotify_queue_is_empty(group))
 		ret = POLLIN | POLLRDNORM;
 	spin_unlock(&group->notification_lock);
 
@@ -264,6 +277,7 @@ static long synotify_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 {
 	struct fsnotify_group *group;
 	struct fsnotify_event *fsn_event;
+	struct synotify_event_info *event = NULL;
 	void __user *p;
 	int ret = -ENOTTY;
 	size_t send_len = 0;
@@ -277,8 +291,13 @@ static long synotify_ioctl(struct file *file, unsigned int cmd, unsigned long ar
 	case FIONREAD:
 		spin_lock(&group->notification_lock);
 		list_for_each_entry(fsn_event, &group->notification_list, list) {
-			send_len += get_event_fixed_size(SYNOTIFY_E(fsn_event));
-			send_len += round_event_name_len(SYNOTIFY_E(fsn_event));
+			event = SYNOTIFY_E(fsn_event);
+
+			if (!event->path_ready && !event->overflow_event) {
+				break;
+			}
+			send_len += get_event_fixed_size(group);
+			send_len += round_event_name_len(group, event);
 		}
 		spin_unlock(&group->notification_lock);
 		ret = put_user(send_len, (int __user *) p);
@@ -464,9 +483,6 @@ static int __syno_notify_init(unsigned int flags)
 
 	pr_debug("%s: flags=%x\n", __func__, flags);
 
-	if (!capable(CAP_SYS_ADMIN))
-		return -EPERM;
-
 	if (flags & ~(SYNO_NONBLOCK | SYNO_CLOEXEC | SYNO_EVENT_V2))
 		return -EINVAL;
 
@@ -476,6 +492,9 @@ static int __syno_notify_init(unsigned int flags)
 		f_flags |= O_NONBLOCK;
 
 	user = get_current_user();
+	if (!uid_eq(user->uid, GLOBAL_ROOT_UID))
+		return -EPERM;
+
 	if (atomic_read(&user->synotify_instances) > SYNOTIFY_DEFAULT_MAX_INSTANCES) {
 		free_uid(user);
 		return -EMFILE;

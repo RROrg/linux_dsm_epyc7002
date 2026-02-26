@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Realtek SATA3 AHCI Controller PHY Driver
@@ -373,10 +376,10 @@ static int rtk_sata_phy_calibration(struct phy *phy, unsigned int addr)
 		val = (val & ~BIT(12) & ~BIT(14) & ~BIT(7)) | BIT(13);
 		write_mdio_reg(base, addr, 0x1e, val);
 
-		val = read_mdio_reg(base, addr, 0x35);
+		val = read_mdio_reg(base, 0, 0x35);
 		while(val & BIT(14)) {
 			msleep(1);
-			val = read_mdio_reg(base, addr, 0x35);
+			val = read_mdio_reg(base, 0, 0x35);
 			if (cnt++ >= 10)
 				goto calibration_err;
 		}
@@ -387,7 +390,7 @@ static int rtk_sata_phy_calibration(struct phy *phy, unsigned int addr)
 
 		mdelay(1);
 
-		taclr[i] = read_mdio_reg(base, addr, 0x36) & TCALR_MSK;
+		taclr[i] = read_mdio_reg(base, 0, 0x36) & TCALR_MSK;
 	}
 
 	bubble_sort(taclr, OOBS_K_count_limit);
@@ -412,10 +415,10 @@ static int rtk_sata_phy_calibration(struct phy *phy, unsigned int addr)
 		val = (val & ~OOBS_EN1) | OOBS_DATA1;
 	writel(val, base + REG_SATA_CTRL);
 
-	val = read_mdio_reg(base, addr, 0x36);
+	val = read_mdio_reg(base, 0, 0x36);
 	while(!(val & BIT(7))) {
 		msleep(1);
-		val = read_mdio_reg(base, addr, 0x36);
+		val = read_mdio_reg(base, 0, 0x36);
 		if (cnt++ >= 10)
 			goto calibration_err;
 	}
@@ -425,6 +428,33 @@ static int rtk_sata_phy_calibration(struct phy *phy, unsigned int addr)
 calibration_err:
 	dev_err(dev, "port%d gen%d rx calibration err\n", port->index, addr+1);
 	return -1;
+}
+
+static void rtk_sata_phy_fg_offset(struct phy *phy)
+{
+	struct rtk_sata_phy *priv = dev_get_drvdata(phy->dev.parent);
+	struct device *dev = priv->dev;
+	void __iomem *base = priv->base;
+	unsigned int val, i, fg_offset;
+
+	for (i = 0; i < PHY_ADDR_ALL; i++) {
+		val = read_mdio_reg(base, i, 0x1e);
+		val = (val & ~BIT(14) & ~BIT(12)) | BIT(7) | BIT(13);
+		write_mdio_reg(base, i, 0x1e, val);
+	}
+
+	fg_offset = read_mdio_reg(base, 0, 0x36) & GENMASK(3, 0);
+	dev_info(dev, "foreground offset 0x%x\n", fg_offset);
+
+	for (i = 0; i < PHY_ADDR_ALL; i++) {
+		val = read_mdio_reg(base, i, 0x0b);
+		val = (val & ~GENMASK(8, 5)) | (fg_offset << 5);
+		write_mdio_reg(base, i, 0x0b, val);
+
+		val = read_mdio_reg(base, i, 0x0d);
+		val = val & ~BIT(13);
+		write_mdio_reg(base, i, 0x0d, val);
+	}
 }
 
 static int rtk_sata_phy_init(struct phy *phy)
@@ -544,7 +574,11 @@ static int rtk_sata_phy_init(struct phy *phy)
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x26, 0x040e);
 		write_mdio_reg(base, PHY_ADDR_SATA1, 0x1, 0xe055);
 		write_mdio_reg(base, PHY_ADDR_SATA2, 0x1, 0xe048);
+#if defined(MY_DEF_HERE)
+		write_mdio_reg(base, PHY_ADDR_SATA3, 0x1, 0x1846);
+#else /* MY_DEF_HERE */
 		write_mdio_reg(base, PHY_ADDR_SATA3, 0x1, 0xe046);
+#endif /* MY_DEF_HERE */
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x5, 0x336a);
 		write_mdio_reg(base, PHY_ADDR_ALL, 0x9, 0x721c);
 		write_mdio_reg(base, PHY_ADDR_ALL, 0xb, 0x9904);
@@ -590,6 +624,8 @@ static int rtk_sata_phy_init(struct phy *phy)
 		reg |= ((tcalr ^ 0x18) << 1);
 		write_mdio_reg(base, PHY_ADDR_SATA3, 0x3, reg);
 
+		rtk_sata_phy_fg_offset(phy);
+
 		for (i = 0; i < PHY_ADDR_ALL; i++) {
 			reg = read_mdio_reg(base, i, 0x20);
 			dev_info(priv->dev, "port%d gen%d tx swing = 0x%x\n",
@@ -597,6 +633,11 @@ static int rtk_sata_phy_init(struct phy *phy)
 			reg = read_mdio_reg(base, i, 0x1a);
 			dev_info(priv->dev, "port%d gen%d tx emphasis = 0x%x\n",
 				port->index, i+1, reg);
+#if defined(MY_DEF_HERE)
+			reg = read_mdio_reg(base, i, 0x1);
+			dev_info(priv->dev, "port%d gen%d leq default = 0x%x\n",
+				port->index, i+1, reg);
+#endif /* MY_DEF_HERE */
 		}
 	}
 

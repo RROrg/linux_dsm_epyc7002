@@ -2506,6 +2506,40 @@ out:
 	return err;
 }
 
+#ifdef MY_ABC_HERE
+/*
+ * Support nfsd to get share quota information
+ */
+void nfsd_quota_query(struct path *path, struct kstatfs *statfs)
+{
+	struct file *file = NULL;
+	u64 used = 0;
+	u64 reserved = 0;
+	u64 limit = 0;
+	u64 free = 0;
+
+	file = dentry_open(path, (int)(O_RDONLY | O_LARGEFILE), current_cred());
+	if (IS_ERR(file))
+		return;
+
+	if (vfs_quota_query(file, &used, &reserved, &limit))
+		goto out;
+
+	if (limit != 0) {
+		used = min_t(u64, limit, used);
+		free = limit - used;
+		statfs->f_blocks = div64_u64(limit, statfs->f_bsize);
+		statfs->f_bfree = div64_u64(free, statfs->f_bsize);
+		statfs->f_bavail = div64_u64(free, statfs->f_bsize);
+	}
+
+out:
+	if (file)
+		fput(file);
+	return;
+}
+#endif /* MY_ABC_HERE */
+
 /*
  * Get file system stats
  * N.B. After this call fhp needs an fh_put
@@ -2523,6 +2557,10 @@ nfsd_statfs(struct svc_rqst *rqstp, struct svc_fh *fhp, struct kstatfs *stat, in
 		};
 		if (vfs_statfs(&path, stat))
 			err = nfserr_io;
+#ifdef MY_ABC_HERE
+		if (!err)
+			nfsd_quota_query(&path , stat);
+#endif /* MY_ABC_HERE */
 	}
 	return err;
 }

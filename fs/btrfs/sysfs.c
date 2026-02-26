@@ -412,6 +412,8 @@ static ssize_t btrfs_locker_store(struct kobject *kobj,
 
 	if (!val)
 		btrfs_syno_locker_feature_disable();
+	else
+		btrfs_syno_locker_rename_disable();
 
 	return len;
 }

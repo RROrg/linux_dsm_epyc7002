@@ -342,6 +342,10 @@ static inline void fsnotify_unlink(struct inode *dir, struct dentry *dentry)
 	/* Expected to be called before d_delete() */
 	WARN_ON_ONCE(d_is_negative(dentry));
 
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+	syno_archive_bit_modify(dir, 0);
+#endif /* MY_ABC_HERE || MY_ABC_HERE */
+
 #ifdef MY_ABC_HERE
 	SYNONotify(dentry, FS_DELETE);
 #endif /* MY_ABC_HERE */
@@ -376,6 +380,10 @@ static inline void fsnotify_rmdir(struct inode *dir, struct dentry *dentry)
 {
 	/* Expected to be called before d_delete() */
 	WARN_ON_ONCE(d_is_negative(dentry));
+
+#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+	syno_archive_bit_modify(dir, 0);
+#endif /* MY_ABC_HERE || MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	SYNONotify(dentry, FS_DELETE | FS_ISDIR);

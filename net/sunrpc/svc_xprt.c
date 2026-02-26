@@ -188,6 +188,9 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
 	set_bit(XPT_BUSY, &xprt->xpt_flags);
 	xprt->xpt_net = get_net(net);
 	strcpy(xprt->xpt_remotebuf, "uninitialized");
+#ifdef MY_ABC_HERE
+	xprt->xpt_pool_index = -1;
+#endif /* MY_ABC_HERE */
 }
 EXPORT_SYMBOL_GPL(svc_xprt_init);
 
@@ -413,6 +416,10 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	struct svc_pool *pool;
 	struct svc_rqst	*rqstp = NULL;
 	int cpu;
+#ifdef MY_ABC_HERE
+	struct svc_serv *svc_serv = xprt->xpt_server;
+	struct svc_pool_hint *pool_hint = NULL;
+#endif /* MY_ABC_HERE */
 
 	if (!svc_xprt_ready(xprt))
 		return;
@@ -430,6 +437,29 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 #endif /* MY_ABC_HERE */
 	cpu = get_cpu();
 	pool = svc_pool_for_cpu(xprt->xpt_server, cpu);
+
+#ifdef MY_ABC_HERE
+	if (xprt->xpt_pool_index >= 0)
+		pool_hint = &svc_serv->pool_hint[xprt->xpt_pool_index];
+
+	if (pool_hint && pool_hint->name[0]) {
+		struct svc_pool *tmp_pool;
+		int i;
+		unsigned long tmp_loading;
+		unsigned long min_loading = (unsigned long)-1;
+
+		for (i = 0; i < NFSD_POOL_MASK_MAX; i++) {
+			if (pool_hint->pool[i] == 0)
+				continue;
+			tmp_pool = &(svc_serv->sv_pools[i]);
+			tmp_loading = (unsigned long)atomic_long_read(&tmp_pool->sp_stats.loading);
+			if (tmp_loading < min_loading && !test_bit(SP_CONGESTED, &tmp_pool->sp_flags)) {
+				min_loading = tmp_loading;
+				pool = tmp_pool;
+			}
+		}
+	}
+#endif /* MY_ABC_HERE */
 
 	atomic_long_inc(&pool->sp_stats.packets);
 
@@ -740,6 +770,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 	smp_mb__before_atomic();
 	clear_bit(SP_CONGESTED, &pool->sp_flags);
 	clear_bit(RQ_BUSY, &rqstp->rq_flags);
+#ifdef MY_ABC_HERE
+	atomic_long_dec(&pool->sp_stats.loading);
+#endif /* MY_ABC_HERE */
 	smp_mb__after_atomic();
 
 	if (likely(rqst_should_sleep(rqstp)))
@@ -749,6 +782,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 
 	try_to_freeze();
 
+#ifdef MY_ABC_HERE
+	atomic_long_inc(&pool->sp_stats.loading);
+#endif /* MY_ABC_HERE */
 	set_bit(RQ_BUSY, &rqstp->rq_flags);
 	smp_mb__after_atomic();
 	rqstp->rq_xprt = svc_xprt_dequeue(pool);
@@ -1439,19 +1475,25 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 	struct svc_pool *pool = p;
 
 	if (p == SEQ_START_TOKEN) {
+		seq_puts(m, "# pool packets-arrived sockets-enqueued threads-woken threads-timedout"
 #ifdef MY_ABC_HERE
-		seq_puts(m, "# pool packets-arrived sockets-enqueued threads-woken threads-timedout congested-count\n");
-#else /* MY_ABC_HERE */
-		seq_puts(m, "# pool packets-arrived sockets-enqueued threads-woken threads-timedout\n");
+			" congested-count"
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+			" loading"
+#endif /* MY_ABC_HERE */
+		"\n");
 		return 0;
 	}
 
+	seq_printf(m, "%u %lu %lu %lu %lu"
 #ifdef MY_ABC_HERE
-	seq_printf(m, "%u %lu %lu %lu %lu %lu\n",
-#else /* MY_ABC_HERE */
-	seq_printf(m, "%u %lu %lu %lu %lu\n",
+		" %lu"
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+		" %lu"
+#endif /* MY_ABC_HERE */
+		"\n",
 		pool->sp_id,
 		(unsigned long)atomic_long_read(&pool->sp_stats.packets),
 		pool->sp_stats.sockets_queued,
@@ -1459,6 +1501,9 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 		(unsigned long)atomic_long_read(&pool->sp_stats.threads_timedout)
 #ifdef MY_ABC_HERE
 		, pool->sp_stats.congested
+#endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+		, (unsigned long)atomic_long_read(&pool->sp_stats.loading)
 #endif /* MY_ABC_HERE */
 		);
 

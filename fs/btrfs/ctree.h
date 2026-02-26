@@ -634,6 +634,13 @@ enum {
 };
 #endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
 
+#ifdef MY_ABC_HERE
+enum btrfs_fix_meta_key_state {
+	CAN_FIX_META_KEY   = 0,  // can trigger another thread to fix metadata key
+	DOING_FIX_META_KEY = 1,  // others are fixing metadata key and we cannot trigger another thread
+};
+#endif /* MY_ABC_HERE */
+
 void btrfs_init_async_reclaim_work(struct btrfs_fs_info *fs_info);
 
 /* fs_info */
@@ -730,6 +737,9 @@ enum {
 
 	/* Indicate that we can't trust the free space tree for caching yet */
 	BTRFS_FS_FREE_SPACE_TREE_UNTRUSTED,
+
+	/* Indicate we have half completed snapshot deletions pending. */
+	BTRFS_FS_UNFINISHED_DROPS,
 };
 
 /*
@@ -890,6 +900,9 @@ struct btrfs_fs_info {
 	struct mutex tree_log_mutex;
 	struct mutex transaction_kthread_mutex;
 	struct mutex cleaner_mutex;
+#ifdef MY_ABC_HERE
+	struct mutex relocate_mutex;
+#endif /* MY_ABC_HERE */
 	struct mutex chunk_mutex;
 
 	/*
@@ -978,6 +991,9 @@ struct btrfs_fs_info {
 	struct btrfs_workqueue *flush_workers;
 	struct btrfs_workqueue *endio_workers;
 	struct btrfs_workqueue *endio_meta_workers;
+#ifdef MY_ABC_HERE
+	struct btrfs_workqueue *endio_meta_fix_workers;
+#endif /* MY_ABC_HERE */
 	struct btrfs_workqueue *endio_raid56_workers;
 	struct btrfs_workqueue *rmw_workers;
 	struct btrfs_workqueue *endio_meta_write_workers;
@@ -1241,6 +1257,10 @@ struct btrfs_fs_info {
 	spinlock_t mount_path_lock;
 	char *mount_path;
 #endif /* MY_ABC_HERE || MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
+	unsigned long can_fix_meta_key;
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	atomic_t nr_extent_maps;
@@ -1515,7 +1535,14 @@ enum {
 	/* Syno space usage is enabled on this root */
 	BTRFS_ROOT_SYNO_SPACE_USAGE_ENABLED,
 #endif /* MY_ABC_HERE */
+	/* This root has a drop operation that was started previously. */
+	BTRFS_ROOT_UNFINISHED_DROP,
 };
+
+static inline void btrfs_wake_unfinished_drop(struct btrfs_fs_info *fs_info)
+{
+	clear_and_wake_up_bit(BTRFS_FS_UNFINISHED_DROPS, &fs_info->flags);
+}
 
 /*
  * Record swapped tree blocks of a subvolume tree for delayed subtree trace
@@ -3638,6 +3665,10 @@ enum btrfs_reserve_flush_enum {
 	 * Can be interruped by fatal signal.
 	 */
 	BTRFS_RESERVE_FLUSH_ALL_STEAL,
+
+#ifdef MY_ABC_HERE
+	BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH,
+#endif /* MY_ABC_HERE */
 };
 
 enum btrfs_flush_state {
@@ -4977,6 +5008,7 @@ void btrfs_syno_locker_update_work_fn(struct work_struct *work);
 void btrfs_syno_locker_update_work_kick(struct btrfs_fs_info *fs_info);
 bool btrfs_syno_locker_feature_is_support(void);
 int btrfs_syno_locker_feature_disable(void);
+int btrfs_syno_locker_rename_disable(void);
 int btrfs_syno_locker_disk_root_read(struct btrfs_root *root);
 int btrfs_syno_locker_disk_root_delete(struct btrfs_trans_handle *trans, struct btrfs_root *root);
 int btrfs_syno_locker_snapshot_clone(struct btrfs_trans_handle *trans,

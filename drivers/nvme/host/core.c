@@ -38,6 +38,15 @@
 #include <linux/synolib.h>
 #endif /* defined(MY_ABC_HERE) || defined(MY_ABC_HERE) */
 
+#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+#include <linux/of.h>
+#include <linux/synolib.h>
+extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
+extern void syno_acm_device_list_add(int slot_index, const char* device_name);
+extern void syno_acm_device_list_delete(const char* device_name);
+extern struct device_node *syno_pcie_path_to_eunit_root_port(const char *pciepath, bool exactly);
+#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+
 #define NVME_MINORS		(1U << MINORBITS)
 
 unsigned int admin_timeout = 60;
@@ -894,7 +903,9 @@ static inline blk_status_t nvme_setup_rw(struct nvme_ns *ns,
 		dsmgmt |= NVME_RW_DSM_FREQ_PREFETCH;
 
 #ifdef MY_ABC_HERE
-	ns->ctrl->idle = jiffies;
+	if (0 == ns->ctrl->do_standby_syncing) {
+		ns->ctrl->idle = jiffies;
+	}
 #endif /* MY_ABC_HERE */
 
 	cmnd->rw.opcode = op;
@@ -3582,6 +3593,45 @@ END:
 }
 
 static DEVICE_ATTR(syno_idle_time, S_IRUGO | S_IWUSR, sdev_show_syno_idle_time, sdev_store_syno_idle_time);
+
+static ssize_t
+nvme_show_syno_standby_syncing(struct device *dev, struct device_attribute *attr, char *buf)
+{
+	struct nvme_ctrl *ctrl = dev_get_drvdata(dev);
+	int iRet = -EFAULT;
+
+	if (NULL == ctrl) {
+		goto END;
+	}
+
+	iRet = snprintf(buf, 20, "%u\n", ctrl->do_standby_syncing);
+
+END:
+	return iRet;
+}
+
+static ssize_t
+nvme_store_syno_standby_syncing(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct nvme_ctrl *ctrl = dev_get_drvdata(dev);
+	unsigned long ulstandby_syncing;
+
+	if (NULL == ctrl) {
+		goto END;
+	}
+
+	sscanf(buf, "%lu", &ulstandby_syncing);
+	if (0 < ulstandby_syncing) {
+		ctrl->do_standby_syncing = 1;
+	} else {
+		ctrl->do_standby_syncing = 0;
+	}
+
+END:
+	return count;
+}
+
+static DEVICE_ATTR(syno_standby_syncing, S_IRUGO | S_IWUSR, nvme_show_syno_standby_syncing, nvme_store_syno_standby_syncing);
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -3971,6 +4021,9 @@ static struct attribute *nvme_dev_attrs[] = {
 	&dev_attr_hostid.attr,
 	&dev_attr_ctrl_loss_tmo.attr,
 	&dev_attr_reconnect_delay.attr,
+#ifdef MY_ABC_HERE
+	&dev_attr_syno_standby_syncing.attr,
+#endif /* MY_ABC_HERE */
 	NULL
 };
 
@@ -4834,6 +4887,13 @@ static void nvme_free_ctrl(struct device *dev)
 	struct nvme_ctrl *ctrl =
 		container_of(dev, struct nvme_ctrl, ctrl_device);
 	struct nvme_subsystem *subsys = ctrl->subsys;
+#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+	char disk_name[DISK_NAME_LEN] = {0};
+
+	sprintf(disk_name, "nvme%d", ctrl->instance);
+	syno_acm_device_list_delete(disk_name);
+#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
+
 
 	if (!subsys || ctrl->instance != subsys->instance)
 		ida_simple_remove(&nvme_instance_ida, ctrl->instance);
@@ -4864,6 +4924,13 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 		const struct nvme_ctrl_ops *ops, unsigned long quirks)
 {
 	int ret;
+
+#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+	char sztemp[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
+	struct device_node *eunit_node = NULL;
+	int index = -1;
+	char disk_name[DISK_NAME_LEN] = {0};
+#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 	ctrl->state = NVME_CTRL_NEW;
 	spin_lock_init(&ctrl->lock);
@@ -4941,6 +5008,20 @@ int nvme_init_ctrl(struct nvme_ctrl *ctrl, struct device *dev,
 
 	nvme_fault_inject_init(&ctrl->fault_inject, dev_name(ctrl->device));
 	nvme_mpath_init_ctrl(ctrl);
+
+#if defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C)
+	syno_pciepath_dts_pattern_get(to_pci_dev(ctrl->dev), sztemp, SYNO_DTS_PROPERTY_CONTENT_LENGTH);
+	eunit_node = syno_pcie_path_to_eunit_root_port(sztemp, false);
+
+	if (eunit_node && eunit_node->full_name) {
+		sscanf(eunit_node->full_name, DT_PCIE_EUNIT_SLOT"@%d", &index);
+
+		if (-1 != index) {
+			sprintf(disk_name, "nvme%d", ctrl->instance);
+			syno_acm_device_list_add(index, disk_name);
+		}
+	}	
+#endif /* defined(MY_DEF_HERE) && defined(CONFIG_SYNO_PCI_EUNIT_I2C) */
 
 	return 0;
 out_free_name:

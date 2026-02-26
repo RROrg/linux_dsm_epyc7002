@@ -18,6 +18,7 @@
 #include "btrfs_inode.h"
 #include "syno-feat-tree.h"
 
+static bool locker_enfore_norename = false;
 static bool locker_feature_support = true;
 extern struct file_system_type *__btrfs_root_fs_type;
 
@@ -39,6 +40,13 @@ int btrfs_syno_locker_feature_disable(void)
 		locker_feature_support = false;
 		pr_info("BTRFS: locker disabled\n");
 	}
+
+	return 0;
+}
+
+int btrfs_syno_locker_rename_disable(void)
+{
+	locker_enfore_norename = true;
 
 	return 0;
 }
@@ -716,7 +724,12 @@ int btrfs_syno_locker_may_rename(struct inode *old_dir, struct dentry *old_dentr
 	}
 
 	spin_lock(&root->locker_lock);
-	/* rename is allowed if old_path is a locker-enabled subvolume */
+	if (old_ino == BTRFS_FIRST_FREE_OBJECTID && locker_enfore_norename &&
+	    root->locker_enabled && root->locker_mode != LM_NONE) {
+		ret = -EPERM;
+		spin_unlock(&root->locker_lock);
+		goto out;
+	}
 
 	if (old_ino != BTRFS_FIRST_FREE_OBJECTID &&
 	    root->locker_enabled && root->locker_mode != LM_NONE &&
