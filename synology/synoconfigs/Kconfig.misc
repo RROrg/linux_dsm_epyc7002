@@ -127,6 +127,11 @@ config SYNO_BIOS_ACPI_FPDT
 	depends on X86_64 && ACPI
 	default y
 
+config SYNO_BIOS_WARNING_FLAGS
+	bool "Warning if some BIOS flags exist"
+	depends on X86_64
+	default y
+
 endmenu #BIOS LOG
 
 menu "ceph"
@@ -161,3 +166,12 @@ config SYNO_KEXEC_TEST
 	depends on X86_64
 
 endmenu # Synology Protection
+
+menu "TPM"
+
+config SYNO_TPM_TIMEOUT_ADJUST_AND_RETRY
+	bool "adjust tpm command timeout and retry"
+	depends on TCG_TPM
+	default n
+
+endmenu #TPM

@@ -83,6 +83,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
 	if (!trylock_super(sb))
 		return SHRINK_STOP;
 
+#ifdef MY_ABC_HERE
+	task_set_shrink(current);
+#endif /* MY_ABC_HERE */
+
 	if (sb->s_op->nr_cached_objects)
 		fs_objects = sb->s_op->nr_cached_objects(sb, sc);
 
@@ -113,6 +117,10 @@ static unsigned long super_cache_scan(struct shrinker *shrink,
 		sc->nr_to_scan = fs_objects + 1;
 		freed += sb->s_op->free_cached_objects(sb, sc);
 	}
+
+#ifdef MY_ABC_HERE
+	task_clear_shrink(current);
+#endif /* MY_ABC_HERE */
 
 	up_read(&sb->s_umount);
 	return freed;

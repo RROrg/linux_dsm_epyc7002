@@ -217,6 +217,7 @@ struct scsi_device {
 	unsigned rpm_autosuspend:1;	/* Enable runtime autosuspend at device
 					 * creation time */
 #ifdef MY_ABC_HERE
+	//TODO: Remove this variable if schedule is suitable for ABI change
 	unsigned power_loss_during_reboot:1;
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
@@ -292,6 +293,7 @@ struct scsi_device {
 #ifdef MY_ABC_HERE
 #define BLOCK_INFO_SIZE        512     /* Largest string for a scsi device block information */
 	char syno_block_info[BLOCK_INFO_SIZE];
+	rwlock_t syno_block_info_rwlock;        /* lock for syno_block_info */
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE

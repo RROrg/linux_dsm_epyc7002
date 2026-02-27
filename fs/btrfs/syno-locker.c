@@ -13,7 +13,6 @@
 #include <linux/string_helpers.h>
 
 #include "ctree.h"
-#include "backref.h"
 #include "disk-io.h"
 #include "btrfs_inode.h"
 #include "syno-feat-tree.h"
@@ -1151,7 +1150,7 @@ syno_locker_inode_period_end_set(struct btrfs_inode *binode, time64_t time)
 
 out:
 	if (ret)
-		btrfs_err(binode->root->fs_info, "invalid lock period end. cur:%lld, new:%lld",
+		btrfs_debug(binode->root->fs_info, "invalid lock period end. cur:%lld, new:%lld",
 			  binode->locker_period_end, time);
 
 	return ret;
@@ -1627,64 +1626,61 @@ static int syno_locker_ioctl_args_validate(struct btrfs_inode *binode,
 	spin_lock(&binode->locker_lock);
 	spin_lock(&root->locker_lock);
 
-	if (args->flags & ~BTRFS_LOCKER_MASK_ALL) {
-		btrfs_err(fs_info, "invalid flags");
-		goto fail_unlock;
-	}
+	args->flags &= BTRFS_LOCKER_MASK_ALL;
 
 	if ((args->flags & BTRFS_LOCKER_CLOCK) ||
 	    (args->flags & BTRFS_LOCKER_CLOCK_DELTA)) {
-		btrfs_err(fs_info, "volume clock is read-only");
+		btrfs_debug(fs_info, "volume clock is read-only");
 		goto fail_unlock;
 	}
 
 	if (args->flags & BTRFS_LOCKER_CLOCK_ADJUSTMENT) {
 		if (root->locker_enabled) {
-			btrfs_err(fs_info, "volume clock adjustment is read-only");
+			btrfs_debug(fs_info, "volume clock adjustment is read-only");
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_ENABLED) {
 		if (!args->enabled) {
-			btrfs_err(fs_info, "you shall not disable locker");
+			btrfs_debug(fs_info, "you shall not disable locker");
 			goto fail_unlock;
 		}
 		if (root->locker_mode == LM_NONE &&
 		    (!(args->flags & BTRFS_LOCKER_MODE) || (args->mode == LM_NONE))) {
-			btrfs_err(fs_info, "mode isn't specified when enabling locker");
+			btrfs_debug(fs_info, "mode isn't specified when enabling locker");
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_MODE) {
 		if (root->locker_enabled && root->locker_mode == LM_COMPLIANCE) {
-			btrfs_err(fs_info, "compliance mode isn't alterable after locker is enabled");
+			btrfs_debug(fs_info, "compliance mode isn't alterable after locker is enabled");
 			goto fail_unlock;
 		}
 		if (args->mode > LM_MAX) {
-			btrfs_err(fs_info, "invalid mode (%d)", args->mode);
+			btrfs_debug(fs_info, "invalid mode (%d)", args->mode);
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_DEFAULT_STATE) {
 		if (args->default_state != LS_IMMUTABLE && args->default_state != LS_APPENDABLE) {
-			btrfs_err(fs_info, "invalid default state (%d) for auto-lock", args->default_state);
+			btrfs_debug(fs_info, "invalid default state (%d) for auto-lock", args->default_state);
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_WAITTIME) {
 		if (args->waittime < 0) {
-			btrfs_err(fs_info, "invalid waittime (%lld) for auto-lock", args->waittime);
+			btrfs_debug(fs_info, "invalid waittime (%lld) for auto-lock", args->waittime);
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_DURATION) {
 		if (args->duration < 0) {
-			btrfs_err(fs_info, "invalid default duration (%lld) for auto-lock", args->duration);
+			btrfs_debug(fs_info, "invalid default duration (%lld) for auto-lock", args->duration);
 			goto fail_unlock;
 		}
 	}
@@ -1695,61 +1691,61 @@ static int syno_locker_ioctl_args_validate(struct btrfs_inode *binode,
 		 * enabled. 'raw_state' will reveal the result, but (effective) `state` may not.
 		 */
 		if (args->state > LS_MAX) {
-			btrfs_err(fs_info, "invalid state (%d)", args->state);
+			btrfs_debug(fs_info, "invalid state (%d)", args->state);
 			goto fail_unlock;
 		}
 		if (args->state != LS_OPEN && S_ISDIR(binode->vfs_inode.i_mode) &&
 		    btrfs_ino(binode) != BTRFS_FIRST_FREE_OBJECTID) {
-			btrfs_err(fs_info, "invalid state (%d) for directory", args->state);
+			btrfs_debug(fs_info, "invalid state (%d) for directory", args->state);
 			goto fail_unlock;
 		}
 		if (root->locker_enabled && binode->locker_period_end < 0 &&
 		    (!(args->flags & BTRFS_LOCKER_PERIOD_MASK) || args->period_end < 0)) {
-			btrfs_err(fs_info, "the end of lock period isn't set");
+			btrfs_debug(fs_info, "the end of lock period isn't set");
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_UPDATE_TIME) {
 		if (root->locker_enabled) {
-			btrfs_err(fs_info, "update-time is read-only");
+			btrfs_debug(fs_info, "update-time is read-only");
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_UPDATE_TIME_FLOOR) {
-		btrfs_err(fs_info, "update-time-floor is read-only");
+		btrfs_debug(fs_info, "update-time-floor is read-only");
 		goto fail_unlock;
 	}
 
 	if (args->flags & BTRFS_LOCKER_BEGIN) {
 		if (root->locker_enabled) {
-			btrfs_err(fs_info, "period_begin is read-only");
+			btrfs_debug(fs_info, "period_begin is read-only");
 			goto fail_unlock;
 		}
 	}
 
 	if (args->flags & BTRFS_LOCKER_END) {
 		if (root->locker_enabled && args->period_end < 0) {
-			btrfs_err(fs_info, "invalid period_end (%lld)", args->period_end);
+			btrfs_debug(fs_info, "invalid period_end (%lld)", args->period_end);
 			goto fail_unlock;
 		}
 	}
 	if (args->flags & BTRFS_LOCKER_END_EXT_BEGIN) {
 		if (args->period_end < 0 || binode->locker_period_begin == LOCKER_DEFAULT_PERIOD_BEGIN) {
-			btrfs_err(fs_info, "invalid period_end (%lld) to extended from begin", args->period_end);
+			btrfs_debug(fs_info, "invalid period_end (%lld) to extended from begin", args->period_end);
 			goto fail_unlock;
 		}
 	}
 	if (args->flags & BTRFS_LOCKER_END_EXT_END) {
 		if (args->period_end < 0 || binode->locker_period_end == LOCKER_DEFAULT_PERIOD_END) {
-			btrfs_err(fs_info, "invalid period_end (%lld) to extended from end", args->period_end);
+			btrfs_debug(fs_info, "invalid period_end (%lld) to extended from end", args->period_end);
 			goto fail_unlock;
 		}
 	}
 	if (args->flags & BTRFS_LOCKER_END_EXT_CURRENT) {
 		if (args->period_end < 0) {
-			btrfs_err(fs_info, "invalid period_end (%lld) to extended from current", args->period_end);
+			btrfs_debug(fs_info, "invalid period_end (%lld) to extended from current", args->period_end);
 			goto fail_unlock;
 		}
 	}
@@ -1953,7 +1949,7 @@ out:
 
 	if (ret) {
 		pathname = kstrdup_quotable_file(file, GFP_KERNEL);
-		btrfs_err(fs_info, "failed to set locker properties of '%s'. err=%d.", pathname, ret);
+		btrfs_debug(fs_info, "failed to set locker properties of '%s'. err=%d.", pathname, ret);
 		kfree(pathname);
 	}
 

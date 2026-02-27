@@ -184,7 +184,7 @@ kconfig_debug_mode()
         #
         # Btrfs
         #
-        CONFIG_BTRFS_FS_RUN_SANITY_TESTS
+        #CONFIG_BTRFS_FS_RUN_SANITY_TESTS
         #CONFIG_BTRFS_DEBUG
         CONFIG_BTRFS_ASSERT
         #CONFIG_BTRFS_FS_REF_VERIFY

@@ -49,7 +49,9 @@ static ssize_t pwrctl_present_show (struct kobject *kobj, struct kobj_attribute 
 
 	iPrzPinVal = SYNO_CHECK_HDD_DETECT(iSlot);
 
-	iRet += scnprintf (buf, PAGE_SIZE, "Slot%d is %sPresent\n", iSlot, iPrzPinVal?"":"Not ");
+	iRet += scnprintf (buf, PAGE_SIZE, "Slot%d is %s\n", iSlot,
+		(iPrzPinVal == 1) ? "Present" :
+			(iPrzPinVal == 0) ? "Not Present": "Unknown");
 
 END:
 	return iRet;

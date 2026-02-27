@@ -112,6 +112,11 @@ struct klist syno_ata_port_head;
 EXPORT_SYMBOL(syno_ata_port_head);
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_DEF_HERE
+extern bool g_support_syno_dpm;
+extern int g_syno_dpm_debug_level;
+#endif /* MY_DEF_HERE */
+
 static unsigned int ata_dev_init_params(struct ata_device *dev,
 					u16 heads, u16 sectors);
 static unsigned int ata_dev_set_xfermode(struct ata_device *dev);
@@ -2058,6 +2063,16 @@ retry:
 	return 0;
 
  err_out:
+#ifdef MY_ABC_HERE
+	/* SSD two hotplug event may cause running IDENTIFY cmd failed */
+	if ((ap->pflags & ATA_PFLAG_SYNO_BOOT_PROBE) && // during plug in
+		(!ap->nr_pmp_links) && 	// not pmp
+		!(dev->link->uiStsFlags & SYNO_STATUS_UNMASK_ERROR) ) { // not mask before
+		dev->link->uiStsFlags |= SYNO_STATUS_UNMASK_ERROR;
+		return rc;
+	}
+#endif /* MY_ABC_HERE */
+
 	if (ata_msg_warn(ap))
 		ata_dev_warn(dev, "failed to IDENTIFY (%s, err_mask=0x%x)\n",
 			     reason, err_mask);
@@ -3134,19 +3149,22 @@ extern void SYNO_HDD_POWER_ON(int index);
 #ifdef MY_ABC_HERE
 void syno_ata_present_print(struct ata_port *ap, const char *eventlog)
 {
+	int funcRet = -1;
 	bool blPresent = false;
-
 	/* XXX: Assume all eunit don't have present pin info */
 	if (0 > ap->syno_internal_slot_index) {
 		return ;
 	}
 
 	if (SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(ap->syno_internal_slot_index+1)) {
-		if (SYNO_CHECK_HDD_DETECT(ap->syno_internal_slot_index + 1)) {
+		funcRet = SYNO_CHECK_HDD_DETECT(ap->syno_internal_slot_index + 1);
+		if (1 == funcRet) {
 			ata_port_printk(ap, KERN_ERR, "Disk is present for %s event\n", eventlog);
 			blPresent = true;
-		} else {
+		} else if (0 == funcRet) {
 			ata_port_printk(ap, KERN_ERR, "Disk is not present for %s event\n", eventlog);
+		} else {
+			ata_port_printk(ap, KERN_ERR, "Unable to get present pin info for %s event\n", eventlog);
 		}
 	} else {
 		ata_port_printk(ap, KERN_ERR, "No present pin info for %s event\n", eventlog);
@@ -5619,6 +5637,10 @@ void ata_link_init(struct ata_port *ap, struct ata_link *link, int pmp)
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
+	link->uiStsFlags &= ~SYNO_STATUS_UNMASK_ERROR;
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
 	INIT_WORK(&link->SendSataErrEventTask, SendSataErrEvent);
 	INIT_WORK(&link->SendDiskTimeoutEventTask, SendDiskTimeoutEvent);
 	INIT_WORK(&link->SendDiskSoftResetFailEventTask, SendDiskSoftResetFailEvent);
@@ -6233,6 +6255,16 @@ int ata_port_probe(struct ata_port *ap)
 	unsigned long flags;
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_DEF_HERE
+	if (g_support_syno_dpm) {
+		/*
+		* The power on control will be done by Syno Disk Power Manager.
+		*/
+		if (g_syno_dpm_debug_level > 0) {
+			printk(KERN_WARNING "skip lagacy hdd power on");
+		}
+	} else {
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	/* delay Xs to avoid probe disks in the same time(consume too much power)
 	 * If this async_port_probe(..) function is run asynchronously this code is not work,
@@ -6249,6 +6281,9 @@ int ata_port_probe(struct ata_port *ap)
 		mdelay(3000);
 	}
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	}
+#endif /* MY_DEF_HERE */
 
 	if (ap->ops->error_handler) {
 		__ata_port_probe(ap);

@@ -104,6 +104,10 @@ config SYNO_FS_SPLICE_FSNOTIFY
 	bool "splice: report related fsnotify events"
 	default y
 
+config SYNO_FS_FIX_FITHAW_DEADLOCK_WITH_SHRINKER_EVICT_UNLINKED_INODE
+	bool "fix fithaw deadlock with shrinker evict unlinked inode"
+	default y
+
 endmenu #Basic
 
 menu "CIFS"
@@ -908,6 +912,16 @@ config SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
 
 config SYNO_BTRFS_FIX_XATTR_EXTENSION_ENOSPC
 	bool "fix xattr extension enospc"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_ENHANCE_TREE_SEARCH
+	bool "Add interface to enhance tree search ioctl"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_DELAYED_INODE_THROTTLE
+	bool "Add btrfs delayed inode throttle"
 	default y
 	depends on BTRFS_FS
 

@@ -40,7 +40,6 @@
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_DEF_HERE
-#include <linux/sort.h>
 extern struct syno_control_operations *syno_control_operation_get(const int slot_type, const int slot_index);
 #endif /* MY_DEF_HERE */
 
@@ -94,12 +93,31 @@ enum {
 
 	/* probe speed down parameters, see ata_eh_schedule_probe() */
 	ATA_EH_PROBE_TRIAL_INTERVAL	= 60000,	/* 1 min */
+#ifdef MY_DEF_HERE
+	/* The first probe will fail if we use SYNO DPM
+	 * because disks are not powered on yet.
+	 * So we add one more chance to probe.
+	 */
+	ATA_EH_PROBE_TRIALS		= 3,
+#else /* MY_DEF_HERE */
 	ATA_EH_PROBE_TRIALS		= 2,
+#endif /* MY_DEF_HERE */
 };
 
 #ifdef MY_ABC_HERE
 extern unsigned int guiWakeupDisksNum;
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+extern bool g_support_syno_dpm;
+extern bool syno_dpm_check_support(const char *uuid);
+extern int syno_dpm_req_pwr_by_slot(const char *uuid, unsigned int slot,
+		const char *caller_name);
+extern int syno_dpm_rel_pwr_by_slot(const char *uuid, unsigned int slot,
+		const char *caller_name);
+extern int syno_dpm_req_quota_only_by_slot(const char *uuid, unsigned int slot,
+		const char *caller_name);
+#endif /* MY_DEF_HERE */
 
 /* The following table determines how we sequence resets.  Each entry
  * represents timeout for that try.  The first try can be soft or
@@ -836,6 +854,32 @@ static unsigned long int gJiffiesLastPmOn = 0;
 DEFINE_SPINLOCK(PmPendingLock);
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static void syno_ata_deep_sleep_spinup_delay(struct ata_port *ap)
+{
+	/* Spin up group control for disk deepsleep */
+	if (gSynoHddPowerupSeq) {
+		spin_lock(&PmPendingLock);
+		if (SynoWakeInterval() > (jiffies - gJiffiesLastPmOn)) {
+			DBGMESG("disk %d will busy loop wait for other disk doing Power On Control\n",
+					ap->print_id);
+
+			/* it is too close from last disk power on. */
+			while (SynoWakeInterval() > (jiffies - gJiffiesLastPmOn)) {
+				spin_unlock(&PmPendingLock);
+				schedule_timeout_uninterruptible(HZ);
+				spin_lock(&PmPendingLock);
+			}
+		}
+		if (SynoDSleepNeedUpdateLastPmOn()) {
+			gJiffiesLastPmOn = jiffies;
+		}
+		spin_unlock(&PmPendingLock);
+	}
+}
+#endif /* MY_ABC_HERE */
+
+
 static int wake_up_deepsleep_internal(struct ata_port *ap)
 {
 	int ret = 0;
@@ -873,24 +917,11 @@ static int wake_up_deepsleep_internal(struct ata_port *ap)
 	spin_unlock_irqrestore(ap->lock, flags);
 
 #ifdef MY_ABC_HERE
-	/* Spin up group control for disk deepsleep */
-	if (gSynoHddPowerupSeq) {
-		spin_lock(&PmPendingLock);
-		if (SynoWakeInterval() > (jiffies - gJiffiesLastPmOn)) {
-			DBGMESG("disk %d will busy loop wait for other disk doing Power On Control\n",
-					ap->print_id);
-
-			/* it is too close from last disk power on. */
-			while (SynoWakeInterval() > (jiffies - gJiffiesLastPmOn)) {
-				spin_unlock(&PmPendingLock);
-				schedule_timeout_uninterruptible(HZ);
-				spin_lock(&PmPendingLock);
-			}
-		}
-		if (SynoDSleepNeedUpdateLastPmOn()) {
-			gJiffiesLastPmOn = jiffies;
-		}
-		spin_unlock(&PmPendingLock);
+#ifdef MY_DEF_HERE
+	if (!syno_dpm_check_support(ap->link.dpm_uuid))
+#endif /* MY_DEF_HERE */
+	{
+		syno_ata_deep_sleep_spinup_delay(ap);
 	}
 #endif /* MY_ABC_HERE */
 
@@ -943,7 +974,11 @@ static int schedule_eunit_eh(struct ata_port *pAp_target)
 		goto END;
 	}
 
+#ifdef MY_DEF_HERE
+	if (!IS_SYNOLOGY_RX1223RP(pAp_target->PMSynoUnique) && !IS_SYNOLOGY_USB_ACM_EUNIT(pAp_target->PMSynoUnique)) {
+#else /* MY_DEF_HERE */
 	if (!IS_SYNOLOGY_RX1223RP(pAp_target->PMSynoUnique)) {
+#endif /* MY_DEF_HERE */
 		iRet = 0;
 		goto END;
 	}
@@ -999,12 +1034,12 @@ static int wake_up_deepsleep_eunit(struct ata_port *ap)
 	if (!(pAp_master->pflags & (ATA_PFLAG_SYNO_IRQ_OFF | ATA_PFLAG_SYNO_IRQOFF_PWROFF_DONE))) {
 		/* not irq off, bye */
 		spin_unlock_irqrestore(pAp_master->lock, flags);
-		goto SKIP;
+		goto END;
 	} else {
 		if (pAp_master->pflags & ATA_PFLAG_SYNO_DS_PWROFF) {
 			/* power off case, bye */
 			spin_unlock_irqrestore(pAp_master->lock, flags);
-			goto SKIP;
+			goto END;
 		}
 	}
 	
@@ -1049,7 +1084,6 @@ static int wake_up_deepsleep_eunit(struct ata_port *ap)
 	pAp_master->pflags &= ~(ATA_PFLAG_SYNO_IRQOFF_LOCK_FOR_EH);
 	spin_unlock_irqrestore(pAp_master->lock, flags);
 
-SKIP:
 	ret = 1;
 
 END:
@@ -1450,14 +1484,13 @@ END:
 	return;
 }
 
-void syno_sata_deep_retry (struct ata_port *ap)
+int syno_sata_deep_retry (struct ata_port *ap)
 {
 	int iDeepCtlRet = -1;
 	bool need_notify = false;
 
 	/* if the port doesn't support deep sleep, give up */
 	if (!iIsSynoDeepSleepSupport(ap)) {
-		ap->syno_recover_tries = 0;
 		goto END;
 	}
 
@@ -1490,7 +1523,6 @@ void syno_sata_deep_retry (struct ata_port *ap)
 	if (iDeepCtlRet) {
 		/* if power off fail, give up */
 		ata_port_printk(ap, KERN_ERR, "set deepsleep fail, can't recover, give up\n");
-		ap->syno_recover_tries = 0;
 		goto END;
 	}
 
@@ -1508,7 +1540,7 @@ void syno_sata_deep_retry (struct ata_port *ap)
 	power_reset_record(ap, need_notify);
 
 END:
-	return;
+	return iDeepCtlRet;
 }
 #endif /* MY_ABC_HERE */
 
@@ -1517,6 +1549,9 @@ END:
 static void syno_sata_recover_mechanism (struct ata_port *ap)
 {
 	unsigned long flags;
+	struct ata_link *link = NULL;
+	unsigned int uiSflags_backup;
+	int rc;
 
 	/* XXX:
 	 * ap->uiSflags != 0 means libata error handling had some fail.
@@ -1560,9 +1595,21 @@ static void syno_sata_recover_mechanism (struct ata_port *ap)
 	/*
 	 * --- try to recover ---
 	 */
+	uiSflags_backup = ap->uiSflags;
 	ap->uiSflags = 0;
+	ata_for_each_link(link, ap, HOST_FIRST) {
+		if (link->uiSflags) {
+			link->sata_spd_limit = link->hw_sata_spd_limit;
+		}
+	}
 	if (ap->ops->syno_recover) {
-		ap->ops->syno_recover(ap);
+		rc = ap->ops->syno_recover(ap);
+		if (rc) {
+			/* Add uiSflags back for error handling in cleanup */
+			ap->uiSflags = uiSflags_backup;
+			/* Recover fail, give up */
+			ap->syno_recover_tries = 0;
+		}
 	}
 
 END:
@@ -1837,6 +1884,9 @@ syno_recover_repeat:
 		if (ap->pflags & ATA_PFLAG_EH_PENDING) {
 			if (--ap->eh_tries) {
 				spin_unlock_irqrestore(ap->lock, flags);
+#ifdef MY_ABC_HERE
+				ata_port_err(ap, "EH pending flag is set, repeat EH\n");
+#endif /* MY_ABC_HERE */
 				goto repeat;
 			}
 			ata_port_err(ap,
@@ -2471,6 +2521,10 @@ void ata_eh_detach_dev(struct ata_device *dev)
 	spin_lock_irqsave(ap->lock, flags);
 
 	dev->flags &= ~ATA_DFLAG_DETACH;
+
+#ifdef MY_ABC_HERE
+	link->uiStsFlags &= ~SYNO_STATUS_UNMASK_ERROR;
+#endif /* MY_ABC_HERE */
 
 	if (ata_scsi_offline_dev(dev)) {
 		dev->flags |= ATA_DFLAG_DETACHED;
@@ -3306,13 +3360,13 @@ static void ata_eh_link_autopsy(struct ata_link *link)
 		nr_failed++;
 	}
 
-	/* If all failed commands requested silence, then be quiet */
-	if (nr_quiet == nr_failed
 #ifdef MY_ABC_HERE
-		&& nr_failed != 0
-#endif /* MY_ABC_HERE */
-		)
+	/* Don't be quiet */
+#else /* MY_ABC_HERE */
+	/* If all failed commands requested silence, then be quiet */
+	if (nr_quiet == nr_failed)
 		ehc->i.flags |= ATA_EHI_QUIET;
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	if ((ATA_SYNO_FLAG_JM585_OTHER_ERR & host_ehc->i.uiJM585DubiosIFSProtoFlag)) {
@@ -4087,6 +4141,12 @@ int ata_eh_reset(struct ata_link *link, int classify,
 		if (ata_phys_link_offline(ata_dev_phys_link(dev)))
 			continue;
 
+#ifdef MY_ABC_HERE
+		if (link->flags & ATA_LFLAG_SYNO_OFFLINE) {
+			continue;
+		}
+#endif /* MY_ABC_HERE */
+
 		/* apply class override */
 		if (lflags & ATA_LFLAG_ASSUME_ATA)
 			classes[dev->devno] = ATA_DEV_ATA;
@@ -4391,6 +4451,13 @@ static int ata_eh_revalidate_and_attach(struct ata_link *link,
 				goto err;
 			}
 
+#ifdef MY_ABC_HERE
+			if (link->flags & ATA_LFLAG_SYNO_OFFLINE) {
+				rc = -EIO;
+				goto err;
+			}
+#endif /* MY_ABC_HERE */
+
 			ata_eh_about_to_do(link, dev, ATA_EH_REVALIDATE);
 			rc = ata_dev_revalidate(dev, ehc->classes[dev->devno],
 						readid_flags);
@@ -4634,6 +4701,13 @@ static int ata_eh_maybe_retry_flush(struct ata_device *dev)
 	if (qc->dev != dev || (qc->tf.command != ATA_CMD_FLUSH_EXT &&
 			       qc->tf.command != ATA_CMD_FLUSH))
 		return 0;
+
+#ifdef MY_ABC_HERE
+	/* link disabled, no action */
+	if (link->flags & ATA_LFLAG_DISABLED) {
+		return 0;
+	}
+#endif /* MY_ABC_HERE */
 
 	/* if the device failed it, it should be reported to upper layers */
 #ifdef MY_ABC_HERE
@@ -5006,6 +5080,8 @@ static int ata_eh_handle_dev_fail(struct ata_device *dev, int err)
 		else if(-EIO == err) {
 			ata_dev_printk(dev, KERN_WARNING,"handle -EIO dev fail, detach this dev\n");
 			ata_eh_detach_dev(dev);
+			/* link still online, disable to avoid wrong handling */
+			dev->link->flags |= ATA_LFLAG_DISABLED;
 		}
 #endif /* MY_ABC_HERE */
 
@@ -5024,63 +5100,14 @@ static int ata_eh_handle_dev_fail(struct ata_device *dev, int err)
 }
 
 #ifdef MY_DEF_HERE
-
-struct ata_link_power_seq {
-	int power_seq;
-	struct ata_link *link;
-};
-
-static int syno_get_power_seq_from_pmp_link(const char *eunit_unique, const int pmp_link)
-{
-	struct device_node *of_eunit = NULL;
-	struct device_node *pSlotNode = NULL, *pLibataNode = NULL;
-	int iDtsPmplink = -1;
-	int iPowerSeq = -1;
-
-	if (!eunit_unique || 0 > pmp_link) {
-		goto END;
-	}
-
-	if (NULL == (of_eunit = of_get_child_by_name(of_root, eunit_unique))) {
-		goto END;
-	}
-
-	for_each_child_of_node(of_eunit, pSlotNode) {
-
-		if (!pSlotNode->full_name || NULL == strstr(pSlotNode->full_name, DT_PMP_SLOT)) {
-			continue;
-		}
-
-		for_each_child_of_node(pSlotNode, pLibataNode) {
-
-			if (!pLibataNode->full_name || NULL == strstr(pLibataNode->full_name, DT_LIBATA)) {
-				continue;
-			}
-			if (0 != of_property_read_u32_index(pLibataNode, DT_PMP_LINK, 0, &iDtsPmplink)) {
-				continue;
-			}
-			if (iDtsPmplink != pmp_link) {
-				continue;
-			}
-			if (0 != of_property_read_u32_index(pLibataNode, DT_POWER_SEQ, 0, &iPowerSeq)) {
-				continue;
-			}
-		}
-	}
-
-END:
-	if (of_eunit) {
-		of_node_put(of_eunit);
-	}
-	return iPowerSeq;
-}
-
-int syno_get_disk_slot_from_pmp_link(const char *eunit_unique, const int pmp_link)
+static 
+int syno_get_disk_slot_from_pmp_link(const char *eunit_unique, const int pmp_emid, const int pmp_link)
 {
 	struct device_node *of_eunit = NULL;
 	struct device_node *pSlotNode = NULL, *pLibataNode = NULL;
 	const char *pPmpSlotName = NULL;
 	int iDtsPmplink = -1;
+	int iDtsPmpEmid = -1;
 	int iSlotIndex = -1;
 
 	if (!eunit_unique || 0 > pmp_link) {
@@ -5102,10 +5129,13 @@ int syno_get_disk_slot_from_pmp_link(const char *eunit_unique, const int pmp_lin
 			if (!pLibataNode->full_name || NULL == strstr(pLibataNode->full_name, DT_LIBATA)) {
 				continue;
 			}
+			if (0 != of_property_read_u32_index(pLibataNode, EBOX_INFO_EMID_KEY, 0, &iDtsPmpEmid)) {
+				continue;
+			}
 			if (0 != of_property_read_u32_index(pLibataNode, DT_PMP_LINK, 0, &iDtsPmplink)) {
 				continue;
 			}
-			if (iDtsPmplink != pmp_link) {
+			if (iDtsPmplink != pmp_link || iDtsPmpEmid != pmp_emid) {
 				continue;
 			}
 			if (1 != sscanf(pPmpSlotName, DT_PMP_SLOT"@%d", &iSlotIndex)) {
@@ -5121,7 +5151,7 @@ END:
 	return iSlotIndex;
 }
 
-#define USB_EUNIT_PER_WAIT_MS 500
+#define USB_EUNIT_PER_WAIT_MS 1000
 #define USB_EUNIT_WAIT_MAX_COUNT 20
 static int syno_ata_eunit_disk_wait_power_on(const struct ata_link *link)
 {
@@ -5148,7 +5178,7 @@ static int syno_ata_eunit_disk_wait_power_on(const struct ata_link *link)
 		goto END;
 	}
 
-	if (0 >= (iSlotIndex = syno_get_disk_slot_from_pmp_link(eunit_unique, link->pmp))) {
+	if (0 >= (iSlotIndex = syno_get_disk_slot_from_pmp_link(eunit_unique, link->ap->PMSynoEMID, link->pmp))) {
 		goto END;
 	}
 
@@ -5158,60 +5188,13 @@ static int syno_ata_eunit_disk_wait_power_on(const struct ata_link *link)
 		}
 		msleep(USB_EUNIT_PER_WAIT_MS);
 	}
+	if (i == USB_EUNIT_WAIT_MAX_COUNT) {
+		ata_link_info(link, "Eunit device %d slot %d timeout to wait for powering up\n", eunit_index, iSlotIndex);
+	}
 
 END:
 	return ret;
 }
-
-static int syno_compare_power_seq(const void *a, const void *b) {
-    const struct ata_link_power_seq *node_a = (struct ata_link_power_seq *)a;
-    const struct ata_link_power_seq *node_b = (struct ata_link_power_seq *)b;
-    return node_a->power_seq - node_b->power_seq;
-}
-
-static int syno_link_seq_init(struct ata_port *ap, struct ata_link_power_seq *rgAtaLinkSeq, const int rbAtaLinkSeq) {
-	struct ata_link *link = NULL;
-	struct syno_control_operations *ctrl_op = NULL;
-	int eunit_index = -1;
-	char eunit_unique[SYNO_EBOX_UNIQUE_MAX_LEN] = {0};
-	int iRet = -1;
-	int index = 0;
-	int i = 0;
-
-	if (!ap || !rgAtaLinkSeq) {
-		goto END;
-	}
-
-	for (i = 0; i < rbAtaLinkSeq; i++) {
-		rgAtaLinkSeq[i].power_seq = 0;
-		rgAtaLinkSeq[i].link = NULL;
-	}
-
-	if (0 < (eunit_index = syno_external_libata_index_get(ap))) {
-		ctrl_op = syno_control_operation_get(EUNIT_DEVICE, eunit_index);
-		if (ctrl_op && ctrl_op->unique_get) {
-			ctrl_op->unique_get(EUNIT_DEVICE, eunit_index, eunit_unique, sizeof(eunit_unique));
-		}
-		ata_for_each_link(link, ap, EDGE) {
-			rgAtaLinkSeq[index].power_seq = syno_get_power_seq_from_pmp_link(eunit_unique, link->pmp);
-			rgAtaLinkSeq[index].link = link;
-			index += 1;
-		}
-		// sort : having ata_link and power_seq lower first
-		sort(rgAtaLinkSeq, index, sizeof(struct ata_link_power_seq), syno_compare_power_seq, NULL);
-	} else {
-		ata_for_each_link(link, ap, EDGE) {
-			rgAtaLinkSeq[index].power_seq = 0;
-			rgAtaLinkSeq[index].link = link;
-			index += 1;
-		}
-	}
-
-	iRet = 0;
-END:
-	return iRet;
-}
-
 #endif /* MY_DEF_HERE */
 
 /**
@@ -5248,10 +5231,6 @@ int ata_eh_recover(struct ata_port *ap, ata_prereset_fn_t prereset,
 #ifdef MY_ABC_HERE
 	bool blCleanFlags = 0;
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
-	int iAtaLinkSeqIndex = 0;
-	struct ata_link_power_seq rgAtaLinkSeq[SATA_PMP_MAX_PORTS] = {{0}};
-#endif /* MY_DEF_HERE */
 
 	DPRINTK("ENTER\n");
 
@@ -5324,27 +5303,18 @@ int ata_eh_recover(struct ata_port *ap, ata_prereset_fn_t prereset,
 
 	/* reset */
 
-#ifdef MY_DEF_HERE
-	syno_link_seq_init(ap, rgAtaLinkSeq, SATA_PMP_MAX_PORTS);
-	for (iAtaLinkSeqIndex = 0; (iAtaLinkSeqIndex < SATA_PMP_MAX_PORTS) && (link = rgAtaLinkSeq[iAtaLinkSeqIndex].link); iAtaLinkSeqIndex++) {
-#else /* MY_DEF_HERE */
 	ata_for_each_link(link, ap, EDGE) {
-#endif /* MY_DEF_HERE */
 		struct ata_eh_context *ehc = &link->eh_context;
 
 #ifdef MY_DEF_HERE
-		syno_ata_eunit_disk_wait_power_on(link);
+		/* if eunit is wakeup from deepsleep, wait until the slot power is on before reset */
+		if (ap->pflags & ATA_PFLAG_SYNO_DS_WAKING) {
+			syno_ata_eunit_disk_wait_power_on(link);
+		}
 #endif /* MY_DEF_HERE */
 
 		if (!(ehc->i.action & ATA_EH_RESET))
 			continue;
-
-#ifdef MY_ABC_HERE
-		/* We add 2 secs delay for pmp first link to avoid HDD drop */
-		if (ap->nr_pmp_links && 0 == link->pmp) {
-			mdelay(2000);
-		}
-#endif /* MY_ABC_HERE */
 
 		rc = ata_eh_reset(link, ata_link_nr_vacant(link),
 				  prereset, softreset, hardreset, postreset);
@@ -5580,13 +5550,15 @@ void syno_print_active_command(struct ata_port *ap)
 		goto END;
 	}
 
-	for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
+	ata_port_err(ap, "ap->nr_active_links: %d\n", ap->nr_active_links);
+
+	for (tag = 0; tag < (ATA_MAX_QUEUE+1); tag++) {
 		struct ata_queued_cmd *qc = __ata_qc_from_tag(ap, tag);
 		struct ata_taskfile *cmd = &qc->tf, *res = &qc->result_tf;
 		char data_buf[20] = "";
 		char cdb_buf[70] = "";
 
-		if (!(ap->qc_active & (1 << qc->tag))) {
+		if (!(ap->qc_active & (1 << qc->tag)) && !(ATA_TAG_INTERNAL == qc->tag)) {
 			continue;
 		}
 

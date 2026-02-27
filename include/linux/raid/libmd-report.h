@@ -15,6 +15,9 @@ extern int (*funcSYNOSendRaidEvent)(unsigned int type, unsigned int raidno,
 void syno_report_bad_sector(sector_t sector, unsigned long rw,
 			    int md_minor, struct block_device *bdev, const char *func_name);
 
+void syno_report_uncorrected_bad_sector(sector_t sector, int md_minor,
+					struct block_device *bdev, const char *func_name);
+
 void syno_report_correct_bad_sector(sector_t sector, int md_minor,
 				    struct block_device *bdev, const char *func_name);
 

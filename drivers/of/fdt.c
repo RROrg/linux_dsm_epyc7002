@@ -63,6 +63,10 @@ extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_DEF_HERE
+extern bool g_support_syno_dpm;
+#endif /* MY_DEF_HERE */
+
 #ifdef MY_ABC_HERE
 void __init syno_init_internal_hdd_number(void)
 {
@@ -216,6 +220,20 @@ void __init syno_init_spinup_group(void)
 	}
 }
 #endif /* MY_ABC_HERE */
+
+#ifdef MY_DEF_HERE
+void __init syno_init_support_syno_dpm(void)
+{
+	struct device_node *dpm_node = NULL;
+
+	dpm_node = of_find_node_by_name(NULL, DT_SYNO_DISK_POWER_MANAGER);
+	if (dpm_node) {
+		printk("Support Synology Disk Power Manager");
+		g_support_syno_dpm = true;
+		of_node_put(dpm_node);
+	}
+}
+#endif /* MY_DEF_HERE */
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -1432,6 +1450,9 @@ void __init unflatten_device_tree(void)
 #ifdef MY_ABC_HERE
 	syno_init_spinup_group();
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	syno_init_support_syno_dpm();
+#endif /* MY_DEF_HERE */
 }
 
 /**

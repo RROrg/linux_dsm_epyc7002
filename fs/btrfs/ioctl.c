@@ -3147,11 +3147,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 
 		if (sizeof(sh) + item_len > *buf_size) {
 			if (*num_found) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 				ret = -EAGAIN;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 				ret = 1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 				goto out;
 			}
 
@@ -3166,11 +3166,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 		}
 
 		if (sizeof(sh) + item_len + *sk_offset > *buf_size) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			ret = -EAGAIN;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			ret = 1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			goto out;
 		}
 
@@ -3214,11 +3214,11 @@ static noinline int copy_to_sk(struct btrfs_path *path,
 			goto out;
 
 		if (*num_found >= sk->nr_items) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			ret = -EAGAIN;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 			ret = 1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			goto out;
 		}
 	}
@@ -3247,7 +3247,7 @@ out:
 	 *     * all items were found
 	 *     Either way, it will stops the loop which iterates to the next
 	 *     leaf
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	 *  -EAGAIN: try again to get more
 #endif
 	 *  -EOVERFLOW: item was to large for buffer
@@ -3267,9 +3267,9 @@ static noinline int search_ioctl(struct inode *inode,
 	struct btrfs_path *path;
 	int ret;
 	int num_found = 0;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	u64 orig_min_offset = sk->min_offset;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	unsigned long sk_offset = 0;
 
 	if (*buf_size < sizeof(struct btrfs_ioctl_search_header)) {
@@ -3296,7 +3296,7 @@ static noinline int search_ioctl(struct inode *inode,
 	key.type = sk->min_type;
 	key.offset = sk->min_offset;
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (sk->search_flag & BTRFS_SEARCH_FLAG_READAHEAD)
 		path->reada = READA_FORWARD_ALWAYS;
 	if ((sk->search_flag & BTRFS_SEARCH_FLAG_ADJUST_MIN) &&
@@ -3311,7 +3311,7 @@ static noinline int search_ioctl(struct inode *inode,
 		}
 		btrfs_release_path(path);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	while (1) {
 		ret = fault_in_pages_writeable(ubuf + sk_offset,
@@ -3335,9 +3335,9 @@ static noinline int search_ioctl(struct inode *inode,
 	if (ret > 0)
 		ret = 0;
 err:
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	sk->min_offset = orig_min_offset;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	sk->nr_items = num_found;
 	btrfs_put_root(root);
 	btrfs_free_path(path);
@@ -3370,11 +3370,11 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
 	 * In the origin implementation an overflow is handled by returning a
 	 * search header with a len of zero, so reset ret.
 	 */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (ret == -EOVERFLOW || ret == -EAGAIN)
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (ret == -EOVERFLOW)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		ret = 0;
 
 	if (ret == 0 && copy_to_user(&uargs->key, &sk, sizeof(sk)))
@@ -3409,13 +3409,13 @@ static noinline int btrfs_ioctl_tree_search_v2(struct file *file,
 	inode = file_inode(file);
 	ret = search_ioctl(inode, &args.key, &buf_size,
 			   (char __user *)(&uarg->buf[0]));
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (!(args.key.search_flag & BTRFS_SEARCH_FLAG_REPORT_BUF_FULL) && ret == -EAGAIN)
 		ret = 0;
 	if ((ret == 0 || ret == -EAGAIN) && copy_to_user(&uarg->key, &args.key, sizeof(args.key)))
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	if (ret == 0 && copy_to_user(&uarg->key, &args.key, sizeof(args.key)))
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		ret = -EFAULT;
 	else if (ret == -EOVERFLOW &&
 		copy_to_user(&uarg->buf_size, &buf_size, sizeof(buf_size)))

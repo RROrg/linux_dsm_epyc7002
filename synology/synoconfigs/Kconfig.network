@@ -20,10 +20,6 @@ config SYNO_BONDING_FIX_ACTIVE
 	bool "Fix a bug in active backup bonding mode"
 	default y
 
-config SYNO_FIX_8023AD_LINK_STATUS
-	bool "Fix 802.3ad link status bug"
-	default y
-
 config SYNO_IPV6_LINKLOCAL
 	bool "Assign an interface to IPV6 link local address automatically."
 	default y

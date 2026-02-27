@@ -516,6 +516,9 @@ static void syno_raid0_end_request(struct bio *bio)
 
 			syno_report_bad_sector(report_sector, bio_data_dir(bio),
 					       mddev->md_minor, rdev->bdev, __func__);
+			if (bio_data_dir(bio) == READ)
+				syno_report_uncorrected_bad_sector(report_sector, mddev->md_minor,
+								   rdev->bdev, __func__);
 		}
 #endif /* MY_ABC_HERE */
 	}

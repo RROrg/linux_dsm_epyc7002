@@ -305,6 +305,15 @@
 #define HW_RS1224p     "RS1224+"       //"RS1224+"
 #define HW_RS1224rpp     "RS1224rp+"       //"RS1224rp+"
 #define HW_RS4025xsp   "RS4025xs+"     //"RS4025xs+"
+#define HW_RS2825rpp   "RS2825rp+"     //"RS2825rp+"
+#define HW_DS425p      "DS425+"        //"DS425+"
+#define HW_DS925p      "DS925+"        //"DS925+"
+#define HW_DS1525p     "DS1525+"       //"DS1525+"
+#define HW_DS1825p     "DS1825+"       //"DS1825+"
+#define HW_DS725p      "DS725+"        //"DS725+"
+#define HW_DS1825xsp   "DS1825xs+"     //"DS1825xs+"
+#define HW_FS200T      "FS200T"        //"FS200T"
+#define HW_DS225p      "DS225+"        //"DS225+"
 #define HW_UNKNOWN     "DSUnknown"
 
 #define EBOX_INFO_UNIQUE_RX410  "RX410"
@@ -329,9 +338,10 @@
 #define EBOX_INFO_UNIQUE_DX1222 "DX1222"
 #define EBOX_INFO_UNIQUE_RX1223RP "RX1223rp"
 #define EBOX_INFO_UNIQUE_RX1224RP "RX1224rp"
-#define EBOX_INFO_UNIQUE_DX524 "DX524"
+#define EBOX_INFO_UNIQUE_DX525 "DX525"
 #define EBOX_INFO_UNIQUE_RX424 "RX424"
 #define EBOX_INFO_UNIQUE_FX2424DN "FX2424DN"
+#define EBOX_INFO_UNIQUE_RX1225RP "RX1225rp"
 
 #define SYNO_UNIQUE(x)     (x>>2)
 #define IS_SYNOLOGY_RX4(x) (SYNO_UNIQUE(x) == 0x15 || SYNO_UNIQUE(x) == 0xd) // 0x54 ~ 0x57
@@ -390,7 +400,7 @@ static const struct syno_ebox_unique_id syno_ebox_unique_mapping[] = {
 	{0x17, 0x1f, EBOX_INFO_UNIQUE_DX1222, EBOX_INFO_UNIQUE_DX1222},		// DX1222, 	0x17
 	{0x1C, 0x1f, EBOX_INFO_UNIQUE_DX1215II, EBOX_INFO_UNIQUE_DX1215II},	// DX1215II, 0x1C
 	{0x01, 0x1f, EBOX_INFO_UNIQUE_RX1223RP, EBOX_INFO_UNIQUE_RX1223RP},	// RX1223RP, 0x01
-	{0x02, 0x1f, EBOX_INFO_UNIQUE_DX524, EBOX_INFO_UNIQUE_DX524},	// DX524, 0x02
+	{0x02, 0x1f, EBOX_INFO_UNIQUE_DX525, EBOX_INFO_UNIQUE_DX525},	// DX525, 0x02
 	{0x03, 0x1f, EBOX_INFO_UNIQUE_RX1224RP, EBOX_INFO_UNIQUE_RX1224RP},	// RX1224RP, 0x03
 
 	{ }, /* terminate list */
@@ -520,6 +530,7 @@ enum {
     MD_SECTOR_WRITE_ERROR = 1,
     MD_SECTOR_REWRITE_OK = 2,
     MD_FAULTY_DEVICE = 3,
+    MD_SECTOR_READ_ERROR_UNCORRECTED = 4,
 };
 
 typedef enum {
@@ -559,6 +570,7 @@ typedef enum {
 #define EBOX_INFO_PHY_KEY       "phy" /* for mv14xx */
 #define EBOX_INFO_USB_PATH      "usb_path"
 #define EBOX_INFO_LAYER_KEY     "layer"
+#define EBOX_INFO_UUID_KEY      "uuid"
 
 /* Use 'K' as magic number */
 #define SYNOBIOS_IOC_MAGIC  'K'

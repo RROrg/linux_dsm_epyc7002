@@ -7,7 +7,7 @@ readonly __INCLUDE_ENV__=defined
 
 export ARCH="${ARCH:=x86_64}"
 export CROSS_COMPILE="${ToolChainPrefix:=}"
-export KCFLAGS="-fdiagnostics-color=always -Werror"
+export KCFLAGS="${KCFLAGS} -fdiagnostics-color=always -Werror"
 
 _init()
 {

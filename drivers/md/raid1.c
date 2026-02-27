@@ -441,9 +441,17 @@ static void raid1_end_read_request(struct bio *bio)
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
-		if (!syno_is_device_disappear(rdev->bdev))
+		if (!syno_is_device_disappear(rdev->bdev)) {
 			syno_report_bad_sector(r1_bio->sector + rdev->data_offset,
 				READ, conf->mddev->md_minor, rdev->bdev, __func__);
+#ifdef MY_ABC_HERE
+			if (uptodate)
+				syno_report_uncorrected_bad_sector(r1_bio->sector
+								   + rdev->data_offset,
+								   conf->mddev->md_minor, rdev->bdev,
+								   __func__);
+#endif /* MY_ABC_HERE */
+		}
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 		/* If we assign read target, we don't want to read data from other disks
@@ -2342,6 +2350,14 @@ static int r1_sync_page_io(struct md_rdev *rdev, sector_t sector,
 			set_bit(MD_RECOVERY_NEEDED, &
 				rdev->mddev->recovery);
 	}
+#ifdef MY_ABC_HERE
+	syno_report_bad_sector(sector + rdev->data_offset, rw, rdev->mddev->md_minor,
+			       rdev->bdev, __func__);
+	if (rw == READ)
+		syno_report_uncorrected_bad_sector(sector + rdev->data_offset,
+						   rdev->mddev->md_minor, rdev->bdev,
+						   __func__);
+#endif /* MY_ABC_HERE */
 	/* need to record an error - either for the block or the device */
 	if (!rdev_set_badblocks(rdev, sector, sectors, 0))
 		md_error(rdev->mddev, rdev);
@@ -2411,6 +2427,11 @@ static int fix_sync_read_error(struct r1bio *r1_bio)
 
 	rdev = conf->mirrors[r1_bio->read_disk].rdev;
 	if (test_bit(FailFast, &rdev->flags)) {
+#ifdef MY_ABC_HERE
+		syno_report_uncorrected_bad_sector(sect + rdev->data_offset,
+						   mddev->md_minor, rdev->bdev,
+						   __func__);
+#endif /* MY_ABC_HERE */
 		/* Don't try recovering from here - just fail it
 		 * ... unless it is the last working device of course */
 		md_error(mddev, rdev);
@@ -2466,6 +2487,11 @@ static int fix_sync_read_error(struct r1bio *r1_bio)
 				rdev = conf->mirrors[d].rdev;
 				if (!rdev || test_bit(Faulty, &rdev->flags))
 					continue;
+#ifdef MY_ABC_HERE
+				syno_report_uncorrected_bad_sector(sect + rdev->data_offset,
+								   mddev->md_minor, rdev->bdev,
+								   __func__);
+#endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 				if (!rdev_set_badblocks(rdev, sect, s, 0)) {
 #ifdef MY_ABC_HERE
@@ -2736,6 +2762,12 @@ static void fix_read_error(struct r1conf *conf, int read_disk,
 		if (!success) {
 			/* Cannot read from anywhere - mark it bad */
 			struct md_rdev *rdev = conf->mirrors[read_disk].rdev;
+
+#ifdef MY_ABC_HERE
+			syno_report_uncorrected_bad_sector(sect + rdev->data_offset,
+							   mddev->md_minor, rdev->bdev,
+							   __func__);
+#endif /* MY_ABC_HERE */
 			if (!rdev_set_badblocks(rdev, sect, s, 0))
 				md_error(mddev, rdev);
 			break;
@@ -2960,6 +2992,11 @@ static void handle_read_error(struct r1conf *conf, struct r1bio *r1_bio)
 			       r1_bio->sector, r1_bio->sectors);
 		unfreeze_array(conf);
 	} else if (mddev->ro == 0 && test_bit(FailFast, &rdev->flags)) {
+#ifdef MY_ABC_HERE
+		syno_report_uncorrected_bad_sector(r1_bio->sector + rdev->data_offset,
+						   mddev->md_minor, rdev->bdev,
+						   __func__);
+#endif /* MY_ABC_HERE */
 		md_error(mddev, rdev);
 	} else {
 		r1_bio->bios[r1_bio->read_disk] = IO_BLOCKED;

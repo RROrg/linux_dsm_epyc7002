@@ -627,11 +627,11 @@ static struct elevator_type *elevator_get_default(struct request_queue *q)
 	if (q->nr_hw_queues != 1)
 		return NULL;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	return elevator_get(q, "bfq", false);
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	return elevator_get(q, "mq-deadline", false);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 
 /*

@@ -25,6 +25,9 @@
 #include "qgroup.h"
 #include "block-group.h"
 #include "space-info.h"
+#ifdef MY_ABC_HERE
+#include "delayed-inode.h"
+#endif /* MY_ABC_HERE */
 
 #define BTRFS_ROOT_TRANS_TAG 0
 
@@ -2736,6 +2739,10 @@ int btrfs_commit_transaction(struct btrfs_trans_handle *trans)
 			goto cleanup_transaction;
 		}
 	}
+
+#ifdef MY_ABC_HERE
+	btrfs_wq_run_delayed_node(fs_info->delayed_root, fs_info, -1);
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 	ktime_get_ts64(&stats.start_timestamp);

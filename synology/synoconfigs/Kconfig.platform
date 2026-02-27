@@ -70,6 +70,10 @@ config SYNO_RAPTORLAKES
        bool "INTEL RAPTOR LAKE-S"
        depends on X86_64
 
+config SYNO_R1000
+	bool "AMD Ryzen Embedded R1000"
+	depends on X86_64
+
 endchoice
 
 config SYNO_SAS
@@ -98,6 +102,11 @@ config SYNO_LSP_RTD1619B
 config SYNO_LSP_RTD1619B_ENABLE_NPU
 	bool "Apply Realtek rtd1619b LSP for NPU"
 	depends on SYNO_RTD1619B
+
+config SYNO_I915_ENABLE_VCS_ENGINE
+	bool "Enable VCS engine"
+	default n
+	depends on SYNO_GEMINILAKE
 
 endmenu #Platform Features
 

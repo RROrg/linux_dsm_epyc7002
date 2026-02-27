@@ -269,6 +269,9 @@ void device_pm_move_to_tail(struct device *dev)
 	device_pm_unlock();
 	device_links_read_unlock(idx);
 }
+#ifdef MY_DEF_HERE
+EXPORT_SYMBOL(device_pm_move_to_tail);
+#endif /* MY_DEF_HERE */
 
 #define to_devlink(dev)	container_of((dev), struct device_link, link_dev)
 

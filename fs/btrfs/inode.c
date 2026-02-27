@@ -5662,6 +5662,10 @@ int btrfs_cont_expand(struct inode *inode, loff_t oldsize, loff_t size)
 				write_lock(&em_tree->lock);
 				err = add_extent_mapping(em_tree, hole_em, 1);
 				write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+				if (!err)
+					btrfs_extent_map_throttle(inode);
+#endif /* MY_ABC_HERE */
 				if (err != -EEXIST)
 					break;
 				btrfs_drop_extent_cache(BTRFS_I(inode),
@@ -5853,17 +5857,21 @@ static void evict_inode_truncate_pages(struct inode *inode)
 	struct extent_map_tree *map_tree = &BTRFS_I(inode)->extent_tree;
 	struct rb_node *node;
 #ifdef MY_ABC_HERE
+#if 0
 	struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
+#endif
 #endif /* MY_ABC_HERE */
 
 	ASSERT(inode->i_state & I_FREEING);
 	truncate_inode_pages_final(&inode->i_data);
 
 #ifdef MY_ABC_HERE
+#if 0
 	spin_lock(&fs_info->extent_map_inode_list_lock);
 	WARN_ON(atomic_read(&BTRFS_I(inode)->free_extent_map_counts) != 0);
 	list_del_init(&BTRFS_I(inode)->free_extent_map_inode);
 	spin_unlock(&fs_info->extent_map_inode_list_lock);
+#endif
 #endif /* MY_ABC_HERE */
 
 	write_lock(&map_tree->lock);
@@ -8076,6 +8084,10 @@ insert:
 	write_lock(&em_tree->lock);
 	ret = btrfs_add_extent_mapping(fs_info, em_tree, &em, start, len);
 	write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+	if (!ret)
+		btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
 out:
 	btrfs_free_path(path);
 
@@ -8580,6 +8592,10 @@ static struct extent_map *create_io_em(struct btrfs_inode *inode, u64 start,
 		write_lock(&em_tree->lock);
 		ret = add_extent_mapping(em_tree, em, 1);
 		write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+		if (!ret)
+			btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
 		/*
 		 * The caller has taken lock_extent(), who could race with us
 		 * to add em?
@@ -10094,8 +10110,10 @@ struct inode *btrfs_alloc_inode(struct super_block *sb)
 
 #ifdef MY_ABC_HERE
 	ei->extent_tree.inode = ei;
+#if 0
 	INIT_LIST_HEAD(&ei->free_extent_map_inode);
 	atomic_set(&ei->free_extent_map_counts, 0);
+#endif
 #endif /* MY_ABC_HERE */
 
 	extent_io_tree_init(fs_info, &ei->io_tree, IO_TREE_INODE_IO, inode);
@@ -11320,6 +11338,9 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
 #ifdef MY_ABC_HERE
 	credit_for_syno++;
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+		down_read(&fs_info->inflight_reserve_lock);
+#endif /* MY_ABC_HERE */
 
 	/*
 	 * 2 items for inode item and ref
@@ -11333,8 +11354,12 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
 #else /* MY_ABC_HERE || MY_ABC_HERE || MY_ABC_HERE */
 	trans = btrfs_start_transaction(root, 7);
 #endif /* MY_ABC_HERE || MY_ABC_HERE || MY_ABC_HERE */
-	if (IS_ERR(trans))
+	if (IS_ERR(trans)) {
+#ifdef MY_ABC_HERE
+		up_read(&fs_info->inflight_reserve_lock);
+#endif /* MY_ABC_HERE */
 		return PTR_ERR(trans);
+	}
 
 	err = btrfs_find_free_ino(root, &objectid);
 	if (err)
@@ -11350,7 +11375,6 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
 	}
 
 #ifdef MY_ABC_HERE
-	down_read(&fs_info->inflight_reserve_lock);
 
 	if (need_reserve) {
 		// After btrfs_new_inode(), so we can get uid to reserve user quota.
@@ -11471,8 +11495,7 @@ free_qgroup:
 			btrfs_qgroup_syno_free(root, name_len);
 	}
 free_inode:
-	if (inode)
-		up_read(&fs_info->inflight_reserve_lock);
+	up_read(&fs_info->inflight_reserve_lock);
 #endif /* MY_ABC_HERE */
 	btrfs_end_transaction(trans);
 	if (err && inode) {
@@ -11711,6 +11734,10 @@ static int __btrfs_prealloc_file_range(struct inode *inode, int mode,
 			write_lock(&em_tree->lock);
 			ret = add_extent_mapping(em_tree, em, 1);
 			write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+			if (!ret)
+				btrfs_extent_map_throttle(inode);
+#endif /* MY_ABC_HERE */
 			if (ret != -EEXIST)
 				break;
 			btrfs_drop_extent_cache(BTRFS_I(inode), cur_offset,

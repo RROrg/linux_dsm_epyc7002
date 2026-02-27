@@ -247,6 +247,102 @@ static const struct file_operations xgbe_phy_led_test_mode_fops = {
 	.write = xgbe_phy_led_test_mode_write,
 };
 
+static ssize_t xgbe_phy_mdio_mii_addr_write(struct file *filp, const char __user *buffer,
+										   size_t count, loff_t *ppos)
+{
+	struct xgbe_prv_data *pdata = filp->private_data;
+
+	return xgbe_common_write(buffer, count, ppos,
+				 &pdata->debugfs_mdio_mii_addr);
+}
+
+static ssize_t xgbe_phy_mdio_mii_addr_read(struct file *filp, char __user *buffer,
+										   size_t count, loff_t *ppos)
+{
+	struct xgbe_prv_data *pdata = filp->private_data;
+
+	return xgbe_common_read(buffer, count, ppos, pdata->debugfs_mdio_mii_addr);
+}
+
+static const struct file_operations xgbe_phy_mdio_mii_addr_fops = {
+	.owner = THIS_MODULE,
+	.open = simple_open,
+	.read =  xgbe_phy_mdio_mii_addr_read,
+	.write = xgbe_phy_mdio_mii_addr_write,
+};
+
+static ssize_t xgbe_phy_mdio_mii_read(struct file *filp, char __user *buffer,
+									size_t count, loff_t *ppos)
+{
+	struct xgbe_prv_data *pdata = filp->private_data;
+	unsigned int value;
+
+	pdata->phy_if.phy_impl.phy_mdio_mii_read(pdata, pdata->debugfs_mdio_mii_addr, &value);
+
+	return xgbe_common_read(buffer, count, ppos, value);
+}
+
+static ssize_t xgbe_phy_mdio_mii_write(struct file *filp, const char __user *buffer,
+									size_t count, loff_t *ppos)
+{
+	struct xgbe_prv_data *pdata = filp->private_data;
+	unsigned int value;
+	ssize_t len;
+
+	len = xgbe_common_write(buffer, count, ppos, &value);
+	if (len < 0)
+		return len;
+
+	pdata->phy_if.phy_impl.phy_mdio_mii_write(pdata, pdata->debugfs_mdio_mii_addr, value);
+
+	return len;
+}
+
+static const struct file_operations xgbe_phy_mdio_mii_fops = {
+	.owner = THIS_MODULE,
+	.open = simple_open,
+	.read =  xgbe_phy_mdio_mii_read,
+	.write = xgbe_phy_mdio_mii_write,
+};
+
+static ssize_t xgbe_phy_pause_read(struct file *filp, char __user *buffer,
+                                    size_t count, loff_t *ppos)
+{
+	return 0;
+}
+
+static ssize_t xgbe_phy_pause_write(struct file *filp,
+                                     const char __user *buffer,
+                                     size_t count, loff_t *ppos)
+{
+	struct xgbe_prv_data *pdata = filp->private_data;
+	unsigned int value;
+	bool pause;
+	ssize_t len;
+
+	len = xgbe_common_write(buffer, count, ppos, &value);
+	if (len < 0)
+		return len;
+
+	if (1 == value)
+		pause = true;
+	else if (0 == value)
+		pause = false;
+	else
+		return -EINVAL;
+
+	pdata->phy_if.phy_impl.phy_pause(pdata, pause);
+
+	return len;
+}
+
+static const struct file_operations xgbe_phy_pause_fops = {
+	.owner = THIS_MODULE,
+	.open = simple_open,
+	.read =  xgbe_phy_pause_read,
+	.write = xgbe_phy_pause_write,
+};
+
 static const struct file_operations xgmac_reg_addr_fops = {
 	.owner = THIS_MODULE,
 	.open = simple_open,
@@ -483,6 +579,17 @@ void xgbe_debugfs_init(struct xgbe_prv_data *pdata)
 
 	debugfs_create_file("xgmac_register", 0600, pdata->xgbe_debugfs, pdata,
 			    &xgmac_reg_addr_fops);
+	debugfs_create_file("xgbe_phy_mdio_mii_addr", 0600,
+			pdata->xgbe_debugfs, pdata,
+			&xgbe_phy_mdio_mii_addr_fops);
+
+	debugfs_create_file("xgbe_phy_mdio_mii", 0600,
+			pdata->xgbe_debugfs, pdata,
+			&xgbe_phy_mdio_mii_fops);
+
+	debugfs_create_file("xgbe_phy_pause", 0600,
+			pdata->xgbe_debugfs, pdata,
+			&xgbe_phy_pause_fops);
 
 	debugfs_create_file("xgbe_phy_led_test_mode", 0600, pdata->xgbe_debugfs, pdata,
 			    &xgbe_phy_led_test_mode_fops);

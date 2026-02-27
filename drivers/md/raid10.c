@@ -496,8 +496,15 @@ static void raid10_end_read_request(struct bio *bio)
 		 * If this rdev is the last drive.
 		 * Then this raid10 is crashed because there is no any chance to retry.
 		 */
-		if (uptodate)
+		if (uptodate) {
+#ifdef MY_ABC_HERE
+			syno_report_uncorrected_bad_sector(r10_bio->devs[slot].addr
+							   + choose_data_offset(r10_bio, rdev),
+							   conf->mddev->md_minor,
+							   rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 			md_error(r10_bio->mddev, rdev);
+		}
 #endif /* MY_ABC_HERE */
 	}
 	if (uptodate) {
@@ -572,19 +579,18 @@ static void raid10_end_write_request(struct bio *bio)
 	 * this branch is our 'one mirror IO has finished' event handler:
 	 */
 	if (bio->bi_status && !discard_error) {
+#ifdef MY_ABC_HERE
+		if (!syno_is_device_disappear(rdev->bdev))
+			syno_report_bad_sector(r10_bio->devs[slot].addr +
+					       choose_data_offset(r10_bio, rdev), WRITE,
+					       conf->mddev->md_minor, rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 		if (repl)
 			/* Never record new bad blocks to replacement,
 			 * just fail it.
 			 */
 			md_error(rdev->mddev, rdev);
 		else {
-#ifdef MY_ABC_HERE
-			if (!syno_is_device_disappear(conf->mirrors[dev].rdev->bdev))
-				syno_report_bad_sector(r10_bio->devs[slot].addr +
-					choose_data_offset(r10_bio, rdev),
-					WRITE, conf->mddev->md_minor,
-					rdev->bdev, __func__);
-#endif /* MY_ABC_HERE */
 			set_bit(WriteErrorSeen,	&rdev->flags);
 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 				set_bit(MD_RECOVERY_NEEDED,
@@ -2428,16 +2434,15 @@ static void end_sync_write(struct bio *bio)
 		rdev = conf->mirrors[d].rdev;
 
 	if (bio->bi_status) {
+#ifdef MY_ABC_HERE
+		if (!syno_is_device_disappear(rdev->bdev))
+			syno_report_bad_sector(r10_bio->devs[slot].addr +
+					       choose_data_offset(r10_bio, rdev), WRITE,
+					       conf->mddev->md_minor, rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 		if (repl)
 			md_error(mddev, rdev);
 		else {
-#ifdef MY_ABC_HERE
-			if (!syno_is_device_disappear(rdev->bdev))
-				syno_report_bad_sector(r10_bio->devs[slot].addr +
-					choose_data_offset(r10_bio, rdev),
-					WRITE, conf->mddev->md_minor,
-					rdev->bdev, __func__);
-#endif /* MY_ABC_HERE */
 			set_bit(WriteErrorSeen, &rdev->flags);
 			if (!test_and_set_bit(WantReplacement, &rdev->flags))
 				set_bit(MD_RECOVERY_NEEDED,
@@ -2541,6 +2546,11 @@ static void sync_request_write(struct mddev *mddev, struct r10bio *r10_bio)
 				continue;
 		} else if (test_bit(FailFast, &rdev->flags)) {
 			/* Just give up on this device */
+#ifdef MY_ABC_HERE
+			syno_report_uncorrected_bad_sector(r10_bio->devs[i].addr
+							   + rdev->data_offset, mddev->md_minor,
+							   rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 			md_error(rdev->mddev, rdev);
 			continue;
 		}
@@ -2718,6 +2728,9 @@ static void fix_recovery_read_error(struct r10bio *r10_bio)
 #ifdef MY_ABC_HERE
 				char b1[BDEVNAME_SIZE];
 				char b2[BDEVNAME_SIZE];
+#ifdef MY_ABC_HERE
+				sector_t dr_addr = addr;
+#endif /* MY_ABC_HERE */
 #endif /* MY_ABC_HERE */
 
 				addr = r10_bio->devs[1].addr + sect;
@@ -2731,6 +2744,11 @@ static void fix_recovery_read_error(struct r10bio *r10_bio)
 						mdname(mddev),
 						bdevname(rdev->bdev, b1),
 						bdevname(rdev2->bdev, b2));
+#ifdef MY_ABC_HERE
+					syno_report_uncorrected_bad_sector(dr_addr + rdev->data_offset,
+									   mddev->md_minor,
+									   rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 					md_error(mddev, rdev);
 #endif /* MY_ABC_HERE */
 
@@ -2841,6 +2859,14 @@ static int r10_sync_page_io(struct md_rdev *rdev, sector_t sector,
 			set_bit(MD_RECOVERY_NEEDED,
 				&rdev->mddev->recovery);
 	}
+#ifdef MY_ABC_HERE
+	syno_report_bad_sector(sector + rdev->data_offset, rw, rdev->mddev->md_minor,
+			       rdev->bdev, __func__);
+	if (rw == READ)
+		syno_report_uncorrected_bad_sector(sector + rdev->data_offset,
+						   rdev->mddev->md_minor, rdev->bdev,
+						   __func__);
+#endif /* MY_ABC_HERE */
 	/* need to record an error - either for the block or the device */
 	if (!rdev_set_badblocks(rdev, sector, sectors, 0))
 		md_error(rdev->mddev, rdev);
@@ -2884,6 +2910,12 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 			  atomic_read(&rdev->read_errors), max_read_errors);
 		pr_notice("md/raid10:%s: %s: Failing raid device\n",
 			  mdname(mddev), b);
+#ifdef MY_ABC_HERE
+		syno_report_uncorrected_bad_sector(r10_bio->devs[r10_bio->read_slot].addr
+						   + choose_data_offset(r10_bio, rdev),
+						   mddev->md_minor, rdev->bdev,
+						   __func__);
+#endif /* MY_ABC_HERE */
 		md_error(mddev, rdev);
 		r10_bio->devs[r10_bio->read_slot].bio = IO_BLOCKED;
 		return;
@@ -2937,6 +2969,13 @@ static void fix_read_error(struct r10conf *conf, struct mddev *mddev, struct r10
 			int dn = r10_bio->devs[r10_bio->read_slot].devnum;
 			rdev = conf->mirrors[dn].rdev;
 
+#ifdef MY_ABC_HERE
+			syno_report_uncorrected_bad_sector(r10_bio->devs[r10_bio->read_slot].addr
+							   + sect
+							   + choose_data_offset(r10_bio, rdev),
+							   mddev->md_minor, rdev->bdev,
+							   __func__);
+#endif /* MY_ABC_HERE */
 			if (!rdev_set_badblocks(
 				    rdev,
 				    r10_bio->devs[r10_bio->read_slot].addr
@@ -3131,8 +3170,17 @@ static void handle_read_error(struct mddev *mddev, struct r10bio *r10_bio)
 		freeze_array(conf, 1);
 		fix_read_error(conf, mddev, r10_bio);
 		unfreeze_array(conf);
+#ifdef MY_ABC_HERE
+	} else {
+		syno_report_uncorrected_bad_sector(r10_bio->devs[slot].addr
+						   + choose_data_offset(r10_bio, rdev),
+						   mddev->md_minor, rdev->bdev, __func__);
+		md_error(mddev, rdev);
+	}
+#else /* MY_ABC_HERE */
 	} else
 		md_error(mddev, rdev);
+#endif /* MY_ABC_HERE */
 
 	rdev_dec_pending(rdev, mddev);
 	allow_barrier(conf);

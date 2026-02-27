@@ -16,10 +16,18 @@
 #include "libata.h"
 #include "libata-transport.h"
 #ifdef MY_DEF_HERE
-extern int syno_usb_eunit_hdd_ctrl(const char *usb_port, int hdd_ctrl);
 extern int syno_usb_eunit_deep_sleep_indicator(const char *usb_port, const int control);
 extern struct syno_control_operations * syno_control_operation_get(const int slot_type, const int slot_index);
 #endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+extern bool g_support_syno_dpm;
+extern int syno_dpm_req_pwr_with_fixed_delayed_by_uuid(
+	const char *uuid, const char *caller_name);
+extern int syno_dpm_req_deep_sleep_by_uuid(
+	const char *uuid, const int timeout, const char *caller_name);
+#endif /* MY_DEF_HERE */
+
 const struct ata_port_operations sata_pmp_port_ops = {
 	.inherits		= &sata_port_ops,
 	.pmp_prereset		= ata_std_prereset,
@@ -1022,6 +1030,11 @@ syno_sata_pmp_is_rp(struct ata_port *ap)
 		goto END;
 	}
 
+	if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
+		// USB Eunit use tty acm to get RP status
+		goto END;
+	}
+
 	if (syno_pm_is_synology_9705(ap)) {
 		syno_pm_fanstatus_pkg_init(sata_pmp_gscr_vendor(ap->link.device->gscr),
 								  sata_pmp_gscr_devid(ap->link.device->gscr),
@@ -1356,6 +1369,43 @@ END:
 	return iRet;
 }
 
+#ifdef MY_ABC_HERE
+int syno_pmp_get_emid(struct ata_port *ap)
+{
+	struct device_node *pDeviceNode = NULL;
+	int index = 0, emid = -1;
+
+	if (!ap || !syno_is_synology_pm(ap)) {
+		return -1;
+	}
+
+	for_each_child_of_node(of_root, pDeviceNode) {
+		if (pDeviceNode->full_name
+			&& 0 == (strncmp(pDeviceNode->full_name, DT_ESATA_SLOT, strlen(DT_ESATA_SLOT)))) {
+			if (true == ap->ops->syno_compare_node_info(ap, pDeviceNode)) {
+				// for an esata port, there is only one ata port connecting to one port multiplier
+				// the emid is always 0
+				emid = 0;
+				of_node_put(pDeviceNode);
+				break;
+			}
+		} else if (pDeviceNode->full_name
+			&& 0 == (strncmp(pDeviceNode->full_name, DT_CX4_SLOT, strlen(DT_CX4_SLOT)))) {
+			if (true == ap->ops->syno_compare_node_info(ap, pDeviceNode)) {
+				// get emid number of cx4_slot, e.g. /cx4_slot@4, 2 --> 2
+				sscanf(pDeviceNode->full_name, DT_CX4_SLOT"@%d,%d", &index, &emid);
+				// in host dts, emid starts from 1
+				emid -= 1;
+				of_node_put(pDeviceNode);
+				break;
+			}
+		}
+	}
+
+	return emid;
+}
+#endif /* MY_ABC_HERE */
+
 unsigned int
 syno_sata_pmp_read_emid(struct ata_port *ap)
 {
@@ -1386,7 +1436,10 @@ syno_sata_pmp_read_emid(struct ata_port *ap)
 	} else if (syno_pm_is_synology_jmb575(ap)) {
 #ifdef MY_DEF_HERE
 		if (IS_SYNOLOGY_USB_ACM_EUNIT(ap->PMSynoUnique)) {
-			res = 0;
+			if(0 <= (emid = syno_pmp_get_emid(ap))) {
+				ap->PMSynoEMID = emid;
+				res = 0;
+			}
 			goto END;
 		}
 #endif /* MY_DEF_HERE */
@@ -2069,13 +2122,38 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 			break;
 		}
 	}
+
 #ifdef MY_DEF_HERE
-	if (ctrl_op) {
-		if (ctrl_op->hdd_ctrl && (SYNO_PWR_OP_DEEPSLEEP == pwrOp || SYNO_PWR_OP_WAKE == pwrOp || SYNO_PWR_OP_POWER_ON == pwrOp)) {
-			if (0 > ctrl_op->hdd_ctrl(EUNIT_DEVICE, eunit_index, blPowerOn)) {
-				printk(KERN_DEBUG "Failed to control hdd\n");
-				goto END;
+	if (g_support_syno_dpm) {
+		int func_ret = -1;
+		char uuid[SYNO_DPM_UUID_LEN_MAX] = {0};
+		struct ata_link *link = NULL;
+
+		/*
+		 * A pmp should in the same machine, pick the uuid from any of its link.
+		 */
+		ata_for_each_link(link, ap, EDGE) {
+			if (strlen(link->dpm_uuid) != 0) {
+				snprintf(uuid, sizeof(uuid), "%s", link->dpm_uuid);
+				break;
 			}
+		}
+
+		if (pwrOp == SYNO_PWR_OP_WAKE) {
+			func_ret = syno_dpm_req_pwr_with_fixed_delayed_by_uuid(uuid, __func__);
+		} else if (pwrOp == SYNO_PWR_OP_DEEPSLEEP) {
+			/* 
+			 * USB ACM update cache every 4 seconds SYNO_EUNIT_PERIODIC_CACHE_UPDATE_INTERVAL
+			 * so we recheck power off for about 3 times 
+			 */
+			func_ret = syno_dpm_req_deep_sleep_by_uuid(uuid, 15, __func__);
+		} else {
+			func_ret = 0;
+		}
+		if (func_ret < 0) {
+			printk(KERN_DEBUG "Failed to %s [%s]\n",
+				pwrOp == SYNO_PWR_OP_WAKE ? "wake" : "deep sleep", uuid);
+			goto END;
 		}
 
 		syno_libata_pmp_deepsleep_indicator_set(ap, blPowerOn);
@@ -3386,6 +3464,17 @@ static int sata_pmp_eh_recover(struct ata_port *ap)
 	if (cnt) {
 		ata_port_info(ap,
 			"PMP SError.N set for some ports, repeating recovery\n");
+
+#ifdef MY_ABC_HERE
+		/*
+		 * Enter this statement, indicating that the power on sequence of the
+		 * disks under PMP is not suitable for FAST PROBE, so disable it.
+		 */
+		if (ap->pflags & ATA_PFLAG_SYNO_BOOT_PROBE) {
+			ap->pflags &= ~ATA_PFLAG_SYNO_BOOT_PROBE;
+		}
+#endif /* MY_ABC_HERE */
+
 		goto retry;
 	}
 

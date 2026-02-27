@@ -645,11 +645,11 @@ struct btrfs_ioctl_ino_lookup_user_args {
 	char path[BTRFS_INO_LOOKUP_USER_PATH_MAX];
 };
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define BTRFS_SEARCH_FLAG_ADJUST_MIN (1 << 0)
 #define BTRFS_SEARCH_FLAG_REPORT_BUF_FULL (1 << 1)
 #define BTRFS_SEARCH_FLAG_READAHEAD (1 << 2)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /* Search criteria for the btrfs SEARCH ioctl family. */
 struct btrfs_ioctl_search_key {
@@ -704,12 +704,12 @@ struct btrfs_ioctl_search_key {
 	__u32 unused;
 
 	/* some extra for later */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	__u32 search_flag;
 	__u32 unused1;
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 	__u64 unused1;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	__u64 unused2;
 	__u64 unused3;
 	__u64 unused4;
@@ -1562,10 +1562,6 @@ enum btrfs_err_code {
 	BTRFS_ERROR_DEV_RAID1C4_MIN_NOT_MET,
 };
 #ifdef __KERNEL__
-#ifdef MY_ABC_HERE
-long btrfs_lazy_clone(struct file *file, unsigned long srcfd, u64 off,
-	u64 olen, u64 destoff);
-#endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 int btrfs_vfs_ino_to_path(struct inode *inode, u64 inum, char *outpath, int len);
 #endif /* MY_ABC_HERE */

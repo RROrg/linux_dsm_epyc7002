@@ -415,7 +415,7 @@ int syno_microp_hdd_present_read(int adapter, int address, int index)
 		goto END;
 	}
 
-	iRet = (data.byte >> iBitToAccess) & 1;
+	iRet = !((data.byte >> iBitToAccess) & 1);
 END:
 	if (pAdapter) {
 		i2c_put_adapter(pAdapter);
@@ -425,7 +425,7 @@ END:
 	 * By default present pin is low active, which means 0 is present.
 	 * Also return not present when error occur.
 	 */
-	return !iRet;
+	return iRet;
 }
 
 int syno_microp_hdd_enable_write_all_once(int adapter, int address)

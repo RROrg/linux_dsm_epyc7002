@@ -327,6 +327,9 @@ struct ahci_port_priv {
 #ifdef MY_ABC_HERE
 	int			(*syno_set_blink)(struct ata_port* ap, u32 state);
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+	atomic_t		intr_status;	/* interrupts to handle */
+#endif /* MY_ABC_HERE */
 };
 
 struct ahci_host_priv {

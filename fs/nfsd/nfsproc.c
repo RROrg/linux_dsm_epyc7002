@@ -741,6 +741,8 @@ nfsd_proc_synocopy(struct svc_rqst *rqstp)
 	int fn_offset;
 	bool skip_zero;
 	char zero_buf[sizeof(__be32)] = {0};
+	char *src_path;
+	unsigned int src_path_len;
 	unsigned int nvecs;
 
 	/*
@@ -775,9 +777,23 @@ nfsd_proc_synocopy(struct svc_rqst *rqstp)
 			(char *)(rqstp->rq_vec[0].iov_base + fn_offset),
 			cnt, offset);
 
-	resp->status = nfsd_synocopy((const char *)(rqstp->rq_vec[0].iov_base + fn_offset), rqstp, fh_copy(&resp->fh, &argp->fh),
+	/* ensure the src_path is NULL termination */
+	src_path_len = (argp->first.iov_len ? argp->first.iov_len : PAGE_SIZE) - fn_offset;
+	if (src_path_len == 0 || src_path_len > PAGE_SIZE) {
+		dprintk("nfsd: invalid src path length");
+		resp->status = nfserr_inval;
+		goto out;
+	}
+	src_path = kstrndup(rqstp->rq_vec[0].iov_base + fn_offset, src_path_len, GFP_KERNEL);
+	if (!src_path) {
+		resp->status = nfserrno(-ENOMEM);
+		return rpc_drop_reply;
+	}
+
+	resp->status = nfsd_synocopy((const char *)(src_path), rqstp, fh_copy(&resp->fh, &argp->fh),
 							   offset, &cnt, skip_zero);
 
+	kfree(src_path);
 	if (resp->status == nfs_ok)
 		resp->status = fh_getattr(&resp->fh, &resp->stat);
 	else if (resp->status == nfserr_jukebox)

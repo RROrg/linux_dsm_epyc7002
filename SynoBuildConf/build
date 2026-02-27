@@ -115,9 +115,9 @@ INFO "Build device tree"
 build_device_tree
 
 INFO "Compare kernel config with re-generated one"
-
+kconfig_check_diff
 
 INFO "Check Synology kernel configs"
-
+kconfig_check_syno_macro
 kconfig_check_rule
 

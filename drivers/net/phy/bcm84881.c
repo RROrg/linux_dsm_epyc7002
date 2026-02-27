@@ -75,8 +75,7 @@ static int bcm84881_config_aneg(struct phy_device *phydev)
 {
 	bool changed = false;
 	u32 adv;
-	int ret;
-
+        int ret;
 	/* Wait for the PHY to finish initialising, otherwise our
 	 * advertisement may be overwritten.
 	 */
@@ -235,6 +234,18 @@ static struct phy_driver bcm84881_drivers[] = {
 		.aneg_done	= bcm84881_aneg_done,
 		.read_status	= bcm84881_read_status,
 	},
+	{
+		.phy_id         = 0x359050a1,
+		.phy_id_mask    = 0xfffffff0,
+		.name           = "Broadcom BCM84892",
+		.config_init    = bcm84881_config_init,
+		.probe          = bcm84881_probe,
+		.get_features   = bcm84881_get_features,
+		.config_aneg    = bcm84881_config_aneg,
+		.aneg_done      = bcm84881_aneg_done,
+		.read_status    = bcm84881_read_status,
+	},
+
 };
 
 module_phy_driver(bcm84881_drivers);
@@ -242,6 +253,7 @@ module_phy_driver(bcm84881_drivers);
 /* FIXME: module auto-loading for Clause 45 PHYs seems non-functional */
 static struct mdio_device_id __maybe_unused bcm84881_tbl[] = {
 	{ 0xae025150, 0xfffffff0 },
+	{ 0x359050a1, 0xfffffff0 },
 	{ },
 };
 MODULE_AUTHOR("Russell King");

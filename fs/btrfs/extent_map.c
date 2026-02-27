@@ -19,6 +19,10 @@ static struct kmem_cache *extent_map_cache;
 
 int __init extent_map_init(void)
 {
+#ifdef MY_ABC_HERE
+	(void)btrfs_global_syno_extent_map_init();
+#endif /* MY_ABC_HERE */
+
 	extent_map_cache = kmem_cache_create("btrfs_extent_map",
 			sizeof(struct extent_map), 0,
 			SLAB_MEM_SPREAD, NULL);
@@ -29,6 +33,10 @@ int __init extent_map_init(void)
 
 void __cold extent_map_exit(void)
 {
+#ifdef MY_ABC_HERE
+	WARN_ON_ONCE(btrfs_global_syno_extent_map_nr());
+#endif /* MY_ABC_HERE */
+
 	kmem_cache_destroy(extent_map_cache);
 }
 
@@ -46,6 +54,7 @@ void extent_map_tree_init(struct extent_map_tree *tree)
 	rwlock_init(&tree->lock);
 #ifdef MY_ABC_HERE
 	atomic_set(&tree->nr_extent_maps, 0);
+	atomic_set(&tree->nr_can_free_extent_maps, 0);
 	INIT_LIST_HEAD(&tree->not_modified_extents);
 	INIT_LIST_HEAD(&tree->syno_modified_extents);
 #endif /* MY_ABC_HERE */
@@ -270,7 +279,9 @@ static void check_and_insert_extent_map_to_global_extent(
 
 	if (!test_bit(EXTENT_FLAG_PINNED, &em->flags)) {
 		if (!em->bl_increase) {
+			btrfs_global_syno_extent_map_inc();
 			atomic_inc(&fs_info->nr_extent_maps);
+			atomic_inc(&tree->nr_can_free_extent_maps);
 			em->bl_increase = true;
 		}
 	}
@@ -282,12 +293,15 @@ static void check_and_insert_extent_map_to_global_extent(
 	else
 		list_move_tail(&em->free_list, &tree->syno_modified_extents);
 
-	if (list_empty(&inode->free_extent_map_inode)) {
+#if 0
+	if (atomic_read(&tree->nr_extent_maps) > 16384 &&
+		list_empty(&inode->free_extent_map_inode)) {
 		spin_lock(&fs_info->extent_map_inode_list_lock);
 		list_move_tail(&inode->free_extent_map_inode,
 			       &fs_info->extent_map_inode_list);
 		spin_unlock(&fs_info->extent_map_inode_list_lock);
 	}
+#endif
 }
 
 static void check_and_decrease_global_extent(struct extent_map_tree *tree,
@@ -313,19 +327,29 @@ static void check_and_decrease_global_extent(struct extent_map_tree *tree,
 	atomic_dec(&tree->nr_extent_maps);
 
 	if (em->bl_increase) {
+		if (unlikely(btrfs_global_syno_extent_map_nr() == 0))
+			WARN_ON_ONCE(1);
+		else
+			btrfs_global_syno_extent_map_dec();
 		if (unlikely(atomic_read(&(fs_info->nr_extent_maps)) == 0))
 			WARN_ON(1);
 		else
 			atomic_dec(&fs_info->nr_extent_maps);
+		if (unlikely(atomic_read(&tree->nr_can_free_extent_maps) == 0))
+			WARN_ON(1);
+		else
+			atomic_dec(&tree->nr_can_free_extent_maps);
 		em->bl_increase = false;
 	}
-	if (atomic_read(&tree->nr_extent_maps) == 0 &&
+#if 0
+	if (atomic_read(&tree->nr_extent_maps) < 4096 &&
 	    !list_empty(&inode->free_extent_map_inode)) {
 		spin_lock(&fs_info->extent_map_inode_list_lock);
 		if (atomic_read(&inode->free_extent_map_counts) == 0)
 			list_del_init(&inode->free_extent_map_inode);
 		spin_unlock(&fs_info->extent_map_inode_list_lock);
 	}
+#endif
 }
 #endif /* MY_ABC_HERE */
 
@@ -416,7 +440,9 @@ int unpin_extent_cache(struct extent_map_tree *tree, u64 start, u64 len,
 #ifdef MY_ABC_HERE
 	list_move_tail(&em->free_list, &tree->syno_modified_extents);
 	if (!em->bl_increase) {
+		btrfs_global_syno_extent_map_inc();
 		atomic_inc(&tree->inode->root->fs_info->nr_extent_maps);
+		atomic_inc(&tree->nr_can_free_extent_maps);
 		em->bl_increase = true;
 	}
 #endif /* MY_ABC_HERE */
@@ -768,3 +794,204 @@ int btrfs_add_extent_mapping(struct btrfs_fs_info *fs_info,
 	ASSERT(ret == 0 || ret == -EEXIST);
 	return ret;
 }
+
+#ifdef MY_ABC_HERE
+static u64 global_syno_extent_map_max = 0;
+static atomic64_t global_syno_extent_map_nr = ATOMIC64_INIT(0);
+
+int btrfs_global_syno_extent_map_init(void)
+{
+	global_syno_extent_map_max = 2000000;
+	global_syno_extent_map_max = max_t(u64, global_syno_extent_map_max, totalram_pages() * 10 / 100 * PAGE_SIZE / sizeof(struct extent_map));
+	global_syno_extent_map_max = min_t(u64, global_syno_extent_map_max, totalram_pages() * 20 / 100 * PAGE_SIZE / sizeof(struct extent_map));
+	global_syno_extent_map_max = min_t(u64, global_syno_extent_map_max, 40000000);
+	return 0;
+}
+
+u64 btrfs_global_syno_extent_map_max(void)
+{
+	return global_syno_extent_map_max;
+}
+
+void btrfs_global_syno_extent_map_max_set(u64 max)
+{
+	global_syno_extent_map_max = max;
+}
+
+u64 btrfs_global_syno_extent_map_nr(void)
+{
+	return atomic64_read(&global_syno_extent_map_nr);
+}
+
+void btrfs_global_syno_extent_map_inc(void)
+{
+	return atomic64_inc(&global_syno_extent_map_nr);
+}
+
+void btrfs_global_syno_extent_map_dec(void)
+{
+	return atomic64_dec(&global_syno_extent_map_nr);
+}
+
+enum btrfs_free_extent_map_type {
+	LOOP_FREE_EXTENT_NOT_MODIFIED,
+	LOOP_FREE_EXTENT_MODIFIED,
+	LOOP_FREE_EXTENT_END,
+};
+
+static int btrfs_drop_extent_maps(struct inode *inode, unsigned long nr_to_drop)
+{
+	struct extent_map *em, *next_em = NULL;
+	struct extent_map_tree *em_tree = &BTRFS_I(inode)->extent_tree;
+	struct btrfs_root *root = BTRFS_I(inode)->root;
+	unsigned long dropped = 0;
+	u64 test_gen;
+	struct list_head *head = NULL;
+	enum btrfs_free_extent_map_type stage = LOOP_FREE_EXTENT_NOT_MODIFIED;
+
+	while (nr_to_drop) {
+		write_lock(&em_tree->lock);
+		test_gen = root->fs_info->last_trans_committed;
+
+		if (stage == LOOP_FREE_EXTENT_NOT_MODIFIED) {
+			head = &em_tree->not_modified_extents;
+		} else if (stage == LOOP_FREE_EXTENT_MODIFIED) {
+			head = &em_tree->syno_modified_extents;
+		} else {
+			write_unlock(&em_tree->lock);
+			ASSERT(0);
+			break;
+		}
+
+		if (next_em && !extent_map_in_tree(next_em)) {
+			free_extent_map(next_em);
+			next_em = NULL;
+		}
+
+		if (next_em) {
+			em = next_em;
+			next_em = NULL;
+		} else {
+			if (list_empty(head)) {
+				write_unlock(&em_tree->lock);
+				goto next;
+			}
+			em = list_entry(head->next, struct extent_map, free_list);
+			refcount_inc(&em->refs);
+		}
+		if (list_is_last(&em->free_list, &em_tree->not_modified_extents) ||
+		    list_is_last(&em->free_list, &em_tree->syno_modified_extents) ||
+		    list_empty(&em->free_list)) {
+			next_em = NULL;
+		} else {
+			next_em = list_entry(em->free_list.next, struct extent_map, free_list);
+			refcount_inc(&next_em->refs);
+		}
+
+		if (test_bit(EXTENT_FLAG_PINNED, &em->flags)) {
+			free_extent_map(em);
+			write_unlock(&em_tree->lock);
+			goto next;
+		}
+		if (!list_empty(&em->list) && em->generation > test_gen) {
+			free_extent_map(em);
+			write_unlock(&em_tree->lock);
+			if (stage == LOOP_FREE_EXTENT_MODIFIED)
+				break;
+			else
+				goto next;
+		}
+		remove_extent_mapping(em_tree, em);
+		write_unlock(&em_tree->lock);
+		/* once for us */
+		free_extent_map(em);
+		/* once for the tree*/
+		free_extent_map(em);
+		dropped++;
+next:
+		if (next_em == NULL)
+			stage++;
+		if (stage >= LOOP_FREE_EXTENT_END)
+			break;
+		nr_to_drop--;
+		cond_resched();
+	}
+	if (next_em) {
+		/* once for us */
+		free_extent_map(next_em);
+	}
+	return dropped;
+}
+
+void btrfs_extent_map_throttle(struct inode *inode)
+{
+	struct extent_map_tree *em_tree = &BTRFS_I(inode)->extent_tree;
+	int nr_to_drop = 32;
+
+	if (!global_syno_extent_map_max)
+		goto out;
+
+	if (atomic64_read(&global_syno_extent_map_nr) <= global_syno_extent_map_max)
+		goto out;
+
+	if (atomic_read(&em_tree->nr_can_free_extent_maps) <= 1024)
+		goto out;
+
+	btrfs_drop_extent_maps(inode, nr_to_drop);
+
+out:
+	return;
+}
+
+#if 0
+static long btrfs_free_cached_objects(struct super_block *sb, struct shrink_control *sc)
+{
+	struct inode *inode;
+	struct inode *toput_inode = NULL;
+	struct btrfs_inode *binode;
+	struct btrfs_fs_info *fs_info = btrfs_sb(sb);
+	unsigned long nr_to_drop = sc->nr_to_scan;
+
+	spin_lock(&fs_info->extent_map_inode_list_lock);
+	list_for_each_entry(binode, &fs_info->extent_map_inode_list,
+			    free_extent_map_inode) {
+		inode = &binode->vfs_inode;
+		spin_lock(&inode->i_lock);
+		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
+			spin_unlock(&inode->i_lock);
+			continue;
+		}
+		__iget(inode);
+		spin_unlock(&inode->i_lock);
+
+		atomic_inc(&binode->free_extent_map_counts);
+		if (toput_inode &&
+		    (atomic_read(&BTRFS_I(toput_inode)->free_extent_map_counts) == 0) &&
+		    (atomic_read(&(BTRFS_I(toput_inode)->extent_tree.nr_extent_maps)) == 0))
+			list_del_init(&BTRFS_I(toput_inode)->free_extent_map_inode);
+
+		spin_unlock(&fs_info->extent_map_inode_list_lock);
+
+		nr_to_drop -= btrfs_drop_extent_maps(inode, nr_to_drop);
+
+		iput(toput_inode);
+		toput_inode = inode;
+		cond_resched();
+
+		spin_lock(&fs_info->extent_map_inode_list_lock);
+		WARN_ON(atomic_read(&binode->free_extent_map_counts) == 0);
+		atomic_dec(&binode->free_extent_map_counts);
+		if (!nr_to_drop)
+			break;
+	}
+	if (toput_inode &&
+	    (atomic_read(&BTRFS_I(toput_inode)->free_extent_map_counts) == 0) &&
+	    (atomic_read(&(BTRFS_I(toput_inode)->extent_tree.nr_extent_maps)) == 0))
+		list_del_init(&BTRFS_I(toput_inode)->free_extent_map_inode);
+
+	spin_unlock(&fs_info->extent_map_inode_list_lock);
+	iput(toput_inode);
+	return (long)(sc->nr_to_scan - nr_to_drop);
+}
+#endif
+#endif /* MY_ABC_HERE */

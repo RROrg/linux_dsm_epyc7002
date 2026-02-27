@@ -730,8 +730,10 @@ syno_block_info_show(struct device *device, struct device_attribute *attr, char 
 
 #ifdef MY_DEF_HERE
 	for (ctrl_op = syno_control_operations_lists; ctrl_op && strlen(ctrl_op->control_method); ctrl_op++) {
-		if (NULL != (control_method = strstr(sdev->syno_block_info, ctrl_op->control_method))) {
-			strncpy(syno_block_info_tmp, control_method + strlen(ctrl_op->control_method), sizeof(syno_block_info_tmp));
+		read_lock(&(sdev->syno_block_info_rwlock));
+		control_method = strstr(sdev->syno_block_info, ctrl_op->control_method);
+		read_unlock(&(sdev->syno_block_info_rwlock));
+		if (NULL != control_method) {
 			sdkp = dev_get_drvdata(device);
 			if (!ctrl_op->unique_get || !ctrl_op->container_index_get_by_diskname) {
 				break;
@@ -743,14 +745,23 @@ syno_block_info_show(struct device *device, struct device_attribute *attr, char 
 				break;
 			}
 
-			snprintf(control_method, BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", unique);
-			snprintf(sdev->syno_block_info + strlen(sdev->syno_block_info),
-					BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", syno_block_info_tmp);
+			write_lock(&(sdev->syno_block_info_rwlock));
+			if (NULL != (control_method = strstr(sdev->syno_block_info, ctrl_op->control_method))) {
+				strncpy(syno_block_info_tmp, control_method + strlen(ctrl_op->control_method), sizeof(syno_block_info_tmp));
+				snprintf(control_method, BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", unique);
+				snprintf(sdev->syno_block_info + strlen(sdev->syno_block_info),
+						BLOCK_INFO_SIZE - strlen(sdev->syno_block_info), "%s", syno_block_info_tmp);
+			}
+			write_unlock(&(sdev->syno_block_info_rwlock));
+			
 		}
+		
 	}
 #endif /* MY_DEF_HERE */
 
+	read_lock(&(sdev->syno_block_info_rwlock));
 	len = snprintf(buf, BLOCK_INFO_SIZE , "%s", sdev->syno_block_info);
+	read_unlock(&(sdev->syno_block_info_rwlock));
 END:
 	return len;
 }
@@ -1312,9 +1323,6 @@ sdev_store_queue_depth(struct device *dev, struct device_attribute *attr,
 	int depth, retval;
 	struct scsi_device *sdev = to_scsi_device(dev);
 	struct scsi_host_template *sht = sdev->host->hostt;
-#ifdef MY_ABC_HERE
-	unsigned long flags;
-#endif /* MY_ABC_HERE */
 
 	if (!sht->change_queue_depth)
 		return -EINVAL;
@@ -1324,26 +1332,11 @@ sdev_store_queue_depth(struct device *dev, struct device_attribute *attr,
 	if (depth < 1 || depth > sdev->host->can_queue)
 		return -EINVAL;
 
-#ifdef MY_ABC_HERE
-	//spin_lock_irqsave to prevent scsi_softirq_done() will call scsi_handle_queue_ramp_up() to increase queue_depth
-	spin_lock_irqsave(sdev->host->host_lock, flags);
-#endif /* MY_ABC_HERE */
-
 	retval = sht->change_queue_depth(sdev, depth);
 	if (retval < 0)
-#ifdef MY_ABC_HERE
-	{
-		spin_unlock_irqrestore(sdev->host->host_lock, flags);
-#endif /* MY_ABC_HERE */
 		return retval;
-#ifdef MY_ABC_HERE
-	}
-#endif /* MY_ABC_HERE */
 
 	sdev->max_queue_depth = sdev->queue_depth;
-#ifdef MY_ABC_HERE
-	spin_unlock_irqrestore(sdev->host->host_lock, flags);
-#endif /* MY_ABC_HERE */
 
 	return count;
 }

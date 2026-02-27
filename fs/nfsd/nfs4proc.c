@@ -557,18 +557,18 @@ nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	memcpy(&cstate->current_fh.fh_handle.fh_base, putfh->pf_fhval,
 	       putfh->pf_fhlen);
 	ret = fh_verify(rqstp, &cstate->current_fh, 0, NFSD_MAY_BYPASS_GSS);
+#ifdef MY_DEF_HERE
+	if (!ret && unlikely(rq_xprt && rq_xprt->xpt_pool_index == -1 &&
+			rq_xprt->xpt_server->has_pool_hint)) {
+		get_pool_hint(rqstp, &cstate->current_fh.fh_export->ex_path);
+	}
+#endif /* MY_DEF_HERE */
 #ifdef CONFIG_NFSD_V4_2_INTER_SSC
 	if (ret == nfserr_stale && putfh->no_verify) {
 		SET_FH_FLAG(&cstate->current_fh, NFSD4_FH_FOREIGN);
 		ret = 0;
 	}
 #endif
-#ifdef MY_DEF_HERE
-	if (unlikely(rq_xprt && rq_xprt->xpt_pool_index == -1 &&
-			rq_xprt->xpt_server->has_pool_hint)) {
-		get_pool_hint(rqstp, &cstate->current_fh.fh_export->ex_path);
-	}
-#endif /* MY_DEF_HERE */
 	return ret;
 }
 

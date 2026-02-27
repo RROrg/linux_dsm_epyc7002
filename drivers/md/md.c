@@ -1139,6 +1139,10 @@ static void super_written(struct bio *bio)
 	if (bio->bi_status) {
 		pr_err("md: %s gets error=%d\n", __func__,
 		       blk_status_to_errno(bio->bi_status));
+#ifdef MY_ABC_HERE
+		syno_report_bad_sector(rdev->sb_start, WRITE, mddev->md_minor,
+				       rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 		md_error(mddev, rdev);
 		if (!test_bit(Faulty, &rdev->flags)
 		    && (bio->bi_opf & MD_FAILFAST)) {

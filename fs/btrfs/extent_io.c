@@ -2029,7 +2029,9 @@ u64 btrfs_max_extent_size(struct inode *inode)
 {
 	if (BTRFS_I(inode)->flags & BTRFS_INODE_NODEDUPE)
 		return BTRFS_MAX_EXTENT_SIZE;
-	return BTRFS_I(inode)->root->small_extent_size;
+	if (BTRFS_I(inode)->root)
+		return BTRFS_I(inode)->root->small_extent_size;
+	return BTRFS_MAX_EXTENT_SIZE;
 }
 #endif /* MY_DEF_HERE */
 
@@ -6000,7 +6002,7 @@ free_eb:
 #endif
 
 struct extent_buffer *alloc_extent_buffer(struct btrfs_fs_info *fs_info,
-					  u64 start)
+					  u64 start, u64 owner_root, int level)
 {
 	unsigned long len = fs_info->nodesize;
 	int num_pages;
@@ -6010,6 +6012,7 @@ struct extent_buffer *alloc_extent_buffer(struct btrfs_fs_info *fs_info,
 	struct extent_buffer *exists = NULL;
 	struct page *p;
 	struct address_space *mapping = fs_info->btree_inode->i_mapping;
+	u64 lockdep_owner = owner_root;
 	int uptodate = 1;
 	int ret;
 
@@ -6025,6 +6028,15 @@ struct extent_buffer *alloc_extent_buffer(struct btrfs_fs_info *fs_info,
 	eb = __alloc_extent_buffer(fs_info, start, len);
 	if (!eb)
 		return ERR_PTR(-ENOMEM);
+
+	/*
+	 * The reloc trees are just snapshots, so we need them to appear to be
+	 * just like any other fs tree WRT lockdep.
+	 */
+	if (lockdep_owner == BTRFS_TREE_RELOC_OBJECTID)
+		lockdep_owner = BTRFS_FS_TREE_OBJECTID;
+
+	btrfs_set_buffer_lockdep_class(lockdep_owner, eb, level);
 
 	num_pages = num_extent_pages(eb);
 	for (i = 0; i < num_pages; i++, index++) {
@@ -7083,4 +7095,62 @@ int try_release_extent_buffer(struct page *page)
 	}
 
 	return release_extent_buffer(eb);
+}
+
+/*
+ * btrfs_readahead_tree_block - attempt to readahead a child block
+ * @fs_info:	the fs_info
+ * @bytenr:	bytenr to read
+ * @owner_root: objectid of the root that owns this eb
+ * @gen:	generation for the uptodate check, can be 0
+ * @level:	level for the eb
+ *
+ * Attempt to readahead a tree block at @bytenr.  If @gen is 0 then we do a
+ * normal uptodate check of the eb, without checking the generation.  If we have
+ * to read the block we will not block on anything.
+ */
+void btrfs_readahead_tree_block(struct btrfs_fs_info *fs_info,
+				u64 bytenr, u64 owner_root, u64 gen, int level)
+{
+	struct extent_buffer *eb;
+	int ret;
+#ifdef MY_ABC_HERE
+	bool can_retry = false;
+#endif /* MY_ABC_HERE */
+
+	eb = btrfs_find_create_tree_block(fs_info, bytenr, owner_root, level);
+	if (IS_ERR(eb))
+		return;
+
+	if (btrfs_buffer_uptodate(eb, gen, 1)) {
+		free_extent_buffer(eb);
+		return;
+	}
+
+	ret = read_extent_buffer_pages(eb, WAIT_NONE, 0
+#ifdef MY_ABC_HERE
+			, &can_retry, 0
+#endif /* MY_ABC_HERE */
+			);
+	if (ret < 0)
+		free_extent_buffer_stale(eb);
+	else
+		free_extent_buffer(eb);
+}
+
+/*
+ * btrfs_readahead_node_child - readahead a node's child block
+ * @node:	parent node we're reading from
+ * @slot:	slot in the parent node for the child we want to read
+ *
+ * A helper for btrfs_readahead_tree_block, we simply read the bytenr pointed at
+ * the slot in the node provided.
+ */
+void btrfs_readahead_node_child(struct extent_buffer *node, int slot)
+{
+	btrfs_readahead_tree_block(node->fs_info,
+				   btrfs_node_blockptr(node, slot),
+				   btrfs_header_owner(node),
+				   btrfs_node_ptr_generation(node, slot),
+				   btrfs_header_level(node) - 1);
 }

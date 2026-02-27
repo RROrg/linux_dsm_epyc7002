@@ -4345,6 +4345,7 @@ static int sd_probe(struct device *dev)
 	 * fill syno_block_info if syno_sdev_info_enum exist
 	 */
 	if (NULL != sdp->host->hostt->syno_sdev_info_enum) {
+		rwlock_init(&(sdp->syno_block_info_rwlock));
 		sdp->host->hostt->syno_sdev_info_enum(sdp);
 	}
 
@@ -4457,6 +4458,12 @@ static int sd_probe(struct device *dev)
 		if (sdkp->opal_dev)
 			sd_printk(KERN_NOTICE, sdkp, "supports TCG Opal\n");
 	}
+
+#if defined(MY_DEF_HERE) && defined(MY_DEF_HERE)
+	if (NULL != sdp->host->hostt->syno_disk_not_ready_count_decrease) {
+		sdp->host->hostt->syno_disk_not_ready_count_decrease();
+	}
+#endif /* MY_DEF_HERE && MY_DEF_HERE */
 
 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
 		  sdp->removable ? "removable " : "");
@@ -4658,7 +4665,9 @@ static void sd_shutdown(struct device *dev)
 	else if (system_state == SYSTEM_RESTART && sdkp->device->manage_start_stop) {
 		/* The models which support deep sleep will cut the power of sata port
 		 * when reboot the machine, so issue STOP command before reboot */
-		if (sdkp->device->power_loss_during_reboot) {
+		struct scsi_device *sdp = sdkp->device;
+		if (sdp->host->hostt->syno_disk_power_loss_when_reboot &&
+			sdp->host->hostt->syno_disk_power_loss_when_reboot(sdp) == 1) {
 #ifdef MY_ABC_HERE
 			syno_disk_paraldown_wait_inc();
 			INIT_WORK(&sdkp->syno_disk_paraldown, syno_disk_paraldown_workfn);

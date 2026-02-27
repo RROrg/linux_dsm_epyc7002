@@ -1542,7 +1542,6 @@ static void reada_root(struct btrfs_root *root)
 {
 	struct extent_buffer *node;
 	int level;
-	u64 search;
 	u32 nr = 0;
 	u32 nritems;
 
@@ -1553,8 +1552,7 @@ static void reada_root(struct btrfs_root *root)
 
 	nritems = btrfs_header_nritems(node);
 	while (nr < nritems) {
-		search = btrfs_node_blockptr(node, nr);
-		readahead_tree_block(root->fs_info, search);
+		btrfs_readahead_node_child(node, nr);
 		nr++;
 	}
 

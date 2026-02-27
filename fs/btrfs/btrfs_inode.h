@@ -277,8 +277,10 @@ struct btrfs_inode {
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
+#if 0
 	struct list_head free_extent_map_inode;
 	atomic_t free_extent_map_counts;
+#endif
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE

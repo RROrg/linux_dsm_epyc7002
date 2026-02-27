@@ -85,6 +85,7 @@ struct acm_rb {
 
 #ifdef MY_DEF_HERE
 #define SYNO_EUNIT_QUEUE_SIZE 128
+#define SYNO_ACM_UUID_SIZE 64
 #endif /* MY_DEF_HERE */
 
 struct acm {
@@ -142,7 +143,6 @@ struct acm {
 	struct delayed_work cache_update_work;
 	struct delayed_work cmd_issue_work;
 	char *acm_buffer;
-	int initial_disk_not_ready_check;
 	unsigned int waken_disks;
 	unsigned long last_waking_time;
 	struct list_head syno_acm_q; /* Queue for commands to be issued */
@@ -151,6 +151,7 @@ struct acm {
 	int cmd_idx_head;
 	int cmd_idx_tail;
 	struct completion *syno_acm_ack_to_cmpl[SYNO_EUNIT_QUEUE_SIZE];
+	unsigned char uuid[SYNO_ACM_UUID_SIZE];
 #endif /* MY_DEF_HERE */
 };
 

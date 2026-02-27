@@ -698,6 +698,9 @@ void btrfs_drop_extent_cache(struct btrfs_inode *inode, u64 start, u64 end,
 	unsigned long flags;
 	int compressed = 0;
 	bool modified;
+#ifdef MY_ABC_HERE
+	bool throttle = false;
+#endif /* MY_ABC_HERE */
 
 	WARN_ON(end < start);
 	if (end == (u64)-1) {
@@ -812,6 +815,10 @@ void btrfs_drop_extent_cache(struct btrfs_inode *inode, u64 start, u64 end,
 			} else {
 				ret = add_extent_mapping(em_tree, split,
 							 modified);
+#ifdef MY_ABC_HERE
+				if (!ret)
+					throttle = true;
+#endif /* MY_ABC_HERE */
 				ASSERT(ret == 0); /* Logic error */
 			}
 			free_extent_map(split);
@@ -831,6 +838,12 @@ next:
 		free_extent_map(split);
 	if (split2)
 		free_extent_map(split2);
+
+#ifdef MY_ABC_HERE
+	if (throttle)
+		btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
+
 }
 
 /*
@@ -3434,6 +3447,10 @@ out:
 			write_lock(&em_tree->lock);
 			ret = add_extent_mapping(em_tree, hole_em, 1);
 			write_unlock(&em_tree->lock);
+#ifdef MY_ABC_HERE
+			if (!ret)
+				btrfs_extent_map_throttle(&inode->vfs_inode);
+#endif /* MY_ABC_HERE */
 		} while (ret == -EEXIST);
 		free_extent_map(hole_em);
 		if (ret)

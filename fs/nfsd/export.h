@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 1995-1997 Olaf Kirch <okir@monad.swb.de>
@@ -101,6 +104,9 @@ int			exp_rootfh(struct net *, struct auth_domain *,
 					char *path, struct knfsd_fh *, int maxsize);
 __be32			exp_pseudoroot(struct svc_rqst *, struct svc_fh *);
 __be32			nfserrno(int errno);
+#ifdef MY_ABC_HERE
+int syno_compose_fh(struct svc_rqst *rqstp, const char *name, struct svc_fh *fhp);
+#endif /* MY_ABC_HERE */
 
 static inline void exp_put(struct svc_export *exp)
 {

@@ -37,6 +37,11 @@
 #include <linux/uaccess.h>
 #include <linux/pm_runtime.h>
 
+#ifdef MY_DEF_HERE
+#include <linux/synolib.h>
+#include <linux/pci.h>
+#endif /* MY_DEF_HERE */
+
 #include "libata.h"
 #include "libata-transport.h"
 
@@ -45,7 +50,11 @@
 #else /* MY_ABC_HERE */
 #define ATA_PORT_ATTRS		3
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+#define ATA_LINK_ATTRS		5
+#else /* MY_DEF_HERE */
 #define ATA_LINK_ATTRS		3
+#endif /* MY_DEF_HERE */
 #define ATA_DEV_ATTRS		9
 
 struct scsi_transport_template;
@@ -355,6 +364,73 @@ ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd, noop);
 
+#ifdef MY_DEF_HERE
+extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
+static void syno_pciepath_enum(struct device *dev, char *buf) {
+	struct pci_dev *pdev = NULL;
+	char sztemp[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
+
+	if (NULL == buf || NULL == dev) {
+		return;
+	}
+	pdev = to_pci_dev(dev);
+
+	if (-1 == syno_pciepath_dts_pattern_get(pdev, sztemp, sizeof(sztemp))) {
+		return;
+	}
+
+	snprintf(buf, 512, "%spciepath=%s\n", buf, sztemp);
+}
+
+static ssize_t ata_link_syno_info_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct ata_link *link = transport_class_to_link(dev);
+	struct ata_port *ap = link->ap;
+	char kv_ata_port_no[32] = {0};
+	char kv_pmp_info[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
+	char kv_pci_pattern[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {0};
+
+	if (ap->dev->bus && !strcmp("pci", ap->dev->bus->name)) {
+		syno_pciepath_enum(ap->dev, kv_pci_pattern);
+	}
+	snprintf(kv_ata_port_no, sizeof(kv_ata_port_no), "ata_port_no=%u\n", ap->port_no);
+	if (syno_is_synology_pm(ap)) {
+		snprintf(kv_pmp_info, sizeof(kv_pmp_info),
+			"is_syno_pmp=1\npmp_link=%u\nEMID=%u\n", link->pmp, ap->PMSynoEMID);
+	}
+
+	return sprintf(buf, "%s%s%s", kv_pci_pattern, kv_ata_port_no, kv_pmp_info);
+}
+DEVICE_ATTR(syno_ata_link_info, 0444, ata_link_syno_info_show, NULL);
+
+static ssize_t ata_link_dpm_slot_attr_show(struct device *dev,
+			struct device_attribute *attr, char *buf)
+{
+	struct ata_link *link = transport_class_to_link(dev);
+	return sprintf(buf, "%s %d\n", link->dpm_uuid, link->dpm_slot);
+}
+
+static ssize_t ata_link_dpm_slot_attr_store(struct device *dev,
+			struct device_attribute *attr, const char *buf, size_t count)
+{
+	int ret = 0;
+	int slot;
+	char uuid[SYNO_DPM_UUID_LEN_MAX] = {0};
+	struct ata_link *link = transport_class_to_link(dev);
+
+	ret = sscanf(buf, "%s %d", uuid, &slot);
+	if (ret != 2) {
+		return -EINVAL;
+	}
+
+	link->dpm_slot = slot;
+	snprintf(link->dpm_uuid, sizeof(link->dpm_uuid), "%s", uuid);
+	return count;
+}
+
+DEVICE_ATTR(syno_dpm_slot_attr, 0644, ata_link_dpm_slot_attr_show, ata_link_dpm_slot_attr_store);
+#endif /* MY_DEF_HERE */
 
 static DECLARE_TRANSPORT_CLASS(ata_link_class,
 		"ata_link", NULL, NULL, NULL);
@@ -707,6 +783,10 @@ static int ata_tdev_add(struct ata_device *ata_dev)
 
 #define SETUP_LINK_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(link_attrs, field, S_IRUGO, 1)
+#ifdef MY_DEF_HERE
+#define SETUP_LINK_ATTRIBUTE_WRITEABLE(field)					\
+	SETUP_TEMPLATE(link_attrs, field, S_IRUGO|S_IWUSR, 1)
+#endif /* MY_DEF_HERE */
 
 #define SETUP_PORT_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(port_attrs, field, S_IRUGO, 1)
@@ -761,6 +841,10 @@ struct scsi_transport_template *ata_attach_transport(void)
 	SETUP_LINK_ATTRIBUTE(hw_sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd);
+#ifdef MY_DEF_HERE
+	SETUP_LINK_ATTRIBUTE(syno_ata_link_info);
+	SETUP_LINK_ATTRIBUTE_WRITEABLE(syno_dpm_slot_attr);
+#endif /* MY_DEF_HERE */
 	BUG_ON(count > ATA_LINK_ATTRS);
 	i->link_attrs[count] = NULL;
 

@@ -198,6 +198,7 @@ obj-$(CONFIG_SYNO_SMBUS_HDDMON)+= syno_smbus_hddmon.o
 
 obj-$(CONFIG_SENSORS_OCC)	+= occ/
 obj-$(CONFIG_PMBUS)		+= pmbus/
+obj-$(CONFIG_SYNO_DISK_POWER_MANAGER)	+= syno_dpm/
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 

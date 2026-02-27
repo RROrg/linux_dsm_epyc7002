@@ -7521,7 +7521,7 @@ static int tree_move_down(struct btrfs_path *path, int *level, u64 reada_min_gen
 
 	for (slot++; slot < nritems && reada_done < reada_max; slot++) {
 		if (btrfs_node_ptr_generation(parent, slot) > reada_min_gen) {
-			readahead_tree_block(eb->fs_info, btrfs_node_blockptr(parent, slot));
+			btrfs_readahead_node_child(parent, slot);
 			reada_done += eb->fs_info->nodesize;
 		}
 	}

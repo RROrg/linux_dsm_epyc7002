@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * NFS exporting and validation.
@@ -954,6 +957,49 @@ out:
 	path_put(&path);
 	return err;
 }
+
+#ifdef MY_ABC_HERE
+int syno_compose_fh(struct svc_rqst *rqstp, const char *name, struct svc_fh *fhp)
+{
+	struct path path;
+	struct inode *inode;
+	struct auth_domain *clp;
+	struct svc_export *exp;
+	struct nfsd_net *nn = net_generic(SVC_NET(rqstp), nfsd_net_id);
+	struct cache_detail *cd = nn->svc_export_cache;
+	int err;
+
+	if (!name || !*name)
+		return nfserr_inval;
+
+	if (kern_path(name, 0, &path)) {
+		dprintk("nfsd: %s path %s not found", __func__, name);
+		return nfserr_perm;
+	}
+
+	inode = d_inode(path.dentry);
+	clp = rqstp->rq_client ? rqstp->rq_client : rqstp->rq_gssclient;
+	if (!clp) {
+		err = nfserr_inval;
+		goto out;
+	}
+	dprintk("nfsd: %s path:%s, clp:%s, sb:%s, inode:%ld",
+		__func__, name, clp->name, inode->i_sb->s_id, inode->i_ino);
+
+	exp = exp_parent(cd, clp, &path);
+	if (IS_ERR(exp)) {
+		err = nfserrno(PTR_ERR(exp));
+		goto out;
+	}
+
+	err = fh_compose(fhp, exp, path.dentry, NULL);
+
+	exp_put(exp);
+out:
+	path_put(&path);
+	return err;
+}
+#endif /* MY_ABC_HERE */
 
 static struct svc_export *exp_find(struct cache_detail *cd,
 				   struct auth_domain *clp, int fsid_type,

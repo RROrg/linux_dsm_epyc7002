@@ -101,7 +101,6 @@ extern int syno_compare_dts_eunit_pciepath(struct pci_dev *, const struct device
 #define DT_PMP_SLOT "pmp_slot"
 #define DT_LIBATA "libata"
 #define DT_PMP_LINK "pmp_link"
-#define DT_POWER_SEQ "power_seq"
 
 #define DT_SYSTEM_SLOT "system_slot"
 #define DT_MV9XXX "mv9xxx"
@@ -140,6 +139,25 @@ extern int syno_compare_dts_eunit_pciepath(struct pci_dev *, const struct device
 #define DT_SYNO_PMBUS_PSU_PRESENT_BIT "syno_pmbus_psu_present_bit"
 #endif /* MY_DEF_HERE */
 
+#ifdef MY_DEF_HERE
+#define DT_PROPERTY_I2C_SDA_HOLD_TIME_NS "i2c_sda_hold_time_ns"
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_DEF_HERE
+#define DT_SYNO_DISK_POWER_MANAGER "disk_power_manager"
+#define SYNO_DPM_UUID_LEN_MAX 64
+#define DT_SYNO_DPM_INTERRUPT_EVENT "interrupt_event"
+#define DT_SYNO_DPM_EVENT_TYPE "type"
+#define DT_SYNO_DPM_EVENT_TYPE_GPIO "gpio"
+#define DT_SYNO_DPM_EVENT_TYPE_GPIO_PIN "gpio_pin"
+#endif /* MY_DEF_HERE */
+
+#ifdef MY_ABC_HERE
+#define SZ_DTS_AHCI_IRQ "ahci_irq"
+#define SZ_AHCI_HARD_IRQ "hard_irq"
+#define SZ_AHCI_THREADED_IRQ "threaded_irq"
+#endif /* MY_ABC_HERE */
+
 #define SZ_DTS_EBOX_I2C_PWR_BTN "power_btn"
 #define SZ_DTS_EBOX_I2C_OFFSET "offset"
 #define SZ_DTS_EBOX_I2C_MASK "mask"
@@ -162,6 +180,8 @@ extern int syno_compare_dts_eunit_pciepath(struct pci_dev *, const struct device
 #define DT_SEG7_LED_MAP_0 "seg7_led_map_0"
 #define DT_SEG7_LED_MAP_1 "seg7_led_map_1"
 #define DT_SEG7_LED_MAP_2 "seg7_led_map_2"
+
+#define DT_REBOOT_DISK_POWER_LOSS "reboot_disk_pwr_lost"
 
 /* This enum must sync with synosdk/fs.h for user space having same DISK_PORT_TYPE mapping */
 typedef enum _tag_DISK_PORT_TYPE{
@@ -311,12 +331,10 @@ void syno_plugin_handle_put(void *hnd);
 #define DT_EUNIT_STATUS_HDDSEDSET "hddsedset"
 #define DT_EUNIT_STATUS_ACK "ack"
 #define DT_EUNIT_STATUS_HDDRESET "hddreset"
+#define DT_EUNIT_STATUS_DIMMER "dimmer"
 
 #define DT_EUNIT_COMMAND "command"
 #define DT_EUNIT_OFFSET "offset"
-
-#define DT_EUNIT_DISK_PRESENT "disk_present"
-#define DT_EUNIT_DISK_POWER_ON "disk_power_on"
 
 typedef enum _tag_EUNIT_STATUS_INDEX {
 	EUNIT_STATUS_EXPCTRL = 0,
@@ -337,6 +355,7 @@ typedef enum _tag_EUNIT_STATUS_INDEX {
 	EUNIT_STATUS_EXPBPSNSET,
 	EUNIT_STATUS_ACK,
 	EUNIT_STATUS_HDDSEDSET,
+	EUNIT_STATUS_DIMMER,
 	EUNIT_STATUS_UNKNOWN,
 	EUNIT_STATUS_INDEX_END,
 } EUNIT_STATUS_INDEX;
@@ -369,7 +388,6 @@ struct syno_control_operations {
 	const char control_method[SYNO_DTS_PROPERTY_CONTENT_LENGTH];
 	int (*unique_get)(const int slot_type, const int slot_index, char *unique, int unique_size);
 	int (*container_index_get_by_diskname)(int *slot_index, const char* diskname);
-	int (*hdd_ctrl)(const int slot_type, const int slot_index, const int power_ctrl);
 	int (*deep_sleep_indicator_ctrl)(const int slot_type, const int slot_index, const int ctrl);
 	int (*power_control) (const int slot_type, const int slot_index);
 	int (*disk_delay_waiting) (const int slot_type, const int slot_index, const int disk_id, int action);

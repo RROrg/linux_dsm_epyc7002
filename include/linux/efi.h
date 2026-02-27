@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef _LINUX_EFI_H
 #define _LINUX_EFI_H
@@ -620,6 +623,11 @@ static inline void efi_enter_virtual_mode (void) {}
 extern efi_status_t efi_query_variable_store(u32 attributes,
 					     unsigned long size,
 					     bool nonblocking);
+
+#ifdef MY_ABC_HERE
+extern efi_status_t efi_force_garbage_collection(void);
+#endif /* MY_ABC_HERE */
+
 #else
 
 static inline efi_status_t efi_query_variable_store(u32 attributes,
@@ -628,6 +636,14 @@ static inline efi_status_t efi_query_variable_store(u32 attributes,
 {
 	return EFI_SUCCESS;
 }
+
+#ifdef MY_ABC_HERE
+static inline efi_status_t efi_force_garbage_collection(void)
+{
+	return EFI_SUCCESS;
+}
+#endif /* MY_ABC_HERE */
+
 #endif
 extern void __iomem *efi_lookup_mapped_addr(u64 phys_addr);
 
@@ -985,8 +1001,6 @@ struct efivar_entry {
 	struct efi_variable var;
 	struct list_head list;
 	struct kobject kobj;
-	bool scanning;
-	bool deleting;
 };
 
 static inline void
@@ -1006,7 +1020,8 @@ int efivar_init(int (*func)(efi_char16_t *, efi_guid_t, unsigned long, void *),
 		void *data, bool duplicates, struct list_head *head);
 
 int efivar_entry_add(struct efivar_entry *entry, struct list_head *head);
-int efivar_entry_remove(struct efivar_entry *entry);
+void __efivar_entry_add(struct efivar_entry *entry, struct list_head *head);
+void efivar_entry_remove(struct efivar_entry *entry);
 
 int __efivar_entry_delete(struct efivar_entry *entry);
 int efivar_entry_delete(struct efivar_entry *entry);
@@ -1039,6 +1054,26 @@ bool efivar_validate(efi_guid_t vendor, efi_char16_t *var_name, u8 *data,
 		     unsigned long data_size);
 bool efivar_variable_is_removable(efi_guid_t vendor, const char *name,
 				  size_t len);
+
+int efivar_lock(void);
+int efivar_trylock(void);
+void efivar_unlock(void);
+
+efi_status_t efivar_get_variable(efi_char16_t *name, efi_guid_t *vendor,
+				 u32 *attr, unsigned long *size, void *data);
+
+efi_status_t efivar_get_next_variable(unsigned long *name_size,
+				      efi_char16_t *name, efi_guid_t *vendor);
+
+efi_status_t efivar_set_variable_locked(efi_char16_t *name, efi_guid_t *vendor,
+					u32 attr, unsigned long data_size,
+					void *data, bool nonblocking);
+
+efi_status_t efivar_set_variable(efi_char16_t *name, efi_guid_t *vendor,
+				 u32 attr, unsigned long data_size, void *data);
+
+efi_status_t check_var_size(u32 attributes, unsigned long size);
+efi_status_t check_var_size_nonblocking(u32 attributes, unsigned long size);
 
 extern bool efi_capsule_pending(int *reset_type);
 

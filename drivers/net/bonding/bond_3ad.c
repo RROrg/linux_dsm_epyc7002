@@ -1,6 +1,3 @@
-#ifndef MY_ABC_HERE
-#define MY_ABC_HERE
-#endif
 // SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * Copyright(c) 1999 - 2004 Intel Corporation. All rights reserved.
@@ -2496,9 +2493,6 @@ void bond_3ad_adapter_speed_duplex_changed(struct slave *slave)
 
 	spin_lock_bh(&slave->bond->mode_lock);
 	ad_update_actor_keys(port, false);
-#ifdef MY_ABC_HERE
-	port->sm_vars |= AD_PORT_BEGIN;
-#endif /* CONFIG_SYNO_8023AD_LINK_STATUS */
 	spin_unlock_bh(&slave->bond->mode_lock);
 	slave_dbg(slave->bond->dev, slave->dev, "Port %d changed speed/duplex\n",
 		  port->actor_port_number);

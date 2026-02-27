@@ -48,12 +48,15 @@ PLATFORMS = [
     Platform.new(:kvmx64v2,         :KVMX64V2,              :x86_64,    'Virtual Machine with port mapping v2'),
     Platform.new(:purleylk5,        :PURLEY,                :x86_64,    'Intel Purley'),
     Platform.new(:geminilakelk5,    :GEMINILAKE,            :x86_64,    'Intel Gemini Lake'),
+    Platform.new(:geminilakenk,     :GEMINILAKENK,          :x86_64,    'Intel Gemini Lake'),
     Platform.new(:v1000lk5,         :V1000,                 :x86_64,    'AMD Ryzen Embedded V1000'),
+    Platform.new(:v1000nk,          :V1000NK,               :x86_64,    'AMD Ryzen Embedded V1000'),
     Platform.new(:v1000sofs,        :V1000SOFS,             :x86_64,    'AMD Ryzen Embedded V1000 with SOFS'),
     Platform.new(:rtd1619b,         :RTD1619B,              :armv8,     'Realtek RTD1619B'),
     Platform.new(:icelaked,         :ICELAKED,              :x86_64,    'Intel Icelake-D'),
     Platform.new(:epyc7002,         :EPYC7002,              :x86_64,    'AMD EPYC Embedded 7002'),
     Platform.new(:epyc7002sofs,     :EPYC7002SOFS,          :x86_64,    'AMD EPYC Embedded 7002 with SOFS'),
     Platform.new(:epyc7003ntb,      :EPYC7003NTB,           :x86_64,    'AMD EPYC Embedded 7003 with NTB'),
+    Platform.new(:r1000nk,          :R1000NK,               :x86_64,    'AMD Ryzen Embedded R1000'),
 ]
 

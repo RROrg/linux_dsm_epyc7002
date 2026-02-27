@@ -351,13 +351,18 @@ u_int16_t *syno_generate_default_upcase_table(void)
 
 
 static u_int16_t *upcase_table = NULL;
+static DEFINE_SPINLOCK(syno_upcase_table_lock);
 
 u_int16_t *def_upcase_table(void)
 {
-    if(upcase_table==NULL)
-        upcase_table = syno_generate_default_upcase_table();
+	if (upcase_table == NULL) {
+		spin_lock(&syno_upcase_table_lock);
+		if (upcase_table == NULL)
+			upcase_table = syno_generate_default_upcase_table();
+		spin_unlock(&syno_upcase_table_lock);
+	}
 
-    return upcase_table;
+	return upcase_table;
 }
 
 int syno_utf8_toupper(u_int8_t *to,const u_int8_t *from, int maxlen, int clenfrom, u_int16_t *upcasetable)

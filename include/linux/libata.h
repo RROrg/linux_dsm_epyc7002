@@ -235,6 +235,10 @@ enum {
 	ATA_LFLAG_RST_ONCE	= (1 << 9), /* limit recovery to one reset */
 	ATA_LFLAG_CHANGED	= (1 << 10), /* LPM state changed on this link */
 	ATA_LFLAG_NO_DB_DELAY	= (1 << 11), /* no debounce delay on link resume */
+#ifdef MY_ABC_HERE
+	/* XXX: may be conflict in newer kernel */
+	ATA_LFLAG_SYNO_OFFLINE	= (1 << 15), /* link is offline */
+#endif /* MY_ABC_HERE */
 
 	/* struct ata_port flags */
 	ATA_FLAG_SLAVE_POSS	= (1 << 0), /* host supports slave dev */
@@ -563,6 +567,7 @@ enum {
 	SYNO_STATUS_DEEP_SLEEP_FAILED   = 1 << 1,
 	SYNO_STATUS_GPIO_CTRL		= 1 << 2,
 	SYNO_STATUS_EUNIT_MASTER_REFIND = (1 << 7), /* find master retries */
+	SYNO_STATUS_UNMASK_ERROR	= (1 << 3), /* Unmask fail to IDENTIFY error */
 #endif /* MY_ABC_HERE */
 };
 
@@ -1061,7 +1066,10 @@ struct ata_link {
 	SYNOBIOS_EVENT_PARM     diskHardResetFailEventParm;
 	SYNOBIOS_EVENT_PARM     diskSataErrEventParm;
 #endif /* MY_ABC_HERE */
-
+#ifdef MY_DEF_HERE
+	char dpm_uuid[SYNO_DPM_UUID_LEN_MAX];
+	unsigned int dpm_slot;
+#endif /* MY_DEF_HERE */
 };
 #define ATA_LINK_CLEAR_BEGIN		offsetof(struct ata_link, active_tag)
 #define ATA_LINK_CLEAR_END		offsetof(struct ata_link, device[0])
@@ -1263,7 +1271,7 @@ struct ata_port_operations {
 	void (*sched_eh)(struct ata_port *ap);
 	void (*end_eh)(struct ata_port *ap);
 #ifdef MY_ABC_HERE
-	void (*syno_recover)(struct ata_port *ap);
+	int  (*syno_recover)(struct ata_port *ap);
 #endif /* MY_ABC_HERE */
 
 	/*
@@ -1762,6 +1770,22 @@ extern void syno_libata_device_list_set(struct scsi_device *sdev, int add, const
 #else /* MY_DEF_HERE || MY_DEF_HERE */
 #endif /* MY_DEF_HERE || MY_DEF_HERE */
 
+#ifdef MY_ABC_HERE
+extern int syno_libata_disk_power_loss_when_reboot(struct scsi_device *sdev);
+#define SYNO_DISK_PWR_LOSS_WHEN_REBOOT \
+	.syno_disk_power_loss_when_reboot = syno_libata_disk_power_loss_when_reboot,
+#else /* MY_ABC_HERE */
+#define SYNO_DISK_PWR_LOSS_WHEN_REBOOT
+#endif /* MY_ABC_HERE */
+
+#if defined(MY_DEF_HERE) && defined(MY_DEF_HERE)
+extern void syno_disk_not_ready_count_increase(void);
+extern void syno_disk_not_ready_count_decrease(void);
+#define MY_ABC_HERE \
+	.syno_disk_not_ready_count_increase = syno_disk_not_ready_count_increase, \
+	.syno_disk_not_ready_count_decrease = syno_disk_not_ready_count_decrease,
+#else /* MY_DEF_HERE && MY_DEF_HERE */
+#endif /* MY_DEF_HERE && MY_DEF_HERE */
 
 /*
  * All sht initializers (BASE, PIO, BMDMA, NCQ) must be instantiated
@@ -1785,6 +1809,8 @@ extern void syno_libata_device_list_set(struct scsi_device *sdev, int add, const
 	.slave_destroy		= ata_scsi_slave_destroy,	\
 	.bios_param		= ata_std_bios_param,		\
 	SYNO_DISK_NAME_MACRO \
+	MY_ABC_HERE \
+	SYNO_DISK_PWR_LOSS_WHEN_REBOOT \
 	MY_ABC_HERE \
 	.unlock_native_capacity	= ata_scsi_unlock_native_capacity
 
@@ -2526,7 +2552,7 @@ extern struct device_attribute dev_attr_syno_port_thaw;
 
 #ifdef MY_ABC_HERE
 extern struct device_attribute dev_attr_syno_pwr_reset_count;
-extern void syno_sata_deep_retry (struct ata_port *ap);
+extern int syno_sata_deep_retry (struct ata_port *ap);
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE

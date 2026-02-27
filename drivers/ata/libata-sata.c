@@ -544,7 +544,16 @@ int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
 	u32 scontrol;
 	int rc;
 
+#ifdef MY_ABC_HERE
+	struct ata_device *dev = NULL;
+	int iRetries = 0, iHasDev = 0;
+#endif /* MY_ABC_HERE */
+
 	DPRINTK("ENTER\n");
+
+#ifdef MY_ABC_HERE
+retry:
+#endif /* MY_ABC_HERE */
 
 	if (online)
 		*online = false;
@@ -586,7 +595,28 @@ int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
 		goto out;
 	/* if link is offline nothing more to do */
 	if (ata_phys_link_offline(link))
+#ifdef MY_ABC_HERE
+	{
+		if (!(link->ap->pflags & ATA_PFLAG_SYNO_DS_WAKING)) {
+			goto out;
+		}
+		iHasDev = 0;
+		ata_for_each_dev(dev, link, ENABLED) {
+			iHasDev = 1;
+			break;
+		}
+		if (iHasDev && iRetries++ < 3) {
+			ata_link_info(link, "Wake up from deep sleep, retry hardreset %d times\n", iRetries);
+			ata_msleep(link->ap, 1000); // delay 1s
+			goto retry;
+		} else if (iHasDev) {
+			ata_link_err(link, "Retry hardreset %d times but still offline\n", iRetries);
+		}
 		goto out;
+	}
+#else /* MY_ABC_HERE */
+		goto out;
+#endif /* MY_ABC_HERE */
 
 	/* Link is online.  From this point, -ENODEV too is an error. */
 	if (online)
@@ -601,15 +631,23 @@ int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
 		if (check_ready) {
 			unsigned long pmp_deadline;
 
+#ifdef MY_ABC_HERE
+			/* To enhance compatibility (DSM#110708), we changed
+			 * the fixed hardreset deadline to dynamic deadline.
+			 *
+			 * Set pmp_deadline = deadline - 1s
+			 */
+			pmp_deadline = deadline - msecs_to_jiffies(1000);
+			if (time_before(pmp_deadline, jiffies)) {
+				pmp_deadline = deadline;
+			}
+#else /* MY_ABC_HERE */
 			pmp_deadline = ata_deadline(jiffies,
 						    ATA_TMOUT_PMP_SRST_WAIT);
-#ifdef MY_ABC_HERE
-			/* SSD Intel S4500 3.84TB Hotplug 100% failed on SATA controller Marvell 88SE9235. */
-			if (time_before(pmp_deadline, deadline))
-#else
 			if (time_after(pmp_deadline, deadline))
-#endif /* MY_ABC_HERE */
 				pmp_deadline = deadline;
+#endif /* MY_ABC_HERE */
+
 			ata_wait_ready(link, pmp_deadline, check_ready);
 		}
 		rc = -EAGAIN;
@@ -632,6 +670,15 @@ int sata_link_hardreset(struct ata_link *link, const unsigned long *timing,
 		}
 #endif /* MY_ABC_HERE */
 	}
+
+#ifdef MY_ABC_HERE
+	if (online && (*online == false)) {
+		link->flags |= ATA_LFLAG_SYNO_OFFLINE;
+	} else {
+		link->flags &= ~ATA_LFLAG_SYNO_OFFLINE;
+	}
+#endif /* MY_ABC_HERE */
+
 	DPRINTK("EXIT, rc=%d\n", rc);
 	return rc;
 }

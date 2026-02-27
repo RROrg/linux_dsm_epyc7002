@@ -3350,7 +3350,9 @@ static void syno_set_signal(struct ata_host *host, unsigned int sigData[SYNO_SAT
 {
 	int port, gen;
 	struct pci_dev *pdev = NULL;
+#ifdef MY_ABC_HERE
 	int max_port = 0;
+#endif /* MY_ABC_HERE */
 	
 	if (NULL == host || NULL == sigData) {
 		goto END;

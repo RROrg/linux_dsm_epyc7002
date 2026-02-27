@@ -1180,10 +1180,15 @@ static ssize_t show_peci(struct device *dev, struct device_attribute *attr,
 {
 	// this function is adt7490 only
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
 	int out = 0;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1219,9 +1224,14 @@ static ssize_t show_adt_full_duty_cycle(struct device *dev, struct device_attrib
 {
 	// this function is adt7490 only
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	u8 config1;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1263,9 +1273,14 @@ static ssize_t show_peci_error(struct device *dev, struct device_attribute *attr
 {
 	// this function is adt7490 only
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	u8 config;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1278,9 +1293,14 @@ static ssize_t show_enh_acou_reg(struct device *dev, struct device_attribute *at
 {
 	// this function is adt7490 only
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	u8 config;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1317,9 +1337,14 @@ static ssize_t show_adtenable(struct device *dev, struct device_attribute *attr,
 {
 	// this function is adt7490 only
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	u8 config1;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1361,9 +1386,14 @@ static ssize_t show_pwmHighFreq(struct device *dev, struct device_attribute *att
 {
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	int out;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1412,10 +1442,15 @@ static ssize_t show_peci_point2(struct device *dev, struct device_attribute *att
 			   char *buf)
 {
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
 	int out, val;
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -1475,9 +1510,14 @@ static ssize_t show_pwm_syno_control(struct device *dev, struct device_attribute
 			    char *buf)
 {
 	struct adt7475_data *data = adt7475_update_device(dev);
-	struct i2c_client *client = data->client;
+	struct i2c_client *client = NULL;
 	struct sensor_device_attribute_2 *sattr = to_sensor_dev_attr_2(attr);
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+	
+	client = data->client;
 	if (!SYNO_IS_ADT7490(client)) {
 		return -EINVAL;
 	}
@@ -2251,6 +2291,10 @@ static int syno_parse_adt_peci_input(struct _SynoCpuTemp *pCpuTemp)
 
 	data = i2c_get_clientdata(client);
 
+	if (IS_ERR(data)) {
+		goto RET;
+	}
+
 #ifdef MY_DEF_HERE
 	cpu_count = 2;
 #endif /* MY_DEF_HERE */
@@ -2278,6 +2322,10 @@ static int syno_parse_adt_voltage_sensor(struct _SYNO_HWMON_SENSOR_TYPE *SysVolt
 
 	data = i2c_get_clientdata(client);
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+
 	for (i = 0 ; i < SysVoltage->sensor_num ; i++) {
 		snprintf(SysVoltage->sensor[i].value, sizeof(SysVoltage->sensor[i].value), "%d", reg2volt(i, data->voltage[INPUT][i], data->bypass_attn));
 	}
@@ -2297,6 +2345,10 @@ static int syno_parse_adt_thermal_sensor(struct _SYNO_HWMON_SENSOR_TYPE *SysTher
 	}
 
 	data = i2c_get_clientdata(client);
+
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
 
 	for (i = 0 ; i < SysThermal->sensor_num ; i++) {
 		snprintf(SysThermal->sensor[i].value, sizeof(SysThermal->sensor[i].value), "%d", reg2temp(data, data->temp[INPUT][i]) / 1000);
@@ -2318,6 +2370,10 @@ static int syno_parse_adt_fan_speed_rpm(struct _SYNO_HWMON_SENSOR_TYPE *FanSpeed
 
 	data = i2c_get_clientdata(client);
 
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
+
 	for (i = 0 ; i < FanSpeedRpm->sensor_num ; i++) {
 		snprintf(FanSpeedRpm->sensor[i].value, sizeof(FanSpeedRpm->sensor[i].value), "%d",  tach2rpm(data->tach[INPUT][i]));
 	}
@@ -2337,6 +2393,10 @@ static int syno_parse_adt_fan_speed_rpm_by_order(struct _SYNO_HWMON_SENSOR_TYPE 
 	}
 
 	data = i2c_get_clientdata(client);
+
+	if (IS_ERR(data)) {
+		return PTR_ERR(data);
+	}
 
 	for (i = 0 ; i < FanSpeedRpm->sensor_num ; i++) {
 		snprintf(FanSpeedRpm->sensor[i].value, sizeof(FanSpeedRpm->sensor[i].value), "%d",  tach2rpm(data->tach[INPUT][FanOrder->fan_order_list[i]]));

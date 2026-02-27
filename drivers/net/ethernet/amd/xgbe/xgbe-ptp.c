@@ -122,44 +122,33 @@
 #include "xgbe.h"
 #include "xgbe-common.h"
 
-static u64 xgbe_cc_read(const struct cyclecounter *cc)
-{
-	struct xgbe_prv_data *pdata = container_of(cc,
-						   struct xgbe_prv_data,
-						   tstamp_cc);
-	u64 nsec;
-
-	nsec = pdata->hw_if.get_tstamp_time(pdata);
-
-	return nsec;
-}
-
-static int xgbe_adjfreq(struct ptp_clock_info *info, s32 delta)
+static int xgbe_adjfine(struct ptp_clock_info *info, long ppm)
 {
 	struct xgbe_prv_data *pdata = container_of(info,
 						   struct xgbe_prv_data,
 						   ptp_clock_info);
-	unsigned long flags;
+	s32 ppb;
 	u64 adjust;
 	u32 addend, diff;
 	unsigned int neg_adjust = 0;
+	unsigned long flags;
 
-	if (delta < 0) {
+	ppb = scaled_ppm_to_ppb(ppm);
+
+	if (ppb < 0) {
 		neg_adjust = 1;
-		delta = -delta;
+		ppb = -ppb;
 	}
 
 	adjust = pdata->tstamp_addend;
-	adjust *= delta;
-	diff = div_u64(adjust, 1000000000UL);
+	adjust *= ppb;
+	diff = div_u64(adjust, NSEC_PER_SEC);
 
 	addend = (neg_adjust) ? pdata->tstamp_addend - diff :
 				pdata->tstamp_addend + diff;
 
 	spin_lock_irqsave(&pdata->tstamp_lock, flags);
-
 	pdata->hw_if.update_tstamp_addend(pdata, addend);
-
 	spin_unlock_irqrestore(&pdata->tstamp_lock, flags);
 
 	return 0;
@@ -171,25 +160,55 @@ static int xgbe_adjtime(struct ptp_clock_info *info, s64 delta)
 						   struct xgbe_prv_data,
 						   ptp_clock_info);
 	unsigned long flags;
+	unsigned int sec, nsec;
+	unsigned int neg_adjust = 0;
+	u32 quotient, reminder;
+
+	if (delta < 0) {
+		neg_adjust = 1;
+		delta = -delta;
+	}
+
+	quotient = div_u64_rem(delta, 1000000000ULL, &reminder);
+	sec = quotient;
+	nsec = reminder;
+
+	/* Negative adjustment for Hw timer register. */
+	if (neg_adjust) {
+		sec = -sec;
+		if (XGMAC_IOREAD_BITS(pdata, MAC_TSCR, TSCTRLSSR))
+			nsec = (1000000000UL - nsec);
+		else
+			nsec = (0x80000000UL - nsec);
+	}
+	nsec = (neg_adjust << 31) | nsec;
 
 	spin_lock_irqsave(&pdata->tstamp_lock, flags);
-	timecounter_adjtime(&pdata->tstamp_tc, delta);
+	pdata->hw_if.update_tstamp_time(pdata, sec, nsec);
 	spin_unlock_irqrestore(&pdata->tstamp_lock, flags);
 
 	return 0;
 }
 
-static int xgbe_gettime(struct ptp_clock_info *info, struct timespec64 *ts)
+static int xgbe_gettimex(struct ptp_clock_info *info,
+			 struct timespec64 *ts,
+			 struct ptp_system_timestamp *sts)
 {
 	struct xgbe_prv_data *pdata = container_of(info,
 						   struct xgbe_prv_data,
 						   ptp_clock_info);
 	unsigned long flags;
 	u64 nsec;
+	static int count = 3;
+
+	if (count > 0 && count--)
+		dump_stack();
 
 	spin_lock_irqsave(&pdata->tstamp_lock, flags);
 
-	nsec = timecounter_read(&pdata->tstamp_tc);
+	ptp_read_system_prets(sts);
+	nsec = pdata->hw_if.get_tstamp_time(pdata);
+	ptp_read_system_postts(sts);
 
 	spin_unlock_irqrestore(&pdata->tstamp_lock, flags);
 
@@ -205,13 +224,10 @@ static int xgbe_settime(struct ptp_clock_info *info,
 						   struct xgbe_prv_data,
 						   ptp_clock_info);
 	unsigned long flags;
-	u64 nsec;
-
-	nsec = timespec64_to_ns(ts);
 
 	spin_lock_irqsave(&pdata->tstamp_lock, flags);
 
-	timecounter_init(&pdata->tstamp_tc, &pdata->tstamp_cc, nsec);
+	pdata->hw_if.set_tstamp_time(pdata, ts->tv_sec, ts->tv_nsec);
 
 	spin_unlock_irqrestore(&pdata->tstamp_lock, flags);
 
@@ -228,16 +244,14 @@ void xgbe_ptp_register(struct xgbe_prv_data *pdata)
 {
 	struct ptp_clock_info *info = &pdata->ptp_clock_info;
 	struct ptp_clock *clock;
-	struct cyclecounter *cc = &pdata->tstamp_cc;
-	u64 dividend;
 
 	snprintf(info->name, sizeof(info->name), "%s",
 		 netdev_name(pdata->netdev));
 	info->owner = THIS_MODULE;
 	info->max_adj = pdata->ptpclk_rate;
-	info->adjfreq = xgbe_adjfreq;
+	info->adjfine = xgbe_adjfine;
 	info->adjtime = xgbe_adjtime;
-	info->gettime64 = xgbe_gettime;
+	info->gettimex64 = xgbe_gettimex;
 	info->settime64 = xgbe_settime;
 	info->enable = xgbe_enable;
 
@@ -248,23 +262,6 @@ void xgbe_ptp_register(struct xgbe_prv_data *pdata)
 	}
 
 	pdata->ptp_clock = clock;
-
-	/* Calculate the addend:
-	 *   addend = 2^32 / (PTP ref clock / 50Mhz)
-	 *          = (2^32 * 50Mhz) / PTP ref clock
-	 */
-	dividend = 50000000;
-	dividend <<= 32;
-	pdata->tstamp_addend = div_u64(dividend, pdata->ptpclk_rate);
-
-	/* Setup the timecounter */
-	cc->read = xgbe_cc_read;
-	cc->mask = CLOCKSOURCE_MASK(64);
-	cc->mult = 1;
-	cc->shift = 0;
-
-	timecounter_init(&pdata->tstamp_tc, &pdata->tstamp_cc,
-			 ktime_to_ns(ktime_get_real()));
 
 	/* Disable all timestamping to start */
 	XGMAC_IOWRITE(pdata, MAC_TSCR, 0);

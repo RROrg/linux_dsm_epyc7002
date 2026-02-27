@@ -524,19 +524,28 @@ static void xgbe_disable_vxlan(struct xgbe_prv_data *pdata)
 	netif_dbg(pdata, drv, pdata->netdev, "VXLAN acceleration disabled\n");
 }
 
+static unsigned int xgbe_get_fc_queue_count(struct xgbe_prv_data *pdata)
+{
+	unsigned int max_q_count = XGMAC_MAX_FLOW_CONTROL_QUEUES;
+
+	/* From MAC ver 30H the TFCR is per priority, instead of per queue */
+	if (XGMAC_GET_BITS(pdata->hw_feat.version, MAC_VR, SNPSVER) >= 0x30)
+		return max_q_count;
+	else
+		return min_t(unsigned int, pdata->tx_q_count, max_q_count);
+}
+
 static int xgbe_disable_tx_flow_control(struct xgbe_prv_data *pdata)
 {
-	unsigned int max_q_count, q_count;
 	unsigned int reg, reg_val;
-	unsigned int i;
+	unsigned int i, q_count;
 
 	/* Clear MTL flow control */
 	for (i = 0; i < pdata->rx_q_count; i++)
 		XGMAC_MTL_IOWRITE_BITS(pdata, i, MTL_Q_RQOMR, EHFC, 0);
 
 	/* Clear MAC flow control */
-	max_q_count = XGMAC_MAX_FLOW_CONTROL_QUEUES;
-	q_count = min_t(unsigned int, pdata->tx_q_count, max_q_count);
+	q_count = xgbe_get_fc_queue_count(pdata);
 	reg = MAC_Q0TFCR;
 	for (i = 0; i < q_count; i++) {
 		reg_val = XGMAC_IOREAD(pdata, reg);
@@ -553,9 +562,8 @@ static int xgbe_enable_tx_flow_control(struct xgbe_prv_data *pdata)
 {
 	struct ieee_pfc *pfc = pdata->pfc;
 	struct ieee_ets *ets = pdata->ets;
-	unsigned int max_q_count, q_count;
 	unsigned int reg, reg_val;
-	unsigned int i;
+	unsigned int i, q_count;
 
 	/* Set MTL flow control */
 	for (i = 0; i < pdata->rx_q_count; i++) {
@@ -579,8 +587,7 @@ static int xgbe_enable_tx_flow_control(struct xgbe_prv_data *pdata)
 	}
 
 	/* Set MAC flow control */
-	max_q_count = XGMAC_MAX_FLOW_CONTROL_QUEUES;
-	q_count = min_t(unsigned int, pdata->tx_q_count, max_q_count);
+	q_count = xgbe_get_fc_queue_count(pdata);
 	reg = MAC_Q0TFCR;
 	for (i = 0; i < q_count; i++) {
 		reg_val = XGMAC_IOREAD(pdata, reg);
@@ -807,6 +814,9 @@ static int xgbe_set_speed(struct xgbe_prv_data *pdata, int speed)
 	unsigned int ss;
 
 	switch (speed) {
+	case SPEED_10:
+		ss = 0x07;
+		break;
 	case SPEED_1000:
 		ss = 0x03;
 		break;
@@ -1519,6 +1529,27 @@ static void xgbe_rx_desc_init(struct xgbe_channel *channel)
 	DBGPR("<--rx_desc_init\n");
 }
 
+static void xgbe_update_tstamp_time(struct xgbe_prv_data *pdata, unsigned int sec,
+				 unsigned int nsec)
+{
+	unsigned int count = 10000;
+
+	/* Set the time values and tell the device */
+	XGMAC_IOWRITE(pdata, MAC_STSUR, sec);
+	XGMAC_IOWRITE(pdata, MAC_STNUR, nsec);
+
+	/* issue command to update the system time value */
+	XGMAC_IOWRITE(pdata, MAC_TSCR,
+		      XGMAC_IOREAD(pdata, MAC_TSCR) | (1 << MAC_TSCR_TSUPDT_INDEX));
+
+	/* Wait for the time till update complete */
+	while (--count && XGMAC_IOREAD_BITS(pdata, MAC_TSCR, TSUPDT))
+		udelay(5);
+
+	if (!count)
+		netdev_err(pdata->netdev, "timed out updating system timestamp\n");
+}
+
 static void xgbe_update_tstamp_addend(struct xgbe_prv_data *pdata,
 				      unsigned int addend)
 {
@@ -1585,7 +1616,6 @@ static u64 xgbe_get_tx_tstamp(struct xgbe_prv_data *pdata)
 	nsec = tx_ssr;
 	nsec *= NSEC_PER_SEC;
 	nsec += tx_snr;
-
 	return nsec;
 }
 
@@ -1597,8 +1627,8 @@ static void xgbe_get_rx_tstamp(struct xgbe_packet_data *packet,
 	if (XGMAC_GET_BITS_LE(rdesc->desc3, RX_CONTEXT_DESC3, TSA) &&
 	    !XGMAC_GET_BITS_LE(rdesc->desc3, RX_CONTEXT_DESC3, TSD)) {
 		nsec = le32_to_cpu(rdesc->desc1);
-		nsec <<= 32;
-		nsec |= le32_to_cpu(rdesc->desc0);
+		nsec *= NSEC_PER_SEC;
+                nsec += le32_to_cpu(rdesc->desc0);
 		if (nsec != 0xffffffffffffffffULL) {
 			packet->rx_tstamp = nsec;
 			XGMAC_SET_BITS(packet->attributes, RX_PACKET_ATTRIBUTES,
@@ -1607,35 +1637,14 @@ static void xgbe_get_rx_tstamp(struct xgbe_packet_data *packet,
 	}
 }
 
-static int xgbe_config_tstamp(struct xgbe_prv_data *pdata,
+static void xgbe_config_tstamp(struct xgbe_prv_data *pdata,
 			      unsigned int mac_tscr)
 {
-	/* Set one nano-second accuracy */
-	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TSCTRLSSR, 1);
+	unsigned int value = 0;
 
-	/* Set fine timestamp update */
-	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TSCFUPDT, 1);
-
-	/* Overwrite earlier timestamps */
-	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TXTSSTSM, 1);
-
-	XGMAC_IOWRITE(pdata, MAC_TSCR, mac_tscr);
-
-	/* Exit if timestamping is not enabled */
-	if (!XGMAC_GET_BITS(mac_tscr, MAC_TSCR, TSENA))
-		return 0;
-
-	/* Initialize time registers */
-	XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SSINC, XGBE_TSTAMP_SSINC);
-	XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SNSINC, XGBE_TSTAMP_SNSINC);
-	xgbe_update_tstamp_addend(pdata, pdata->tstamp_addend);
-	xgbe_set_tstamp_time(pdata, 0, 0);
-
-	/* Initialize the timecounter */
-	timecounter_init(&pdata->tstamp_tc, &pdata->tstamp_cc,
-			 ktime_to_ns(ktime_get_real()));
-
-	return 0;
+	value = XGMAC_IOREAD(pdata, MAC_TSCR);
+	value |= mac_tscr;
+	XGMAC_IOWRITE(pdata, MAC_TSCR, value);
 }
 
 static void xgbe_tx_start_xmit(struct xgbe_channel *channel,
@@ -3463,6 +3472,80 @@ static void xgbe_powerdown_rx(struct xgbe_prv_data *pdata)
 	}
 }
 
+static void xgbe_init_ptp(struct xgbe_prv_data *pdata)
+{
+	unsigned int mac_tscr = 0;
+	struct timespec64 now;
+	u64 dividend;
+
+	/* Register Settings to be done based on the link speed. */
+	switch(pdata->phy.speed) {
+	case SPEED_1000:
+		XGMAC_IOWRITE(pdata, MAC_TICNR, MAC_TICNR_1G_INITVAL);
+		XGMAC_IOWRITE(pdata, MAC_TECNR, MAC_TECNR_1G_INITVAL);
+		break;
+	case SPEED_2500:
+	case SPEED_10000:
+		XGMAC_IOWRITE_BITS(pdata, MAC_TICSNR, TSICSNS, MAC_TICSNR_10G_INITVAL);
+		XGMAC_IOWRITE(pdata, MAC_TECNR, MAC_TECNR_10G_INITVAL);
+		XGMAC_IOWRITE_BITS(pdata, MAC_TECSNR, TSECSNS, MAC_TECSNR_10G_INITVAL);
+		break;
+	case SPEED_UNKNOWN:
+	default:
+		break;
+	}
+
+	/* Enable IEEE1588 PTP clock. */
+	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TSENA, 1);
+
+	/* Overwrite earlier timestamps */
+	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TXTSSTSM, 1);
+
+	/* Set one nano-second accuracy */
+	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TSCTRLSSR, 1);
+
+	/* Set fine timestamp update */
+	XGMAC_SET_BITS(mac_tscr, MAC_TSCR, TSCFUPDT, 1);
+
+	xgbe_config_tstamp(pdata, mac_tscr);
+
+	/* Exit if timestamping is not enabled */
+	if (!XGMAC_GET_BITS(mac_tscr, MAC_TSCR, TSENA))
+		return;
+
+	if (pdata->vdata->tstamp_ptp_clock_freq) {
+		/* Initialize time registers based on 125MHz PTP Clock Frequency */
+		XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SSINC, XGBE_V2_TSTAMP_SSINC);
+		XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SNSINC, XGBE_V2_TSTAMP_SNSINC);
+	} else {
+                /* Initialize time registers based on 50MHz PTP Clock Frequency*/
+                XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SSINC, XGBE_TSTAMP_SSINC);
+                XGMAC_IOWRITE_BITS(pdata, MAC_SSIR, SNSINC, XGBE_TSTAMP_SNSINC);
+	}
+
+	/* Calculate the addend:
+	 *   addend = 2^32 / (PTP ref clock / (PTP clock based on SSINC))
+	 *          = (2^32 * (PTP clock based on SSINC)) / PTP ref clock
+	 */
+	if (pdata->vdata->tstamp_ptp_clock_freq)
+		dividend = 100000000;           // PTP clock frequency is 125MHz
+	else
+		dividend = 50000000;            // PTP clock frequency is 50MHz
+
+	dividend <<= 32;
+	pdata->tstamp_addend = div_u64(dividend, pdata->ptpclk_rate);
+
+	xgbe_update_tstamp_addend(pdata, pdata->tstamp_addend);
+
+	dma_wmb();
+	/* initialize system time */
+	ktime_get_real_ts64(&now);
+
+	/* lower 32 bits of tv_sec are safe until y2106 */
+	xgbe_set_tstamp_time(pdata, (u32)now.tv_sec, now.tv_nsec);
+
+}
+
 static int xgbe_init(struct xgbe_prv_data *pdata)
 {
 	struct xgbe_desc_if *desc_if = &pdata->desc_if;
@@ -3617,9 +3700,11 @@ void xgbe_init_function_ptrs_dev(struct xgbe_hw_if *hw_if)
 	hw_if->read_mmc_stats = xgbe_read_mmc_stats;
 
 	/* For PTP config */
+	hw_if->init_ptp = xgbe_init_ptp;
 	hw_if->config_tstamp = xgbe_config_tstamp;
 	hw_if->update_tstamp_addend = xgbe_update_tstamp_addend;
 	hw_if->set_tstamp_time = xgbe_set_tstamp_time;
+	hw_if->update_tstamp_time = xgbe_update_tstamp_time;
 	hw_if->get_tstamp_time = xgbe_get_tstamp_time;
 	hw_if->get_tx_tstamp = xgbe_get_tx_tstamp;
 

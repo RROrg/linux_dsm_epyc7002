@@ -1619,6 +1619,10 @@ static inline bool is_percpu_thread(void)
 #define PFA_SPEC_IB_FORCE_DISABLE	6	/* Indirect branch speculation permanently restricted */
 #define PFA_SPEC_SSB_NOEXEC		7	/* Speculative Store Bypass clear on execve() */
 
+#ifdef MY_ABC_HERE
+#define PFA_SHRINK	10	/* for shrink */
+#endif /* MY_ABC_HERE */
+
 #define TASK_PFA_TEST(name, func)					\
 	static inline bool task_##func(struct task_struct *p)		\
 	{ return test_bit(PFA_##name, &p->atomic_flags); }
@@ -1659,6 +1663,12 @@ TASK_PFA_CLEAR(SPEC_IB_DISABLE, spec_ib_disable)
 
 TASK_PFA_TEST(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
 TASK_PFA_SET(SPEC_IB_FORCE_DISABLE, spec_ib_force_disable)
+
+#ifdef MY_ABC_HERE
+TASK_PFA_TEST(SHRINK, test_shrink)
+TASK_PFA_SET(SHRINK, shrink)
+TASK_PFA_CLEAR(SHRINK, shrink)
+#endif /* MY_ABC_HERE */
 
 static inline void
 current_restore_flags(unsigned long orig_flags, unsigned long flags)

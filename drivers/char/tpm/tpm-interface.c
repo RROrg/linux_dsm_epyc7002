@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0-only
 /*
  * Copyright (C) 2004 IBM Corporation
@@ -28,6 +31,10 @@
 #include <linux/tpm_eventlog.h>
 
 #include "tpm.h"
+
+#ifdef MY_DEF_HERE
+#define MAX_TPM_CC_RETRY 2
+#endif /* MY_DEF_HERE */
 
 /*
  * Bug workaround - some TPM's don't flush the most
@@ -161,6 +168,10 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 	const size_t save_size = min(sizeof(save), bufsiz);
 	/* the command code is where the return code will be */
 	u32 cc = be32_to_cpu(header->return_code);
+#ifdef MY_DEF_HERE
+	u32 retry = 0;
+	unsigned long duration = tpm_calc_ordinal_duration(chip, cc);
+#endif /* MY_DEF_HERE */
 
 	/*
 	 * Subtlety here: if we have a space, the handles will be
@@ -171,6 +182,17 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 
 	for (;;) {
 		ret = tpm_try_transmit(chip, buf, bufsiz);
+#ifdef MY_DEF_HERE
+		if (chip->duration[TPM_LONG] >= duration && -ETIME == ret) {
+			if (MAX_TPM_CC_RETRY > retry) {
+				retry += 1;
+				dev_err(&chip->dev, "TPM Timed out retry count %d, tpm command: %x\n", retry, cc);
+				goto RETRY;
+			} else {
+				dev_err(&chip->dev, "TPM Timed out retry fail, tpm command: %x\n", cc);
+			}
+		}
+#endif /* MY_DEF_HERE */
 		if (ret < 0)
 			break;
 		rc = be32_to_cpu(header->return_code);
@@ -191,6 +213,9 @@ ssize_t tpm_transmit(struct tpm_chip *chip, u8 *buf, size_t bufsiz)
 					"self test is still running\n");
 			break;
 		}
+#ifdef MY_DEF_HERE
+RETRY:
+#endif /* MY_DEF_HERE */
 		tpm_msleep(delay_msec);
 		delay_msec *= 2;
 		memcpy(buf, save, save_size);

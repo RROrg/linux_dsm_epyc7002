@@ -285,9 +285,13 @@ syno_linear_end_request(struct bio *bio)
 		rcu_read_unlock();
 
 		md_error(mddev, rdev);
-		if (!syno_is_device_disappear(rdev->bdev))
+		if (!syno_is_device_disappear(rdev->bdev)) {
 			syno_report_bad_sector(report_sector, bio_data_dir(bio),
 					       mddev->md_minor, rdev->bdev, __func__);
+			if (bio_data_dir(bio) == READ)
+				syno_report_uncorrected_bad_sector(report_sector, mddev->md_minor,
+								   rdev->bdev, __func__);
+		}
 	}
 #else /* MY_ABC_HERE */
 	if (bio->bi_status)

@@ -228,6 +228,14 @@
 #define XGBE_MSI_BASE_COUNT	4
 #define XGBE_MSI_MIN_COUNT	(XGBE_MSI_BASE_COUNT + 1)
 
+/* Initial PTP register values based on Link Speed. */
+#define MAC_TICNR_1G_INITVAL	0x10
+#define MAC_TECNR_1G_INITVAL	0x28
+
+#define MAC_TICSNR_10G_INITVAL	0x33
+#define MAC_TECNR_10G_INITVAL	0x14
+#define MAC_TECSNR_10G_INITVAL	0xCC
+
 /* PCI clock frequencies */
 #define XGBE_V2_DMA_CLOCK_FREQ	500000000	/* 500 MHz */
 #define XGBE_V2_PTP_CLOCK_FREQ	125000000	/* 125 MHz */
@@ -238,6 +246,8 @@
 #define XGBE_TSTAMP_SSINC	20
 #define XGBE_TSTAMP_SNSINC	0
 
+#define XGBE_V2_TSTAMP_SSINC	0xA
+#define XGBE_V2_TSTAMP_SNSINC	0
 /* Driver PMT macros */
 #define XGMAC_DRIVER_CONTEXT	1
 #define XGMAC_IOCTL_CONTEXT	2
@@ -295,6 +305,7 @@
 
 #define XGBE_SGMII_AN_LINK_STATUS	BIT(1)
 #define XGBE_SGMII_AN_LINK_SPEED	(BIT(2) | BIT(3))
+#define XGBE_SGMII_AN_LINK_SPEED_10	0x00
 #define XGBE_SGMII_AN_LINK_SPEED_100	0x04
 #define XGBE_SGMII_AN_LINK_SPEED_1000	0x08
 #define XGBE_SGMII_AN_LINK_DUPLEX	BIT(4)
@@ -419,7 +430,7 @@ struct xgbe_rx_ring_data {
 
 /* Structure used to hold information related to the descriptor
  * and the packet associated with the descriptor (always use
- * use the XGBE_GET_DESC_DATA macro to access this data from the ring)
+ * the XGBE_GET_DESC_DATA macro to access this data from the ring)
  */
 struct xgbe_ring_data {
 	struct xgbe_ring_desc *rdesc;	/* Virtual address of descriptor */
@@ -572,6 +583,7 @@ enum xgbe_an_mode {
 	XGBE_AN_MODE_CL73_REDRV,
 	XGBE_AN_MODE_CL37,
 	XGBE_AN_MODE_CL37_SGMII,
+	XGBE_AN_MODE_MDIO,
 	XGBE_AN_MODE_NONE,
 };
 
@@ -596,6 +608,7 @@ enum xgbe_mode {
 	XGBE_MODE_KX_2500,
 	XGBE_MODE_KR,
 	XGBE_MODE_X,
+	XGBE_MODE_SGMII_10,
 	XGBE_MODE_SGMII_100,
 	XGBE_MODE_SGMII_1000,
 	XGBE_MODE_SFI,
@@ -611,6 +624,32 @@ enum xgbe_mdio_mode {
 	XGBE_MDIO_MODE_NONE = 0,
 	XGBE_MDIO_MODE_CL22,
 	XGBE_MDIO_MODE_CL45,
+};
+
+enum xgbe_mb_cmd {
+	XGBE_MB_CMD_POWER_OFF = 0,
+	XGBE_MB_CMD_SET_1G,
+	XGBE_MB_CMD_SET_2_5G,
+	XGBE_MB_CMD_SET_10G_SFI,
+	XGBE_MB_CMD_SET_10G_KR,
+	XGBE_MB_CMD_RRC
+};
+
+enum xgbe_mb_subcmd {
+	XGBE_MB_SUBCMD_NONE = 0,
+	XGBE_MB_SUBCMD_RX_ADAP,
+
+	/* 10GbE SFP subcommands */
+	XGBE_MB_SUBCMD_ACTIVE = 0,
+	XGBE_MB_SUBCMD_PASSIVE_1M,
+	XGBE_MB_SUBCMD_PASSIVE_3M,
+	XGBE_MB_SUBCMD_PASSIVE_OTHER,
+
+	/* 1GbE Mode subcommands */
+	XGBE_MB_SUBCMD_10MBITS = 0,
+	XGBE_MB_SUBCMD_100MBITS,
+	XGBE_MB_SUBCMD_1G_SGMII,
+	XGBE_MB_SUBCMD_1G_KX
 };
 
 struct xgbe_phy {
@@ -809,10 +848,13 @@ struct xgbe_hw_if {
 	void (*read_mmc_stats)(struct xgbe_prv_data *);
 
 	/* For Timestamp config */
-	int (*config_tstamp)(struct xgbe_prv_data *, unsigned int);
+	void (*init_ptp)(struct xgbe_prv_data *);
+	void (*config_tstamp)(struct xgbe_prv_data *, unsigned int);
 	void (*update_tstamp_addend)(struct xgbe_prv_data *, unsigned int);
 	void (*set_tstamp_time)(struct xgbe_prv_data *, unsigned int sec,
 				unsigned int nsec);
+	void (*update_tstamp_time)(struct xgbe_prv_data *, unsigned int sec,
+				   unsigned int nsec);
 	u64 (*get_tstamp_time)(struct xgbe_prv_data *);
 	u64 (*get_tx_tstamp)(struct xgbe_prv_data *);
 
@@ -907,6 +949,9 @@ struct xgbe_phy_impl_if {
 	void (*force_1g)(struct xgbe_prv_data *);
 	void (*resume_autoneg)(struct xgbe_prv_data *);
 	void (*phy_led_test_mode)(struct xgbe_prv_data *, unsigned int);
+	void (*phy_pause)(struct xgbe_prv_data *, bool);
+	void (*phy_mdio_mii_read)(struct xgbe_prv_data *, unsigned int, unsigned int *);
+	void (*phy_mdio_mii_write)(struct xgbe_prv_data *, unsigned int, unsigned int);
 #endif /* MY_DEF_HERE */
 
 };
@@ -1021,6 +1066,7 @@ struct xgbe_version_data {
 	unsigned int tx_max_fifo_size;
 	unsigned int rx_max_fifo_size;
 	unsigned int tx_tstamp_workaround;
+	unsigned int tstamp_ptp_clock_freq;
 	unsigned int ecc_support;
 	unsigned int i2c_support;
 	unsigned int irq_reissue_support;
@@ -1028,6 +1074,7 @@ struct xgbe_version_data {
 	unsigned int rx_desc_prefetch;
 	unsigned int an_cdr_workaround;
 	unsigned int an_kr_workaround;
+	unsigned int enable_rrc;
 };
 
 struct xgbe_prv_data {
@@ -1205,8 +1252,6 @@ struct xgbe_prv_data {
 	struct ptp_clock_info ptp_clock_info;
 	struct ptp_clock *ptp_clock;
 	struct hwtstamp_config tstamp_config;
-	struct cyclecounter tstamp_cc;
-	struct timecounter tstamp_tc;
 	unsigned int tstamp_addend;
 	struct work_struct tx_tstamp_work;
 	struct sk_buff *tx_tstamp_skb;
@@ -1245,6 +1290,7 @@ struct xgbe_prv_data {
 	struct xgbe_phy phy;
 	int mdio_mmd;
 	unsigned long link_check;
+	unsigned long phy_link_check;
 	struct completion mdio_complete;
 	unsigned int ext_fixed_phy;
 
@@ -1294,6 +1340,8 @@ struct xgbe_prv_data {
 
 	unsigned int debugfs_xgmac_reg;
 
+	unsigned int debugfs_mdio_mii_addr;
+
 	unsigned int debugfs_xpcs_mmd;
 	unsigned int debugfs_xpcs_reg;
 
@@ -1307,6 +1355,11 @@ struct xgbe_prv_data {
 #if defined(MY_DEF_HERE)
 	int wol_flag;
 #endif /* MY_DEF_HERE */
+	
+	bool en_rx_adap;
+	int rx_adapt_retries;
+	bool rx_adapt_done;
+	bool mode_set;
 };
 
 /* Function prototypes*/

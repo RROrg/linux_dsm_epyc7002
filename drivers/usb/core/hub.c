@@ -41,8 +41,8 @@
 #include <linux/kobject.h>
 
 #ifdef MY_DEF_HERE
-extern void syno_device_not_ready_set(const char *);
-extern void syno_device_not_ready_clear(const char *);
+extern void syno_usb_eunit_not_ready_set(const char *);
+extern void syno_usb_eunit_not_ready_clear(const char *);
 #endif /* MY_DEF_HERE */
 
 #include <linux/uaccess.h>
@@ -1374,7 +1374,7 @@ static void hub_activate(struct usb_hub *hub, enum hub_activation_type type)
 		 */
 		if (type == HUB_INIT) {
 #ifdef MY_DEF_HERE
-			syno_device_not_ready_set(dev_name(hub->intfdev));
+			syno_usb_eunit_not_ready_set(dev_name(hub->intfdev));
 #endif /* MY_DEF_HERE */
 			delay = hub_power_on_good_delay(hub);
 
@@ -6538,7 +6538,7 @@ static void hub_event(struct work_struct *work)
 	}
 
 #ifdef MY_DEF_HERE
-	syno_device_not_ready_clear(dev_name(hub->intfdev));
+	syno_usb_eunit_not_ready_clear(dev_name(hub->intfdev));
 #endif /* MY_DEF_HERE */
 out_autopm:
 	/* Balance the usb_autopm_get_interface() above */

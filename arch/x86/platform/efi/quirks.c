@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0-only
 #define pr_fmt(fmt) "efi: " fmt
 
@@ -221,6 +224,61 @@ efi_status_t efi_query_variable_store(u32 attributes, unsigned long size,
 	return EFI_SUCCESS;
 }
 EXPORT_SYMBOL_GPL(efi_query_variable_store);
+
+#ifdef MY_ABC_HERE
+/*
+ * Write a dummy variable to trigger a garbage collection
+ *
+ * Return EFI_SUCCESS if set the dummy variable successfully
+ */
+efi_status_t efi_force_garbage_collection(void)
+{
+	efi_status_t status;
+	u64 storage_size, remaining_size, max_size;
+	unsigned long dummy_size;
+	void *dummy = NULL;
+	u32 attributes = EFI_VARIABLE_NON_VOLATILE | \
+	                 EFI_VARIABLE_BOOTSERVICE_ACCESS | \
+	                 EFI_VARIABLE_RUNTIME_ACCESS;
+
+	status = efi.query_variable_info_nonblocking(attributes, &storage_size,
+						     &remaining_size,
+						     &max_size);
+	if (status != EFI_SUCCESS)
+		return status;
+
+	/*
+	 * Triggering garbage collection may require that the firmware
+	 * generate a real EFI_OUT_OF_RESOURCES error. We can force
+	 * that by attempting to use more space than is available.
+	 */
+	dummy_size = remaining_size + 1024;
+	dummy = kzalloc(dummy_size, GFP_ATOMIC);
+
+	if (!dummy)
+		return EFI_OUT_OF_RESOURCES;
+
+	status = efi.set_variable_nonblocking((efi_char16_t *)efi_dummy_name,
+				  &EFI_DUMMY_GUID,
+				  EFI_VARIABLE_NON_VOLATILE |
+				  EFI_VARIABLE_BOOTSERVICE_ACCESS |
+				  EFI_VARIABLE_RUNTIME_ACCESS,
+				  dummy_size, dummy);
+
+	if (status == EFI_SUCCESS) {
+		/*
+		 * This should have failed, so if it didn't make sure
+		 * that we delete it...
+		 */
+		efi_delete_dummy_variable();
+	}
+
+	kfree(dummy);
+
+	return status;
+}
+EXPORT_SYMBOL_GPL(efi_force_garbage_collection);
+#endif /* MY_ABC_HERE */
 
 /*
  * The UEFI specification makes it clear that the operating system is

@@ -18,8 +18,13 @@
 #include "qgroup.h"
 #include "locking.h"
 
+#ifdef MY_ABC_HERE
+#define BTRFS_DELAYED_WRITEBACK		256
+#define BTRFS_DELAYED_BACKGROUND	64
+#else
 #define BTRFS_DELAYED_WRITEBACK		512
 #define BTRFS_DELAYED_BACKGROUND	128
+#endif /* MY_ABC_HERE */
 #define BTRFS_DELAYED_BATCH		16
 
 static struct kmem_cache *delayed_node_cache;
@@ -1406,6 +1411,9 @@ static void btrfs_async_run_delayed_root(struct btrfs_work *work)
 			btrfs_release_path(path);
 			btrfs_release_prepared_delayed_node(delayed_node);
 			total_done++;
+#ifdef MY_ABC_HERE
+			cond_resched();
+#endif /* MY_ABC_HERE */
 			continue;
 		}
 
@@ -1422,6 +1430,9 @@ static void btrfs_async_run_delayed_root(struct btrfs_work *work)
 		btrfs_release_prepared_delayed_node(delayed_node);
 		total_done++;
 
+#ifdef MY_ABC_HERE
+		cond_resched();
+#endif /* MY_ABC_HERE */
 	} while ((async_work->nr == 0 && total_done < BTRFS_DELAYED_WRITEBACK)
 		 || total_done < async_work->nr);
 
@@ -1432,10 +1443,20 @@ out:
 }
 
 
+#ifdef MY_ABC_HERE
+int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
+				     struct btrfs_fs_info *fs_info, int nr)
+#else
 static int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
 				     struct btrfs_fs_info *fs_info, int nr)
+#endif /* MY_ABC_HERE */
 {
 	struct btrfs_async_delayed_work *async_work;
+
+#ifdef MY_ABC_HERE
+	if (btrfs_workqueue_normal_congested(fs_info->delayed_workers))
+		return 0;
+#endif /* MY_ABC_HERE */
 
 	async_work = kmalloc(sizeof(*async_work), GFP_NOFS);
 	if (!async_work)
@@ -1444,6 +1465,11 @@ static int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
 	async_work->delayed_root = delayed_root;
 	btrfs_init_work(&async_work->work, btrfs_async_run_delayed_root, NULL,
 			NULL);
+#ifdef MY_ABC_HERE
+	if (nr == -1)
+		async_work->nr = atomic_read(&delayed_root->items);
+	else
+#endif /* MY_ABC_HERE */
 	async_work->nr = nr;
 
 	btrfs_queue_work(fs_info->delayed_workers, &async_work->work);
@@ -1468,6 +1494,46 @@ static int could_end_wait(struct btrfs_delayed_root *delayed_root, int seq)
 	return 0;
 }
 
+#ifdef MY_ABC_HERE
+void btrfs_balance_delayed_items(struct btrfs_fs_info *fs_info)
+{
+	struct btrfs_delayed_root *delayed_root = fs_info->delayed_root;
+	int nr;
+	int start_seq;
+
+	nr = atomic_read(&delayed_root->items);
+	start_seq = atomic_read(&delayed_root->items_seq);
+
+	if (nr < BTRFS_DELAYED_BACKGROUND)
+		return;
+
+	if (nr < BTRFS_DELAYED_WRITEBACK) {
+		btrfs_wq_run_delayed_node(delayed_root, fs_info, BTRFS_DELAYED_BATCH);
+		return;
+	}
+
+	do {
+		int seq;
+		int ret;
+
+		seq = atomic_read(&delayed_root->items_seq);
+
+		ret = btrfs_wq_run_delayed_node(delayed_root, fs_info, 0);
+		if (ret)
+			return;
+
+		ret = wait_event_interruptible(delayed_root->wait,
+					 could_end_wait(delayed_root, seq));
+		if (ret)
+			return;
+
+		if (seq - start_seq >= nr)
+			return;
+
+		cond_resched();
+	} while (atomic_read(&delayed_root->items) >= BTRFS_DELAYED_WRITEBACK);
+}
+#else
 void btrfs_balance_delayed_items(struct btrfs_fs_info *fs_info)
 {
 	struct btrfs_delayed_root *delayed_root = fs_info->delayed_root;
@@ -1493,6 +1559,7 @@ void btrfs_balance_delayed_items(struct btrfs_fs_info *fs_info)
 
 	btrfs_wq_run_delayed_node(delayed_root, fs_info, BTRFS_DELAYED_BATCH);
 }
+#endif /* MY_ABC_HERE */
 
 /* Will return 0 or -ENOMEM */
 int btrfs_insert_delayed_dir_index(struct btrfs_trans_handle *trans,

@@ -48,7 +48,6 @@ END:
 
 extern int syno_usb_acm_container_index_get_by_diskname(int *, const char *);
 extern int syno_usb_acm_unique_get(const int, const int, char *, int);
-extern int syno_usb_eunit_hdd_ctrl(const int, const int, const int);
 extern int syno_usb_eunit_deep_sleep_indicator(const int, const int, const int);
 extern int syno_usb_eunit_disk_delay_waiting(const int, const int, const int, int);
 extern int syno_usb_eunit_disk_is_wait_power_on(const int, const int, const int);
@@ -58,7 +57,6 @@ struct syno_control_operations syno_control_operations_lists[] = {
 		.control_method = DT_USB_TO_TTY,
 		.container_index_get_by_diskname = syno_usb_acm_container_index_get_by_diskname,
 		.unique_get = syno_usb_acm_unique_get,
-		.hdd_ctrl = syno_usb_eunit_hdd_ctrl,
 		.deep_sleep_indicator_ctrl = syno_usb_eunit_deep_sleep_indicator,
 		.power_control = NULL,
 		.disk_delay_waiting = syno_usb_eunit_disk_delay_waiting,

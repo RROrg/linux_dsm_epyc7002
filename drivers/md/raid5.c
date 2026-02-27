@@ -3493,9 +3493,13 @@ static void raid5_end_read_request(struct bio * bi)
 			retry = 1;
 
 #ifdef MY_ABC_HERE
-		if (!syno_is_device_disappear(rdev->bdev))
+		if (!syno_is_device_disappear(rdev->bdev)) {
 			syno_report_bad_sector(s, READ, conf->mddev->md_minor,
 				rdev->bdev, __func__);
+			if (!retry)
+				syno_report_uncorrected_bad_sector(s, conf->mddev->md_minor,
+								   rdev->bdev, __func__);
+		}
 #endif /* MY_ABC_HERE */
 		if (retry)
 			if (sh->qd_idx >= 0 && sh->pd_idx == i)
@@ -3584,6 +3588,13 @@ static void raid5_end_write_request(struct bio *bi)
 		return;
 	}
 
+#ifdef MY_ABC_HERE
+	if (bi->bi_status && !syno_is_device_disappear(rdev->bdev))
+		syno_report_bad_sector(use_new_offset(conf, sh) ?
+				       sh->sector + rdev->new_data_offset :
+				       sh->sector + rdev->data_offset, WRITE, conf->mddev->md_minor,
+				       rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 	if (replacement) {
 		if (bi->bi_status)
 			md_error(conf->mddev, rdev);
@@ -3593,14 +3604,6 @@ static void raid5_end_write_request(struct bio *bi)
 			set_bit(R5_MadeGoodRepl, &sh->dev[i].flags);
 	} else {
 		if (bi->bi_status) {
-#ifdef MY_ABC_HERE
-			if (!syno_is_device_disappear(rdev->bdev))
-				syno_report_bad_sector(use_new_offset(conf, sh) ?
-					sh->sector + rdev->new_data_offset :
-					sh->sector + rdev->data_offset,
-					WRITE, conf->mddev->md_minor,
-					conf->disks[i].rdev->bdev, __func__);
-#endif /* MY_ABC_HERE */
 			set_bit(STRIPE_DEGRADED, &sh->state);
 			set_bit(WriteErrorSeen, &rdev->flags);
 			set_bit(R5_WriteError, &sh->dev[i].flags);
@@ -4512,6 +4515,15 @@ handle_failed_stripe(struct r5conf *conf, struct stripe_head *sh,
 				rdev = NULL;
 			rcu_read_unlock();
 			if (rdev) {
+#ifdef MY_ABC_HERE
+				sector_t report_sector = use_new_offset(conf, sh) ?
+							 sh->sector + rdev->new_data_offset :
+							 sh->sector + rdev->data_offset;
+
+				syno_report_uncorrected_bad_sector(report_sector,
+								   conf->mddev->md_minor,
+								   rdev->bdev, __func__);
+#endif /* MY_ABC_HERE */
 				if (!rdev_set_badblocks(
 					    rdev,
 					    sh->sector,

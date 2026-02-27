@@ -586,7 +586,7 @@ static void fix_node_key(struct btrfs_root *root, struct extent_buffer *node, in
 	// get the key of first child
 	bytenr = btrfs_node_blockptr(node, slot);
 	generation = btrfs_node_ptr_generation(node, slot);
-	eb = read_tree_block(root->fs_info, bytenr, generation, btrfs_header_level(node) - 1, NULL);
+	eb = read_tree_block(root->fs_info, bytenr, btrfs_header_owner(node), generation, btrfs_header_level(node) - 1, NULL);
 	if (IS_ERR(eb))
 		goto restore_key;
 	else if (!extent_buffer_uptodate(eb))
@@ -637,7 +637,7 @@ static void fix_node_blockptr(struct btrfs_root *root, struct extent_buffer *nod
 		return;
 
 	// get the key of first child
-	eb = read_tree_block(root->fs_info, fixed_bytenr, generation, btrfs_header_level(node) - 1, NULL);
+	eb = read_tree_block(root->fs_info, fixed_bytenr, btrfs_header_owner(node), generation, btrfs_header_level(node) - 1, NULL);
 	if (IS_ERR(eb))
 		goto restore_key;
 	else if (!extent_buffer_uptodate(eb))

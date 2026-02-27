@@ -22,9 +22,9 @@
 #ifdef MY_ABC_HERE
 #include <linux/spinlock.h>
 #endif /* MY_ABC_HERE */
-#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
+#ifdef MY_DEF_HERE
 #include <linux/acpi.h>
-#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
+#endif /* MY_DEF_HERE */
 
 #define MAX_NUM_LEDS		16
 #define MAX_BRIGHTNESS		255
@@ -619,13 +619,13 @@ static int lp3943_chip_detect(struct lp3943 *lp)
 	return lp3943_read_byte(lp, LP3943_INPUT1, &val);
 }
 
-#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
+#ifdef MY_DEF_HERE
 static const struct acpi_device_id lp3943_acpi_ids[] = {
 	{ "LED3943", (kernel_ulong_t)&syno_lp3943_pdata },
 	{ }
 };
 MODULE_DEVICE_TABLE(acpi, lp3943_acpi_ids);
-#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
+#endif /* MY_DEF_HERE */
 
 static int lp3943_probe(struct i2c_client *cl,
 				const struct i2c_device_id *id)
@@ -633,7 +633,7 @@ static int lp3943_probe(struct i2c_client *cl,
 	struct lp3943 *lp;
 	struct lp3943_platform_data *pdata = cl->dev.platform_data;
 	int ret;
-#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
+#ifdef MY_DEF_HERE
 	const struct acpi_device_id *aid;
 
 	aid = acpi_match_device(lp3943_acpi_ids, &cl->dev);
@@ -642,14 +642,14 @@ static int lp3943_probe(struct i2c_client *cl,
 	} else {
 		return -ENODEV;
 	}
-#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
+#endif /* MY_DEF_HERE */
 
 	if (!i2c_check_functionality(cl->adapter, I2C_FUNC_SMBUS_I2C_BLOCK))
 		return -EIO;
 
-#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_OF
+#ifdef MY_DEF_HERE
 	pdata = &syno_lp3943_pdata;
-#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_OF */
+#endif /* MY_DEF_HERE */
 
 	ret = lp3943_validate_platform_data(&cl->dev, pdata);
 	if (ret)
@@ -698,9 +698,9 @@ static struct i2c_driver lp3943_driver = {
 	.driver = {
 		.name = "lp3943",
 		.owner = THIS_MODULE,
-#ifdef CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI
+#ifdef MY_DEF_HERE
 		.acpi_match_table = ACPI_PTR(lp3943_acpi_ids),
-#endif /* CONFIG_SYNO_LEDS_LP3943_PROBE_ACPI */
+#endif /* MY_DEF_HERE */
 	},
 	.id_table = lp3943_id,
 };

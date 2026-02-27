@@ -37,6 +37,8 @@
 #include <linux/suspend.h>
 #ifdef MY_DEF_HERE
 #include <linux/synobios.h>
+#include <linux/synolib.h>
+#include <linux/syno_fdt.h>
 #endif /* MY_DEF_HERE */
 
 #include "i2c-designware-core.h"
@@ -217,6 +219,12 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	struct dw_i2c_dev *dev;
 	struct i2c_timings *t;
 	int irq, ret;
+#ifdef MY_DEF_HERE
+	struct device I2CDev;
+	struct device_node *pI2CNode = NULL;
+	int index = 0;
+#endif /* MY_DEF_HERE */
+
 
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0)
@@ -260,6 +268,13 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	if (syno_is_hw_version(HW_RS822p) || syno_is_hw_version(HW_RS822rpp) 
 			|| syno_is_hw_version(HW_SA6400) || syno_is_hw_version(HW_SA6200) || syno_is_hw_version(HW_FS6410) || syno_is_hw_version(HW_SC6200)) {
 		t->sda_hold_ns = 100;
+	} else { /* Try to read dts i2c_sda_hold_time_ns of the i2c bus */
+		if (-1 == pdev->id) { /* -1 means dynamically assign bus id */
+			I2CDev.parent = dev->dev;
+			if (NULL != (pI2CNode = syno_of_i2c_bus_match(&I2CDev, &index))) {
+				of_property_read_u32(pI2CNode, DT_PROPERTY_I2C_SDA_HOLD_TIME_NS, &(t->sda_hold_ns));
+			}
+		}
 	}
 #else /* MY_DEF_HERE */
 	i2c_dw_adjust_bus_speed(dev);

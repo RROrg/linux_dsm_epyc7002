@@ -1264,8 +1264,10 @@ struct btrfs_fs_info {
 
 #ifdef MY_ABC_HERE
 	atomic_t nr_extent_maps;
+#if 0
 	struct list_head extent_map_inode_list;
 	spinlock_t extent_map_inode_list_lock;
+#endif
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -1537,6 +1539,8 @@ enum {
 #endif /* MY_ABC_HERE */
 	/* This root has a drop operation that was started previously. */
 	BTRFS_ROOT_UNFINISHED_DROP,
+	/* This reloc root needs to have its buffers lockdep class reset. */
+	BTRFS_ROOT_RESET_LOCKDEP_CLASS,
 };
 
 static inline void btrfs_wake_unfinished_drop(struct btrfs_fs_info *fs_info)

@@ -335,10 +335,6 @@ config SYNO_SCSI_DISK_ERROR_REPORT
 	select SYNO_SYNOBIOS_EVENT
 	default y
 
-config SYNO_SCSI_MAX_QUEUE_DEPTH_LOCK
-	bool "Enable irq lock while changing queue_depth"
-	default y
-
 menu "SATA"
 
 config SYNO_SATA_DEVICE_PREFIX
@@ -628,10 +624,6 @@ config SYNO_SATA_DISABLE_READ_LOG_DMA
 	bool "Don't use READ LOG DMA EXT"
 	default y
 
-config SYNO_SATA_INTEL_SSD_COMPATIBILITY
-	bool "Solution of Intel S4500 3.84TB Hotplug 100% failed on Marvell 88SE9235"
-	default y
-
 config SYNO_SATA_EXTEND_READ_LOG_TIMEOUT
 	bool "Extend read log timeout prevent spinup timeout for large size drives"
 	default y
@@ -734,6 +726,15 @@ config SYNO_AHCI_REG_READ_TEST
 config SYNO_SATA_EH_DEFER_CMD
 	bool "Defer sending command while ata is processing eh"
 	depends on SYNO_SATA_DEEPSLEEP
+	default y
+
+config SYNO_AHCI_IRQ_MODE
+	bool "Enable ahci threaded irq for JMB585 controller"
+	default y
+	depends on SYNO_PORT_MAPPING_V2
+
+config SYNO_SATA_RESET_ENHANCE
+	bool "Enhance SATA hardreset/softreset flow"
 	default y
 
 endmenu #SATA
@@ -1118,6 +1119,11 @@ config SYNO_SERIAL_CONSOLE_FORBID
 	select SYNO_SYNOBIOS_EVENT
 	default n
 
+config SYNO_EARLY_PRINTK_PCI_64
+	bool "Support early print PCI used over 4GB memory mapping address"
+	depends on EARLY_PRINTK
+	default n
+
 endmenu #Serial/TTYs
 
 menu "MTD"
@@ -1340,6 +1346,9 @@ config SYNO_NTB_FIX_CLEANUP_WORK_PANIC
 endmenu #NTB
 
 menu "POWER"
+config SYNO_DISK_POWER_MANAGER
+	tristate "enable disk power manager"
+	depends on SYNO_PORT_MAPPING_V2
 
 endmenu #POWER
 

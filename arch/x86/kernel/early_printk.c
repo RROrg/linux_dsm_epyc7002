@@ -292,7 +292,12 @@ static __init void early_pcifull_serial_init(char *s)
 	unsigned long baud = DEFAULT_BAUD;
 	u8 bus, slot, func;
 	u8 htype, secondbus;
+#ifdef MY_DEF_HERE
+	u32 classcode;
+	u64 bar0;
+#else
 	u32 classcode, bar0;
+#endif
 	u16 cmdreg;
 	char *e;
 
@@ -372,8 +377,19 @@ static __init void early_pcifull_serial_init(char *s)
 		serial_in = mem32_serial_in;
 		serial_out = mem32_serial_out;
 		/* WARNING! assuming the address is always in the first 4G */
+#ifdef MY_DEF_HERE
+		/*
+		* Verify support 64 bit BAR
+		*/
+		if (bar0 & 0x4) {
+			bar0 |= ((u64)read_pci_config(bus, slot, func, PCI_BASE_ADDRESS_1)) << 32;
+		}
+		early_serial_base =
+			(unsigned long)early_ioremap(bar0 & 0xfffffffffffffff0, 0x10);
+#else
 		early_serial_base =
 			(unsigned long)early_ioremap(bar0 & 0xfffffff0, 0x10);
+#endif
 		early_serial_console.pcimapaddress = (void __iomem *)early_serial_base;
 		/* base on pci spec with serial console */
 		early_serial_console.pcimapsize = 0x10;
@@ -417,7 +433,12 @@ static __init void early_pci_serial_init(char *s)
 	unsigned divisor;
 	unsigned long baud = DEFAULT_BAUD;
 	u8 bus, slot, func;
+#ifdef MY_DEF_HERE
+	u32 classcode;
+	u64 bar0;
+#else
 	u32 classcode, bar0;
+#endif
 	u16 cmdreg;
 	char *e;
 	int force = 0;
@@ -490,8 +511,19 @@ static __init void early_pci_serial_init(char *s)
 		serial_in = mem32_serial_in;
 		serial_out = mem32_serial_out;
 		/* WARNING! assuming the address is always in the first 4G */
+#ifdef MY_DEF_HERE
+		/*
+		* Verify support 64 bit BAR
+		*/
+		if (bar0 & 0x4) {
+			bar0 |= ((u64)read_pci_config(bus, slot, func, PCI_BASE_ADDRESS_1)) << 32;
+		}
+		early_serial_base =
+			(unsigned long)early_ioremap(bar0 & 0xfffffffffffffff0, 0x10);
+#else
 		early_serial_base =
 			(unsigned long)early_ioremap(bar0 & 0xfffffff0, 0x10);
+#endif
 #ifdef MY_DEF_HERE
 		early_serial_console.pcimapaddress = (void __iomem *)early_serial_base;
 		/* base on pci spec with serial console */

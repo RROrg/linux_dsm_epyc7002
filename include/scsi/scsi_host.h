@@ -525,6 +525,14 @@ struct scsi_host_template {
 	bool syno_uas_delay_revalidate;
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+	int (*syno_disk_power_loss_when_reboot)(struct scsi_device *);
+#endif /* MY_ABC_HERE */
+
+#if defined(MY_DEF_HERE) && defined(MY_DEF_HERE)
+	void (*syno_disk_not_ready_count_increase)(void);
+	void (*syno_disk_not_ready_count_decrease)(void);
+#endif /* MY_DEF_HERE && MY_DEF_HERE */
 };
 
 /*

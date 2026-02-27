@@ -157,7 +157,7 @@ install_systemd_units()
 			NETWORK_MODULES="be2net"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${NETWORK_MODULES}" "70-network-kernel.conf"
 			;;
-		GEMINILAKE)
+		GEMINILAKE|GEMINILAKENK)
 			# Auto generate video driver conf into /lib/modules-load.d/video.conf
 			VIDEO_DRIVER_LIST="i2c-algo-bit button backlight video fbdev fb iosf_mbi drm_panel_orientation_quirks drm cfbimgblt cfbcopyarea cfbfillrect fb_sys_fops sysimgblt sysfillrect syscopyarea drm_kms_helper i915"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${VIDEO_DRIVER_LIST}" "70-video-kernel.conf"
@@ -180,7 +180,7 @@ install_systemd_units()
 			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${VXLAN_MODULES}" "69-docker-vxlan.conf"
 			;;
-		V1000)
+		V1000|V1000NK)
 			IPV6_LIST=${IPV6_COMMON_LIST}
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${IPV6_LIST}" "70-ipv6-kernel.conf"
 
@@ -396,6 +396,25 @@ install_systemd_units()
 
 			NETWORK_MODULES="be2net"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${NETWORK_MODULES}" "70-network-kernel.conf"
+			;;
+		R1000NK)
+			IPV6_LIST=${IPV6_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${IPV6_LIST}" "70-ipv6-kernel.conf"
+
+			CRYPTO_MODULES_LIST=${CRYPTO_MODULES_X86_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CRYPTO_MODULES_LIST}" "70-crypto-kernel.conf"
+
+			CPUFREQ_MODULES_LIST=${CPUFREQ_MODULES_X86_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CPUFREQ_MODULES_LIST}" "70-cpufreq-kernel.conf"
+
+			MISC_MODULES_LIST=${MISC_MODULES_X86_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
+
+			USB_MODULES_LIST="ehci-hcd ehci-pci uhci-hcd"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
+
+			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${VXLAN_MODULES}" "69-docker-vxlan.conf"
 			;;
 		*)
 			;;

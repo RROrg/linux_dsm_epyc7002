@@ -586,6 +586,12 @@ static void amd_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	unsigned int old_timing = host->timing;
 	u16 val;
 
+	if (mmc->ios.clock == 52000000 && host->clock == 200000000)
+		return;
+
+	if (mmc->ios.timing == MMC_TIMING_MMC_HS && host->timing == MMC_TIMING_MMC_HS200)
+		return;
+
 	sdhci_set_ios(mmc, ios);
 
 	if (old_timing != host->timing && amd_host->tuned_clock) {

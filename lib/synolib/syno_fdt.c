@@ -240,3 +240,41 @@ END:
 }
 
 EXPORT_SYMBOL(syno_pmp_i2c_addr_get);
+
+
+#ifdef MY_ABC_HERE
+int syno_is_disk_power_loss_when_reboot(const char *unique)
+{
+	char *property_value = NULL;
+	struct device_node *root_node = NULL;
+	struct device_node *entry_node = NULL;
+
+	if (unique == NULL) {
+		printk("Invalid unique id\n");
+		return -1;
+	}
+
+	if (strlen(unique) != 0) {
+		for_each_child_of_node(of_root, entry_node) {
+			if ((entry_node->full_name) &&
+				(strcmp(entry_node->full_name, unique) == 0)) {
+				root_node = entry_node;
+			}
+		}
+		if (root_node == NULL) {
+			printk("Can't find the device node for %s\n", unique);
+			return -1;
+		}
+	} else {
+		root_node = of_root;
+	}
+
+	property_value = (char *)of_get_property(
+			root_node, DT_REBOOT_DISK_POWER_LOSS, NULL);
+	if (property_value && strcmp(property_value, "true") == 0) {
+		return 1;
+	}
+	return 0;
+}
+EXPORT_SYMBOL(syno_is_disk_power_loss_when_reboot);
+#endif /* MY_ABC_HERE */

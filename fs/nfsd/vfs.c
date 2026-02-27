@@ -1358,10 +1358,20 @@ nfsd_synocopy(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp,
 {
 	__be32 err;
 	struct file *dst_filp, *src_filp;
+	struct svc_fh src_fh;
 	loff_t i_size;
 	loff_t write_offset, read_offset;
 	char *buffer;
 	size_t count;
+	int maxsize;
+
+	maxsize = rqstp->rq_vers == 3 ? NFS3_FHSIZE : NFS4_FHSIZE;
+	fh_init(&src_fh, maxsize);
+	err = syno_compose_fh(rqstp, src_path, &src_fh);
+	if (err) {
+		dprintk("%s: can not compose fh [%s] err [%d]", __func__, src_path, err);
+		goto out;
+	}
 
 	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_WRITE, &dst_filp);
 	if (err) {
@@ -1369,9 +1379,8 @@ nfsd_synocopy(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp,
 		goto out;
 	}
 
-	src_filp = filp_open(src_path, O_RDONLY | O_LARGEFILE, 0);
-	if(IS_ERR(src_filp)) {
-		err = nfserrno(PTR_ERR(src_filp));
+	err = nfsd_open(rqstp, &src_fh, S_IFREG, NFSD_MAY_READ, &src_filp);
+	if (err) {
 		// If the source file is on different machine, the open operation must fail
 		printk(KERN_WARNING "%s: cannot open source file\n", __func__);
 		goto close_dst;
@@ -1431,11 +1440,12 @@ nfsd_synocopy(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp,
 
 	err = nfs_ok;
 close_src:
-	filp_close(src_filp, NULL);
+	fput(src_filp);
 close_dst:
 	fput(dst_filp);
 out:
 	kvfree(buffer);
+	fh_put(&src_fh);
 	return err;
 }
 
@@ -1446,6 +1456,16 @@ nfsd_synoclone(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp)
 	__be32 err;
 	loff_t cloned;
 	struct file *dst_filp, *src_filp;
+	struct svc_fh src_fh;
+	int maxsize;
+
+	maxsize = rqstp->rq_vers == 3 ? NFS3_FHSIZE : NFS4_FHSIZE;
+	fh_init(&src_fh, maxsize);
+	err = syno_compose_fh(rqstp, src_path, &src_fh);
+	if (err) {
+		dprintk("%s: can not compose fh [%s] err [%d]", __func__, src_path, err);
+		goto out;
+	}
 
 	err = nfsd_open(rqstp, fhp, S_IFREG, NFSD_MAY_WRITE, &dst_filp);
 	if (err) {
@@ -1453,11 +1473,9 @@ nfsd_synoclone(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp)
 		goto out;
 	}
 
-	src_filp = filp_open(src_path, O_RDONLY | O_LARGEFILE, 0);
-	if(IS_ERR(src_filp)) {
-		err = nfserrno(PTR_ERR(src_filp));
-		// If the source file is on different machine, the open operation must fail
-		printk(KERN_WARNING "%s: cannot open source file %s\n", __func__, src_path);
+	err = nfsd_open(rqstp, &src_fh, S_IFREG, NFSD_MAY_READ, &src_filp);
+	if (err) {
+		dprintk("%s: cannot open source file, err:[%d]", __func__, err);
 		goto close_dst;
 	}
 
@@ -1470,10 +1488,11 @@ nfsd_synoclone(const char *src_path, struct svc_rqst *rqstp, struct svc_fh *fhp)
 
 	err = nfs_ok;
 close_src:
-	filp_close(src_filp, NULL);
+	fput(src_filp);
 close_dst:
 	fput(dst_filp);
 out:
+	fh_put(&src_fh);
 	return err;
 }
 #endif /* MY_ABC_HERE */

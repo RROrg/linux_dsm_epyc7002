@@ -147,4 +147,9 @@ void __cold btrfs_delayed_inode_exit(void);
 /* for debugging */
 void btrfs_assert_delayed_root_empty(struct btrfs_fs_info *fs_info);
 
+#ifdef MY_ABC_HERE
+int btrfs_wq_run_delayed_node(struct btrfs_delayed_root *delayed_root,
+			      struct btrfs_fs_info *fs_info, int nr);
+#endif /* MY_ABC_HERE */
+
 #endif

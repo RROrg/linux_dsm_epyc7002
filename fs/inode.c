@@ -794,6 +794,15 @@ static enum lru_status inode_lru_isolate(struct list_head *item,
 		return LRU_ROTATE;
 	}
 
+#ifdef MY_ABC_HERE
+	if (task_test_shrink(current) &&
+		inode->i_sb->s_writers.frozen != SB_UNFROZEN &&
+		!inode->i_nlink) {
+		spin_unlock(&inode->i_lock);
+		return LRU_ROTATE;
+	}
+#endif /* MY_ABC_HERE */
+
 	if (inode_has_buffers(inode) || inode->i_data.nrpages) {
 		__iget(inode);
 		spin_unlock(&inode->i_lock);
@@ -1656,6 +1665,13 @@ static void iput_final(struct inode *inode)
 		drop = op->drop_inode(inode);
 	else
 		drop = generic_drop_inode(inode);
+
+#ifdef MY_ABC_HERE
+	if (task_test_shrink(current) &&
+		sb->s_writers.frozen != SB_UNFROZEN &&
+		!inode->i_nlink)
+		drop = 0;
+#endif /* MY_ABC_HERE */
 
 	if (!drop &&
 	    !(inode->i_state & I_DONTCACHE) &&

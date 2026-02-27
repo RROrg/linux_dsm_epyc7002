@@ -284,6 +284,16 @@ static int xgbe_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
 	    (rdev->vendor == PCI_VENDOR_ID_AMD) && (rdev->device == 0x15d0)) {
 		pdata->xpcs_window_def_reg = PCS_V2_RV_WINDOW_DEF;
 		pdata->xpcs_window_sel_reg = PCS_V2_RV_WINDOW_SELECT;
+	} else if (rdev && (rdev->vendor == PCI_VENDOR_ID_AMD) &&
+		   (rdev->device == 0x14b5)) {
+		pdata->xpcs_window_def_reg = PCS_V2_YC_WINDOW_DEF;
+		pdata->xpcs_window_sel_reg = PCS_V2_YC_WINDOW_SELECT;
+
+		/* Yellow Carp devices do not need cdr workaround */
+		pdata->vdata->an_cdr_workaround = 0;
+
+		/* Yellow Carp devices do not need rrc */
+		pdata->vdata->enable_rrc = 0;
 	} else {
 		pdata->xpcs_window_def_reg = PCS_V2_WINDOW_DEF;
 		pdata->xpcs_window_sel_reg = PCS_V2_WINDOW_SELECT;
@@ -424,6 +434,9 @@ static void xgbe_pci_remove(struct pci_dev *pdev)
 
 	pci_free_irq_vectors(pdata->pcidev);
 
+	/* Disable all interrupts in the hardware */
+	XP_IOWRITE(pdata, XP_INT_EN, 0x0);
+
 	xgbe_free_pdata(pdata);
 }
 
@@ -466,13 +479,14 @@ static int __maybe_unused xgbe_pci_resume(struct device *dev)
 	return ret;
 }
 
-static const struct xgbe_version_data xgbe_v2a = {
+static struct xgbe_version_data xgbe_v2a = {
 	.init_function_ptrs_phy_impl	= xgbe_init_function_ptrs_phy_v2,
 	.xpcs_access			= XGBE_XPCS_ACCESS_V2,
 	.mmc_64bit			= 1,
 	.tx_max_fifo_size		= 229376,
 	.rx_max_fifo_size		= 229376,
 	.tx_tstamp_workaround		= 1,
+	.tstamp_ptp_clock_freq		= 1,
 	.ecc_support			= 1,
 	.i2c_support			= 1,
 	.irq_reissue_support		= 1,
@@ -480,15 +494,17 @@ static const struct xgbe_version_data xgbe_v2a = {
 	.rx_desc_prefetch		= 5,
 	.an_cdr_workaround		= 1,
 	.an_kr_workaround		= 1,
+	.enable_rrc			= 1,
 };
 
-static const struct xgbe_version_data xgbe_v2b = {
+static struct xgbe_version_data xgbe_v2b = {
 	.init_function_ptrs_phy_impl	= xgbe_init_function_ptrs_phy_v2,
 	.xpcs_access			= XGBE_XPCS_ACCESS_V2,
 	.mmc_64bit			= 1,
 	.tx_max_fifo_size		= 65536,
 	.rx_max_fifo_size		= 65536,
 	.tx_tstamp_workaround		= 1,
+	.tstamp_ptp_clock_freq		= 1,
 	.ecc_support			= 1,
 	.i2c_support			= 1,
 	.irq_reissue_support		= 1,
@@ -496,6 +512,7 @@ static const struct xgbe_version_data xgbe_v2b = {
 	.rx_desc_prefetch		= 5,
 	.an_cdr_workaround		= 1,
 	.an_kr_workaround		= 1,
+	.enable_rrc			= 1,
 };
 
 static const struct pci_device_id xgbe_pci_table[] = {
@@ -513,15 +530,13 @@ static void syno_xgbe_pci_shutdown(struct pci_dev *pdev)
 {
 	struct xgbe_prv_data *pdata = pci_get_drvdata(pdev);
 	struct net_device *netdev = pdata->netdev;
-	int ret = 0;
 
 	if (pdata->wol_flag & WAKE_MAGIC) {
 		pdata->phy_if.phy_impl.wol_enable(pdata);
 	} else {
-		if (netif_running(netdev))
-			ret = xgbe_powerdown(netdev, XGMAC_DRIVER_CONTEXT);
-
-		pdata->phy_if.phy_stop(pdata);
+		if (netif_running(netdev)) {
+			netdev->netdev_ops->ndo_stop(netdev);
+		}
 	}
 }
 #endif /* MY_DEF_HERE */

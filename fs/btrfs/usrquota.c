@@ -1071,7 +1071,7 @@ int btrfs_usrquota_enable(struct btrfs_fs_info *fs_info, u64 cmd)
 			"Should enable qgroup before enable user quota.");
 		return -EINVAL;
 	}
-
+	down_write(&fs_info->inflight_reserve_lock);
 	mutex_lock(&fs_info->usrquota_ioctl_lock);
 	if (fs_info->usrquota_root)
 		goto out;
@@ -1158,7 +1158,6 @@ int btrfs_usrquota_enable(struct btrfs_fs_info *fs_info, u64 cmd)
 	 * deadlocks on fs_info->usrquota_ioctl_lock with concurrent snapshot
 	 * creation.
 	 */
-	down_write(&fs_info->inflight_reserve_lock);
 	spin_lock(&fs_info->usrquota_lock);
 	fs_info->usrquota_root = usrquota_root;
 	if (cmd == BTRFS_USRQUOTA_V1_CTL_ENABLE)
@@ -1166,7 +1165,6 @@ int btrfs_usrquota_enable(struct btrfs_fs_info *fs_info, u64 cmd)
 	else
 		set_bit(BTRFS_FS_SYNO_USRQUOTA_V2_ENABLED, &fs_info->flags);
 	spin_unlock(&fs_info->usrquota_lock);
-	up_write(&fs_info->inflight_reserve_lock);
 
 out_free_root:
 	if (ret) {
@@ -1176,6 +1174,7 @@ out_free_root:
 out:
 	btrfs_free_path(path);
 	mutex_unlock(&fs_info->usrquota_ioctl_lock);
+	up_write(&fs_info->inflight_reserve_lock);
 	if (ret && trans)
 		btrfs_end_transaction(trans);
 	else if (trans)

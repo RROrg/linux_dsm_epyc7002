@@ -467,6 +467,48 @@ static const struct attribute_group btrfs_qgroup_soft_limit_feature_attr_group =
 };
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static ssize_t btrfs_global_syno_extent_map_max_show(struct kobject *kobj,
+				 struct kobj_attribute *a, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%llu\n", btrfs_global_syno_extent_map_max());
+}
+
+static ssize_t btrfs_global_syno_extent_map_max_store(struct kobject *kobj,
+				 struct kobj_attribute *a,
+				 const char *buf, size_t len)
+{
+	int ret;
+	unsigned long long val;
+
+	ret = kstrtoull(skip_spaces(buf), 0, &val);
+	if (ret)
+		return ret;
+
+	btrfs_global_syno_extent_map_max_set(val);
+	return len;
+}
+BTRFS_ATTR_RW(, global_syno_extent_map_max, btrfs_global_syno_extent_map_max_show, btrfs_global_syno_extent_map_max_store);
+
+static ssize_t btrfs_global_syno_extent_map_nr_show(struct kobject *kobj,
+				 struct kobj_attribute *a, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%llu\n", btrfs_global_syno_extent_map_nr());
+}
+BTRFS_ATTR(, global_syno_extent_map_nr, btrfs_global_syno_extent_map_nr_show);
+
+static struct attribute *btrfs_syno_feature_attrs[] = {
+	BTRFS_ATTR_PTR(, global_syno_extent_map_max),
+	BTRFS_ATTR_PTR(, global_syno_extent_map_nr),
+	NULL
+};
+
+static const struct attribute_group btrfs_syno_feature_attr_group = {
+	.name = "features",
+	.attrs = btrfs_syno_feature_attrs,
+};
+#endif /* MY_ABC_HERE */
+
 #ifdef CONFIG_BTRFS_DEBUG
 
 /*
@@ -1613,6 +1655,17 @@ static ssize_t btrfs_syno_orphan_cleanup_delayed_store(struct kobject *kobj,
 BTRFS_ATTR_RW(, syno_orphan_cleanup_delayed, btrfs_syno_orphan_cleanup_delayed_show, btrfs_syno_orphan_cleanup_delayed_store);
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static ssize_t btrfs_syno_extent_map_nr_show(struct kobject *kobj,
+				struct kobj_attribute *a, char *buf)
+{
+	struct btrfs_fs_info *fs_info = to_fs_info(kobj);
+	return snprintf(buf, PAGE_SIZE, "%d\n", atomic_read(&fs_info->nr_extent_maps));
+}
+
+BTRFS_ATTR(, syno_extent_map_nr, btrfs_syno_extent_map_nr_show);
+#endif /* MY_ABC_HERE */
+
 static const struct attribute *btrfs_attrs[] = {
 	BTRFS_ATTR_PTR(, label),
 	BTRFS_ATTR_PTR(, nodesize),
@@ -1674,6 +1727,9 @@ static const struct attribute *btrfs_attrs[] = {
 #ifdef MY_ABC_HERE
 	BTRFS_ATTR_PTR(, syno_orphan_cleanup_enable),
 	BTRFS_ATTR_PTR(, syno_orphan_cleanup_delayed),
+#endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+	BTRFS_ATTR_PTR(, syno_extent_map_nr),
 #endif /* MY_ABC_HERE */
 	NULL,
 };
@@ -2831,6 +2887,12 @@ int __init btrfs_init_sysfs(void)
 #endif /* CONFIG_SYNO_BTRFS_LOCK */
 #ifdef MY_ABC_HERE
 	ret = sysfs_merge_group(&btrfs_kset->kobj, &btrfs_qgroup_soft_limit_feature_attr_group);
+	if (ret)
+		goto out_remove_group;
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
+	ret = sysfs_merge_group(&btrfs_kset->kobj, &btrfs_syno_feature_attr_group);
 	if (ret)
 		goto out_remove_group;
 #endif /* MY_ABC_HERE */

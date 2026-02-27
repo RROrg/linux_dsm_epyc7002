@@ -60,10 +60,6 @@
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
-#include <linux/list_lru.h>
-#endif /* MY_ABC_HERE */
-
-#ifdef MY_ABC_HERE
 #include "syno-rbd-meta.h"
 #endif /* MY_ABC_HERE */
 
@@ -2839,170 +2835,6 @@ static int btrfs_syno_set_sb_archive_version(struct super_block *sb, u32 archive
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
-static long btrfs_nr_cached_objects(struct super_block *sb, struct shrink_control *sc)
-{
-	return (long)atomic_read(&btrfs_sb(sb)->nr_extent_maps);
-}
-
-enum btrfs_free_extent_map_type {
-	LOOP_FREE_EXTENT_NOT_MODIFIED,
-	LOOP_FREE_EXTENT_MODIFIED,
-	LOOP_FREE_EXTENT_END,
-};
-
-static int btrfs_drop_extent_maps(struct inode *inode, unsigned long nr_to_drop)
-{
-	struct extent_map *em, *next_em = NULL;
-	struct extent_map_tree *em_tree = &BTRFS_I(inode)->extent_tree;
-	struct btrfs_root *root = BTRFS_I(inode)->root;
-	unsigned long dropped = 0;
-	u64 test_gen;
-	struct list_head *head = NULL;
-	enum btrfs_free_extent_map_type stage = LOOP_FREE_EXTENT_NOT_MODIFIED;
-
-	while (nr_to_drop) {
-		write_lock(&em_tree->lock);
-		test_gen = root->fs_info->last_trans_committed;
-
-		if (stage == LOOP_FREE_EXTENT_NOT_MODIFIED) {
-			head = &em_tree->not_modified_extents;
-		} else if (stage == LOOP_FREE_EXTENT_MODIFIED) {
-			head = &em_tree->syno_modified_extents;
-		} else {
-			write_unlock(&em_tree->lock);
-			ASSERT(0);
-			break;
-		}
-
-		if (next_em != NULL && !extent_map_in_tree(next_em)) {
-			free_extent_map(next_em);
-			next_em = NULL;
-		}
-
-		if (next_em == NULL) {
-			if (list_empty(head)) {
-				write_unlock(&em_tree->lock);
-				goto next;
-			}
-			em = list_entry(head->next, struct extent_map, free_list);
-			refcount_inc(&em->refs);
-		} else {
-			em = next_em;
-		}
-		if (list_is_last(&em->free_list, &em_tree->not_modified_extents) ||
-		    list_is_last(&em->free_list, &em_tree->syno_modified_extents) ||
-		    list_empty(&em->free_list)) {
-			next_em = NULL;
-		} else {
-			next_em = list_entry(em->free_list.next, struct extent_map, free_list);
-			refcount_inc(&next_em->refs);
-		}
-
-		if (test_bit(EXTENT_FLAG_PINNED, &em->flags)) {
-			free_extent_map(em);
-			write_unlock(&em_tree->lock);
-			goto next;
-		}
-		if (!list_empty(&em->list) && em->generation > test_gen) {
-			free_extent_map(em);
-			write_unlock(&em_tree->lock);
-			if (stage == LOOP_FREE_EXTENT_MODIFIED)
-				break;
-			else
-				goto next;
-		}
-		remove_extent_mapping(em_tree, em);
-		write_unlock(&em_tree->lock);
-		/* once for us */
-		free_extent_map(em);
-		/* once for the tree*/
-		free_extent_map(em);
-		dropped++;
-		nr_to_drop--;
-next:
-		if (next_em == NULL)
-			stage++;
-		if (stage >= LOOP_FREE_EXTENT_END)
-			break;
-		cond_resched();
-	}
-	if (next_em) {
-		/* once for us */
-		free_extent_map(next_em);
-	}
-	return dropped;
-}
-
-static bool list_lru_item_empty(struct list_lru *lru, struct list_head *item)
-{
-	int nid = page_to_nid(virt_to_page(item));
-	struct list_lru_node *nlru = &lru->node[nid];
-
-	spin_lock(&nlru->lock);
-	if (list_empty(item)) {
-		spin_unlock(&nlru->lock);
-		return true;
-	}
-	spin_unlock(&nlru->lock);
-	return false;
-}
-
-static long btrfs_free_cached_objects(struct super_block *sb, struct shrink_control *sc)
-{
-	struct inode *inode;
-	struct inode *toput_inode = NULL;
-	struct btrfs_inode *binode;
-	struct btrfs_fs_info *fs_info = btrfs_sb(sb);
-	unsigned long nr_to_drop = sc->nr_to_scan;
-
-	spin_lock(&fs_info->extent_map_inode_list_lock);
-	list_for_each_entry(binode, &fs_info->extent_map_inode_list,
-			    free_extent_map_inode) {
-		inode = &binode->vfs_inode;
-		if (!list_lru_item_empty(&fs_info->sb->s_inode_lru,
-					 &inode->i_lru))
-			continue;
-
-		spin_lock(&inode->i_lock);
-		if (inode->i_state & (I_FREEING|I_WILL_FREE|I_NEW)) {
-			spin_unlock(&inode->i_lock);
-			continue;
-		}
-		__iget(inode);
-		spin_unlock(&inode->i_lock);
-
-		atomic_inc(&binode->free_extent_map_counts);
-		if (toput_inode &&
-		    (atomic_read(&BTRFS_I(toput_inode)->free_extent_map_counts) == 0) &&
-		    (atomic_read(&(BTRFS_I(toput_inode)->extent_tree.nr_extent_maps)) == 0))
-			list_del_init(&BTRFS_I(toput_inode)->free_extent_map_inode);
-
-		spin_unlock(&fs_info->extent_map_inode_list_lock);
-
-		nr_to_drop -= btrfs_drop_extent_maps(inode, nr_to_drop);
-
-		iput(toput_inode);
-		toput_inode = inode;
-		cond_resched();
-
-		spin_lock(&fs_info->extent_map_inode_list_lock);
-		WARN_ON(atomic_read(&binode->free_extent_map_counts) == 0);
-		atomic_dec(&binode->free_extent_map_counts);
-		if (!nr_to_drop)
-			break;
-	}
-	if (toput_inode &&
-	    (atomic_read(&BTRFS_I(toput_inode)->free_extent_map_counts) == 0) &&
-	    (atomic_read(&(BTRFS_I(toput_inode)->extent_tree.nr_extent_maps)) == 0))
-		list_del_init(&BTRFS_I(toput_inode)->free_extent_map_inode);
-
-	spin_unlock(&fs_info->extent_map_inode_list_lock);
-	iput(toput_inode);
-	return (long)(sc->nr_to_scan - nr_to_drop);
-}
-#endif /* MY_ABC_HERE */
-
-#ifdef MY_ABC_HERE
 static int btrfs_syno_rbd_set_first_mapping_table_offset(struct super_block *sb,
 							 u64 offset)
 {
@@ -3038,10 +2870,6 @@ static const struct super_operations btrfs_super_ops = {
 	.remount_fs	= btrfs_remount,
 	.freeze_fs	= btrfs_freeze,
 	.unfreeze_fs	= btrfs_unfreeze,
-#ifdef MY_ABC_HERE
-	.nr_cached_objects = btrfs_nr_cached_objects,
-	.free_cached_objects = btrfs_free_cached_objects,
-#endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 	.syno_rbd_set_first_mapping_table_offset = btrfs_syno_rbd_set_first_mapping_table_offset,
 	.syno_rbd_meta_file_cleanup_all	= btrfs_delete_all_rbd_meta_file_records,
@@ -3185,8 +3013,6 @@ static int __init init_btrfs_fs(void)
 	if (err)
 		goto free_btrfs_interface;
 #endif /* MY_ABC_HERE */
-
-	btrfs_init_lockdep();
 
 	btrfs_print_mod_info();
 

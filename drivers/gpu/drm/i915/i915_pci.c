@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 /*
  * Copyright © 2016 Intel Corporation
  *
@@ -677,6 +680,7 @@ static const struct intel_device_info skl_gt4_info = {
 	.gt = 4,
 };
 
+#ifdef MY_DEF_HERE
 #define GEN9_LP_FEATURES \
 	GEN(9), \
 	.is_lp = 1, \
@@ -714,6 +718,45 @@ static const struct intel_device_info skl_gt4_info = {
 	IVB_COLORS, \
 	GEN9_DEFAULT_PAGE_SIZES, \
 	GEN_DEFAULT_REGIONS
+#else
+#define GEN9_LP_FEATURES \
+	GEN(9), \
+	.is_lp = 1, \
+	.num_supported_dbuf_slices = 1, \
+	.display.has_hotplug = 1, \
+	.platform_engine_mask = BIT(RCS0) | BIT(BCS0) | BIT(VECS0), \
+	.pipe_mask = BIT(PIPE_A) | BIT(PIPE_B) | BIT(PIPE_C), \
+	.cpu_transcoder_mask = BIT(TRANSCODER_A) | BIT(TRANSCODER_B) | \
+		BIT(TRANSCODER_C) | BIT(TRANSCODER_EDP) | \
+		BIT(TRANSCODER_DSI_A) | BIT(TRANSCODER_DSI_C), \
+	.has_64bit_reloc = 1, \
+	.display.has_ddi = 1, \
+	.has_fpga_dbg = 1, \
+	.display.has_fbc = 1, \
+	.display.has_hdcp = 1, \
+	.display.has_psr = 1, \
+	.display.has_psr_hw_tracking = 1, \
+	.has_runtime_pm = 1, \
+	.display.has_csr = 1, \
+	.has_rc6 = 1, \
+	.has_rps = true, \
+	.display.has_dp_mst = 1, \
+	.has_logical_ring_contexts = 1, \
+	.has_logical_ring_preemption = 1, \
+	.has_gt_uc = 1, \
+	.dma_mask_size = 39, \
+	.ppgtt_type = INTEL_PPGTT_FULL, \
+	.ppgtt_size = 48, \
+	.has_reset_engine = 1, \
+	.has_snoop = true, \
+	.has_coherent_ggtt = false, \
+	.display.has_ipc = 1, \
+	HSW_PIPE_OFFSETS, \
+	IVB_CURSOR_OFFSETS, \
+	IVB_COLORS, \
+	GEN9_DEFAULT_PAGE_SIZES, \
+	GEN_DEFAULT_REGIONS
+#endif /* MY_DEF_HERE */
 
 static const struct intel_device_info bxt_info = {
 	GEN9_LP_FEATURES,
