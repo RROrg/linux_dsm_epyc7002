@@ -7290,6 +7290,15 @@ int get_disk_port_type_and_index_by_ata_port(const struct ata_port *ap, DISK_POR
 
     *portType = UNKNOWN_DEVICE;
 
+#ifdef MY_DEF_HERE
+    if (syno_is_synology_pci_eunit(ap)) {
+	    *portIndex = syno_ap_to_port_index(ap);
+	    if (0 < *portIndex) {
+		    *portType = EUNIT_DEVICE;
+	    }
+	    goto END;
+    }
+#endif /* MY_DEF_HERE */
     for_each_child_of_node(of_root, pDeviceNode) {
         if (NULL == pDeviceNode->full_name) {
             continue;

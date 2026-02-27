@@ -1718,6 +1718,18 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
 	}
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_DEF_HERE
+	/*
+	 * We get usb eunit status directly through sending ACM command.
+	 * ACM receive responses from usb eunit, it wiil pass back to tty layer.
+	 * If ACM pass message when tty is opening but tty->disc_data has not been assign,
+	 * it will cause kernel panic due to NULL pointer tty->disc_data.
+	 */
+	if (NULL == ldata) {
+		return 0;
+	}
+#endif /* MY_DEF_HERE */
+
 	down_read(&tty->termios_rwsem);
 
 	do {

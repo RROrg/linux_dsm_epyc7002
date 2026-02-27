@@ -248,6 +248,9 @@ static void __init pcie_init_services(void)
 	pcie_pme_init();
 	pcie_dpc_init();
 	pcie_hp_init();
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
+	pcie_switch_i2c_service_init();
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
 }
 
 static int __init pcie_portdrv_init(void)

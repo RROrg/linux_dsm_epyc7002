@@ -147,6 +147,49 @@ int btrfs_setxattr(struct btrfs_trans_handle *trans, struct inode *inode,
 			ret = -ENOSPC;
 			goto out;
 		}
+
+#ifdef MY_ABC_HERE
+		/*
+		 * If overflow when replaced by extension, we need to change
+		 * the size to the extension size and insert again, otherwise
+		 * it may not be able to expand due to insufficient leaf free
+		 * space, causing ENOSPC to fail.
+		 */
+		if (di) {
+			struct extent_buffer *leaf = path->nodes[0];
+			const u16 old_data_len = btrfs_dir_data_len(path->nodes[0], di);
+
+			if (size > old_data_len) {
+				u16 expand_size = size - old_data_len;
+
+				if (btrfs_leaf_free_space(leaf) < expand_size) {
+					di = NULL;
+					btrfs_release_path(path);
+					ret = btrfs_insert_xattr_item(trans, root, path, btrfs_ino(BTRFS_I(inode)), name, name_len, value, expand_size);
+					if (!ret) {
+						/* logic error */
+						WARN_ON_ONCE(1);
+						ret = -EUCLEAN;
+						btrfs_abort_transaction(trans, ret);
+						goto out;
+					} else if (ret == -EOVERFLOW) {
+						ret = -ENOSPC;
+						goto out;
+					} else if (ret != -EEXIST) {
+						goto out;
+					}
+					di = btrfs_match_dir_item_name(fs_info, path, name, name_len);
+					if (!di) {
+						/* logic error */
+						WARN_ON_ONCE(1);
+						ret = -ENOSPC;
+						goto out;
+					}
+					ret = 0;
+				}
+			}
+		}
+#endif /* MY_ABC_HERE */
 	} else if (ret == -EEXIST) {
 		ret = 0;
 		di = btrfs_match_dir_item_name(fs_info, path, name, name_len);

@@ -25,6 +25,16 @@
 
 #define PCIE_PORT_DEVICE_MAXSERVICES   5
 
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
+#define PCIE_PORT_SERVICE_SWITCH_I2C_SHIFT	5	/* switch I2C bus */
+#if PCIE_PORT_SERVICE_SWITCH_I2C_SHIFT < PCIE_PORT_DEVICE_MAXSERVICES
+#error PCIE_PORT_SERVICE_SWITCH_I2C_SHIFT should not less than PCIE_PORT_DEVICE_MAXSERVICES
+#endif
+#define PCIE_PORT_SERVICE_SWITCH_I2C	(1 << PCIE_PORT_SERVICE_SWITCH_I2C_SHIFT)
+#undef PCIE_PORT_DEVICE_MAXSERVICES
+#define PCIE_PORT_DEVICE_MAXSERVICES   6
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
+
 extern bool pcie_ports_dpc_native;
 
 #ifdef CONFIG_PCIEAER
@@ -52,6 +62,10 @@ int pcie_dpc_init(void);
 #else
 static inline int pcie_dpc_init(void) { return 0; }
 #endif
+
+#ifdef CONFIG_SYNO_PCI_EUNIT_I2C
+int pcie_switch_i2c_service_init(void);
+#endif /* CONFIG_SYNO_PCI_EUNIT_I2C */
 
 /* Port Type */
 #define PCIE_ANY_PORT			(~0)

@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 // SPDX-License-Identifier: GPL-2.0
 /*
  * DFS referral cache routines
@@ -300,7 +303,11 @@ int dfs_cache_init(void)
 		INIT_HLIST_HEAD(&cache_htable[i]);
 
 	atomic_set(&cache_count, 0);
+#ifdef MY_ABC_HERE
+	cache_nlsc = load_nls("utf8");
+#else /* MY_ABC_HERE */
 	cache_nlsc = load_nls_default();
+#endif /* MY_ABC_HERE */
 
 	cifs_dbg(FYI, "%s: initialized DFS referral cache\n", __func__);
 	return 0;

@@ -2165,6 +2165,54 @@ static int irqoff_error_case (struct ata_port *ap, u32 irq_stat)
 }
 #endif /* MY_ABC_HERE || MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static int ata_link_abort_mv92x5_wa(struct ata_link *link)
+{
+	struct ata_port *ap = link->ap;
+	void __iomem *port_mmio = ahci_port_base(ap);
+	int tag, nr_aborted = 0;
+	u32 qc_active = 0;
+	u32 done_mask = 0;
+
+	WARN_ON(!ap->ops->error_handler);
+
+	/* we're gonna abort all commands, no need for fast drain */
+	/* XXX: copy from ata_eh_set_pending(ap, 0) */
+	if (!(ap->pflags & ATA_PFLAG_EH_PENDING)) {
+		ap->pflags |= ATA_PFLAG_EH_PENDING;
+	}
+
+	if (ap->qc_active) {
+		qc_active = readl(port_mmio + PORT_SCR_ACT);
+		qc_active |= readl(port_mmio + PORT_CMD_ISSUE);
+		done_mask = ap->qc_active ^ qc_active;
+	}
+
+	for (tag = 0; tag < ATA_MAX_QUEUE; tag++) {
+		struct ata_queued_cmd *qc = ata_qc_from_tag(ap, tag);
+
+		if (qc) {
+			if (qc->dev->link == link) {
+				qc->flags |= ATA_QCFLAG_FAILED;
+				ata_qc_complete(qc);
+				nr_aborted++;
+			} else {
+				// qc at other link already done, complete it normally.
+				if (done_mask & (1 << tag)) {
+					ata_qc_complete(qc);
+				}
+			}
+		}
+	}
+
+	// no command abort, EH directly
+	if (!nr_aborted)
+		ata_port_schedule_eh(ap);
+
+	return nr_aborted;
+}
+#endif /* MY_ABC_HERE */
+
 static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
 {
 	struct ahci_host_priv *hpriv = ap->host->private_data;
@@ -2317,7 +2365,15 @@ static void ahci_error_intr(struct ata_port *ap, u32 irq_stat)
 	if (irq_stat & PORT_IRQ_FREEZE)
 		ata_port_freeze(ap);
 	else if (fbs_need_dec) {
+#ifdef MY_ABC_HERE
+		if (0 == syno_mv92x5_check(ap->host->vendor, ap->host->device)) {
+			ata_link_abort_mv92x5_wa(link);
+		} else {
+			ata_link_abort(link);
+		}
+#else /* MY_ABC_HERE*/
 		ata_link_abort(link);
+#endif /* MY_ABC_HERE */
 		ahci_fbs_dec_intr(ap);
 	} else
 		ata_port_abort(ap);

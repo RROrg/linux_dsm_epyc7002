@@ -335,6 +335,10 @@ config SYNO_SCSI_DISK_ERROR_REPORT
 	select SYNO_SYNOBIOS_EVENT
 	default y
 
+config SYNO_SCSI_MAX_QUEUE_DEPTH_LOCK
+	bool "Enable irq lock while changing queue_depth"
+	default y
+
 menu "SATA"
 
 config SYNO_SATA_DEVICE_PREFIX
@@ -448,6 +452,7 @@ config SYNO_SATA_SIGNAL_TEST
 
 config SYNO_SATA_MV92XX_PORTING
 	bool "Marvell 88SE92x5 specific initialize steps"
+	select SYNO_SATA_CONTROLLER_INFO
 	default y
 
 config SYNO_SATA_MV9170_PORTING
@@ -798,6 +803,14 @@ config SYNO_SAS_SATA_EARLY_WAKEUP
 
 endmenu #SAS
 
+menu "UAS"
+	depends on USB_UAS
+	config SYNO_SCSI_UAS_BEEDRIVE_DELAY_REVALIDATE
+	bool "Delay BeeDrive revalidate to wait device ready"
+	default y
+
+endmenu #UAS
+
 endmenu #SCSI
 
 menu "NVMe"
@@ -1017,7 +1030,7 @@ config SYNO_USB_EXTERNAL_HUB
 
 config SYNO_USB_EUNIT_CONTROL
 	bool "For an eunit that has a separated usb control port from data port"
-	depends on USB_ACM
+	depends on USB_ACM && SYNO_PORT_MAPPING_V2
 	default n
 
 endmenu #USB
@@ -1298,7 +1311,7 @@ config SYNO_PCI_DOMAIN_PATH
 
 config SYNO_PCI_EUNIT_SUPPORT
 	bool "Supporting i2c bus on pcie switch for eunit"
-	depends on PCI
+	depends on PCI && SYNO_SATA_EUNIT_SUPPORT
 	default n
 
 config SYNO_PCI_EUNIT_I2C

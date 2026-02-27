@@ -2815,7 +2815,11 @@ cifs_setup_ipc(struct cifs_ses *ses, struct smb_vol *volume_info)
 	scnprintf(unc, sizeof(unc), "\\\\%s\\IPC$", server->hostname);
 
 	/* cannot fail */
+#ifdef MY_ABC_HERE
+	nls_codepage = load_nls("utf8");
+#else /* MY_ABC_HERE */
 	nls_codepage = load_nls_default();
+#endif /* MY_ABC_HERE */
 
 	xid = get_xid();
 	tcon->ses = ses;

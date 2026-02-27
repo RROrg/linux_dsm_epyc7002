@@ -1,3 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ *   Copyright (c) 2021-2023 Synology inc.
+*/
+
 #include <linux/pagemap.h>
 #include <linux/vfs.h>
 #include <linux/falloc.h>

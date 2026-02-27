@@ -43,15 +43,15 @@ describe 'CONFIG_SYNO_BTRFS_*' do
         CONFIG_SYNO_BTRFS_FILE_EXTENT_SYNO_FLAG
         CONFIG_SYNO_BTRFS_DEDUPE
     ].each do |cfg|
-        it "#{cfg} is enabled for PURLEY, ICELAKED, V1000, EPYC7002 and EPYC7002SOFS" do
+        it "#{cfg} is enabled for PURLEY, ICELAKED, V1000, GEMINILAKE, EPYC7002 and EPYC7002SOFS" do
             platforms
-                .select { |p| p.target == :PURLEY || p.target == :ICELAKED ||  p.target == :EPYC7002 || p.target == :EPYC7002SOFS || p.target == :V1000 }
+                .select { |p| p.target == :PURLEY || p.target == :ICELAKED || p.target == :GEMINILAKE || p.target == :EPYC7002 || p.target == :EPYC7002SOFS || p.target == :V1000 }
                 .verify(cfg, builtin?)
         end
 
-        it "#{cfg} is disabled for non-PURLEY, non-ICELAKED, non-EPYC7002, non-V1000, and non-EPYC7002SOFS" do
+        it "#{cfg} is disabled for non-PURLEY, non-ICELAKED, non-GEMINILAKE, non-EPYC7002, non-V1000, and non-EPYC7002SOFS" do
             platforms
-                .reject { |p| p.target == :PURLEY || p.target == :ICELAKED ||  p.target == :EPYC7002 || p.target == :EPYC7002SOFS || p.target == :V1000 }
+                .reject { |p| p.target == :PURLEY || p.target == :ICELAKED || p.target == :GEMINILAKE ||  p.target == :EPYC7002 || p.target == :EPYC7002SOFS || p.target == :V1000 }
                 .verify(cfg, disabled?)
         end
     end

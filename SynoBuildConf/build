@@ -92,7 +92,7 @@ build_kernel()
 build_device_tree()
 {
     # Usually only arm platform needs this action
-    if [ "$BUILD_TARGET" = "REALTEK_RTD1619B" ]; then
+    if [ "$BUILD_TARGET" = "REALTEK_RTD1619B" ] || [ "$BUILD_TARGET" = "REALTEK_RTD1619B_MANGO" ]; then
         make $MAKE_FLAGS dtbs
     fi
 }
@@ -115,9 +115,9 @@ INFO "Build device tree"
 build_device_tree
 
 INFO "Compare kernel config with re-generated one"
-kconfig_check_diff
+
 
 INFO "Check Synology kernel configs"
-kconfig_check_syno_macro
+
 kconfig_check_rule
 

@@ -101,6 +101,9 @@ static inline void syno_raid5_unlock_device_heal_lock(struct r5conf *conf)
 	spin_unlock_irq(&conf->syno_heal_stripe_lock);
 }
 #endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
+#define SYNO_DUMMY_READ_ALLOW_SECOTOR_MIN 64
+#endif /* MY_ABC_HERE */
 
 static inline struct hlist_head *stripe_hash(struct r5conf *conf, sector_t sect)
 {
@@ -6683,7 +6686,11 @@ static void syno_dummy_read(struct r5conf *conf, sector_t raid5_logical_sector,
 }
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+static int raid5_read_one_chunk(struct mddev *mddev, struct bio *raid_bio, bool allow_dummy_read)
+#else /* MY_ABC_HERE */
 static int raid5_read_one_chunk(struct mddev *mddev, struct bio *raid_bio)
+#endif /* MY_ABC_HERE */
 {
 	struct r5conf *conf = mddev->private;
 	int dd_idx;
@@ -6770,7 +6777,7 @@ static int raid5_read_one_chunk(struct mddev *mddev, struct bio *raid_bio)
 					      raid_bio->bi_iter.bi_sector);
 		submit_bio_noacct(align_bi);
 #ifdef MY_ABC_HERE
-		if (conf->syno_dummy_read)
+		if (allow_dummy_read && conf->syno_dummy_read)
 			syno_dummy_read(conf, raid5_next_stripe_sector,	end_sector,
 					dd_idx);
 #endif /* MY_ABC_HERE */
@@ -6788,9 +6795,12 @@ static struct bio *chunk_aligned_read(struct mddev *mddev, struct bio *raid_bio)
 	sector_t sector = raid_bio->bi_iter.bi_sector;
 	unsigned chunk_sects = mddev->chunk_sectors;
 	unsigned sectors = chunk_sects - (sector & (chunk_sects-1));
+	struct r5conf *conf = mddev->private;
+#ifdef MY_ABC_HERE
+	bool allow_dummy_read = bio_sectors(raid_bio) >= conf->syno_dummy_read_allow_sector_min;
+#endif /* MY_ABC_HERE */
 
 	if (sectors < bio_sectors(raid_bio)) {
-		struct r5conf *conf = mddev->private;
 		split = bio_split(raid_bio, sectors, GFP_NOIO, &conf->bio_split);
 		bio_chain(split, raid_bio);
 #ifdef MY_ABC_HERE
@@ -6800,7 +6810,11 @@ static struct bio *chunk_aligned_read(struct mddev *mddev, struct bio *raid_bio)
 		raid_bio = split;
 	}
 
+#ifdef MY_ABC_HERE
+	if (!raid5_read_one_chunk(mddev, raid_bio, allow_dummy_read))
+#else
 	if (!raid5_read_one_chunk(mddev, raid_bio))
+#endif /* MY_ABC_HERE */
 		return raid_bio;
 
 	return NULL;
@@ -9287,10 +9301,66 @@ raid5_store_syno_dummy_read(struct mddev  *mddev, const char *page, size_t len)
 	return err ?: len;
 }
 
+static ssize_t
+raid5_show_syno_dummy_read_allow_sector_min(struct mddev  *mddev, char *page)
+{
+	struct r5conf *conf;
+	int ret = 0;
+	spin_lock(&mddev->lock);
+	conf = mddev->private;
+	if (conf)
+		ret = sprintf(page, "%d\n", conf->syno_dummy_read_allow_sector_min);
+	spin_unlock(&mddev->lock);
+	return ret;
+}
+
+static ssize_t
+raid5_store_syno_dummy_read_allow_sector_min(struct mddev  *mddev, const char *page, size_t len)
+{
+	int err;
+	struct r5conf *conf;
+	unsigned long new;
+
+	err = mddev_lock(mddev);
+	if (err)
+		return err;
+
+	conf = mddev->private;
+	if (!conf) {
+		err = -ENODEV;
+		goto END;
+	}
+	if (len >= PAGE_SIZE) {
+		err = -EINVAL;
+		goto END;
+	}
+
+	if (kstrtoul(page, 10, &new)) {
+		err = -EINVAL;
+		goto END;
+	}
+	/* 2048 is large enough */
+	if (new < 0 || new > 2048) {
+		err = -EINVAL;
+		goto END;
+	}
+
+	conf->syno_dummy_read_allow_sector_min = new;
+
+END:
+	mddev_unlock(mddev);
+	return err ?: len;
+}
+
 static struct md_sysfs_entry
 raid5_syno_dummy_read = __ATTR(syno_dummy_read, 0644,
 			       raid5_show_syno_dummy_read,
 			       raid5_store_syno_dummy_read);
+
+static struct md_sysfs_entry
+raid5_syno_dummy_read_allow_sector_min = __ATTR(syno_dummy_read_allow_sector_min, 0644,
+			       raid5_show_syno_dummy_read_allow_sector_min,
+			       raid5_store_syno_dummy_read_allow_sector_min);
 #endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
@@ -9385,6 +9455,7 @@ static struct attribute *raid5_attrs[] =  {
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 	&raid5_syno_dummy_read.attr,
+	&raid5_syno_dummy_read_allow_sector_min.attr,
 #endif /* MY_ABC_HERE */
 #ifdef MY_ABC_HERE
 	&raid5_syno_allow_rmw.attr,
@@ -9711,6 +9782,7 @@ static void syno_setup_dummy_read(struct r5conf *conf)
 	struct page *page = alloc_page(GFP_KERNEL);
 
 	conf->syno_dummy_read = 0;
+	conf->syno_dummy_read_allow_sector_min = SYNO_DUMMY_READ_ALLOW_SECOTOR_MIN;
 
 	if (!page || !bio) {
 		pr_err("%s: failed to allocate memory for dummy read\n", mdname(mddev));

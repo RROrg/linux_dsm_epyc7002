@@ -66,6 +66,10 @@ config SYNO_EPYC7003NTB
        bool "AMD EPYC Embedded 7003 with NTB"
        depends on X86_64
 
+config SYNO_RAPTORLAKES
+       bool "INTEL RAPTOR LAKE-S"
+       depends on X86_64
+
 endchoice
 
 config SYNO_SAS
@@ -78,6 +82,11 @@ config SYNO_AMD_MCE_THRESHOLD_CLEAR
 	default y
 	depends on X86_MCE_AMD
 
+config SYNO_DROP_CACHE_MEM_COMPACT
+	bool "Drop cache and compact memory"
+	default y
+	depends on COMPACTION
+
 config SYNO_INTEL_PSTATE_CALC
 	bool "Compare P-state ratio only"
 	default y
@@ -85,6 +94,10 @@ config SYNO_INTEL_PSTATE_CALC
 config SYNO_LSP_RTD1619B
 	bool "Apply Realtek rtd1619b LSP"
 	depends on ARM64
+
+config SYNO_LSP_RTD1619B_ENABLE_NPU
+	bool "Apply Realtek rtd1619b LSP for NPU"
+	depends on SYNO_RTD1619B
 
 endmenu #Platform Features
 

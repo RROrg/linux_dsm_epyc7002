@@ -95,4 +95,37 @@ END:
 	return ret;
 }
 EXPORT_SYMBOL(syno_compare_dts_pciepath);
+
+#ifdef MY_DEF_HERE
+extern struct device_node *syno_pcie_path_to_eunit_root_port(const char *pciepath, bool exactly);
+int syno_compare_dts_eunit_pciepath(struct pci_dev *pdev, const struct device_node *pDeviceNode)
+{
+	int ret = -1;
+	char szDevPciePath[SYNO_DTS_PROPERTY_CONTENT_LENGTH] = {'\0'};
+	char *szDtsNodePciePath = NULL;
+	int offset = -1;
+	szDtsNodePciePath = (char *)of_get_property(pDeviceNode, DT_PCIE_ROOT, NULL);
+
+	if (NULL == szDtsNodePciePath) {
+		printk(KERN_ERR "%s: Read pcie_root from dts error\n", __func__);
+		goto END;
+	}
+	if (-1 == syno_pciepath_dts_pattern_get(pdev, szDevPciePath, SYNO_DTS_PROPERTY_CONTENT_LENGTH)) {
+		goto END;
+	}
+	if (NULL == syno_pcie_path_to_eunit_root_port(szDevPciePath, false)) {
+		goto END;
+	}
+	offset=strlen(szDevPciePath)-strlen(szDtsNodePciePath);
+	if (0 > offset) {
+		goto END;
+	}
+	if (0 == strncmp(szDtsNodePciePath, szDevPciePath+offset, SYNO_DTS_PROPERTY_CONTENT_LENGTH)) {
+		ret = 0;
+	}
+END:
+	return ret;
+}
+EXPORT_SYMBOL(syno_compare_dts_eunit_pciepath);
+#endif /* MY_DEF_HERE */
 #endif /* MY_ABC_HERE */

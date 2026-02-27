@@ -145,6 +145,10 @@ config SYNO_CIFS_RECONNECT
 	bool "modify cifs reconnect behavior to prevent wait mutex lock cause hung task"
 	default y
 
+config SYNO_CIFS_FIX_BUGS
+	bool "fix open source bugs. It might be fix in the future kernel release."
+	default y
+
 endmenu #CIFS
 
 menu "FAT"
@@ -300,6 +304,11 @@ config SYNO_EXT4_SKIP_UNNECESSARY_BARRIER
 
 config SYNO_EXT4_BH_FLAGS_WARNING
 	bool "Workaround for incorrect bh flags"
+	default y
+	depends on EXT4_FS
+
+config SYNO_EXT4_FIX_PADDING_ZERO
+	bool "Fix padding zero issues after crash"
 	default y
 	depends on EXT4_FS
 
@@ -872,6 +881,36 @@ config SYNO_BTRFS_SEARCH_BY_EXTENT_TYPE
 	default y
 	depends on BTRFS_FS
 
+config SYNO_BTRFS_CHECK_INTEGRITY
+	bool "Auto fix error in check_leaf()."
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_FREE_SPACE_CACHE_IMPROVEMENT
+	bool "free space cache improvement"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_DELETE_SNAPSHOT_CHECK
+	bool "delete snapshot should check whether it is snapshoted by someone"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_AVOID_ORPHANED_RUUID
+	bool "do not set ruuid on orphaned subvolume"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_IMPROVE_NOCOW_WRITE_WHEN_VOLUME_FULL
+	bool "improve nocow write when volume full for iSCSI thick lun"
+	default y
+	depends on BTRFS_FS
+
+config SYNO_BTRFS_FIX_XATTR_EXTENSION_ENOSPC
+	bool "fix xattr extension enospc"
+	default y
+	depends on BTRFS_FS
+
 endmenu #BTRFS
 
 menu "ECRYPT"
@@ -1059,6 +1098,21 @@ config SYNO_NFSD_UDC_COLLECTOR
 	bool "Collect information for UDC"
 	default y
 	depends on NFSD && SYNO_NFSD_LATENCY_REPORT
+
+config SYNO_NFSD_SHARE_QUOTA
+	bool "Support share quota"
+	default y
+	depends on NFSD && SYNO_FS_QUOTA_QUERY
+
+config SYNO_NFSD_TRACE
+	bool "Tracepoint for debug and collecting data"
+	default y
+	depends on NFSD
+
+config SYNO_NFSD_POOL_HINT
+	bool "Hint RPC service to use the thread pool on the same node with the export path."
+	default y
+	depends on NFSD
 
 endmenu #NFS
 

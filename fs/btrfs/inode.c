@@ -12926,12 +12926,20 @@ static const struct inode_operations btrfs_symlink_inode_operations = {
 /* Hash a string to an integer in a caseless way */
 static int btrfs_dentry_hash(const struct dentry *dentry, struct qstr *this)
 {
-	int ret;
-	u32 hash;
-	ret = btrfs_upper_name_hash(this->name, this->len, &hash);
-	if (!ret)
-		this->hash = hash;
-	return ret;
+	/*
+	 * hash_buf need to add 1 byte for syno_utf8_toupper, because it
+	 * will append 0 to the end of string.
+	 */
+	char hash_buf[BTRFS_NAME_LEN + 1];
+	unsigned int upper_len;
+
+	if (this->len > BTRFS_NAME_LEN)
+		return -ENAMETOOLONG;
+
+	upper_len = syno_utf8_toupper(hash_buf, this->name, BTRFS_NAME_LEN, this->len, NULL);
+	this->hash = full_name_hash(dentry, hash_buf, upper_len);
+
+	return 0;
 }
 
 /* return 1 on failure and 0 on success */

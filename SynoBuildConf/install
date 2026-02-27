@@ -193,7 +193,7 @@ install_systemd_units()
 			MISC_MODULES_LIST=${MISC_MODULES_X86_64_COMMON_LIST}
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
 
-			USB_MODULES_LIST="${USB_MODULES_COMMON_LIST} ehci-hcd ehci-pci uhci-hcd"
+			USB_MODULES_LIST="ehci-hcd ehci-pci uhci-hcd"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
 
 			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
@@ -215,7 +215,7 @@ install_systemd_units()
 			MISC_MODULES_LIST=${MISC_MODULES_X86_64_COMMON_LIST}
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
 
-			USB_MODULES_LIST="${USB_MODULES_COMMON_LIST} ehci-hcd ehci-pci uhci-hcd"
+			USB_MODULES_LIST="usb-storage ehci-hcd ehci-pci uhci-hcd"
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
 
 			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
@@ -225,6 +225,26 @@ install_systemd_units()
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${NET_DRIVER_MODULES_LIST}" "70-net-kernel.conf"
 			;;
 		REALTEK_RTD1619B)
+
+			IPV6_LIST=${IPV6_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${IPV6_LIST}" "70-ipv6-kernel.conf"
+
+			CRYPTO_MODULES_LIST="lrw md4 ansi_cprng hmac des_generic cts md5 ghash-generic cbc ecb sha256_generic echainiv cmac ccm seqiv ctr libarc4"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CRYPTO_MODULES_LIST}" "70-crypto-kernel.conf"
+
+			CPUFREQ_MODULES_LIST="cpufreq_performance cpufreq_powersave"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CPUFREQ_MODULES_LIST}" "70-cpufreq-kernel.conf"
+
+			MISC_MODULES_LIST=${MISC_MODULES_ARM_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
+
+			USB_MODULES_LIST="${USB_MODULES_COMMON_LIST} dwc3 xhci-pci xhci-plat-hcd phy-rtk-usb2 phy-rtk-usb3 dwc3_rtk rtk-usb-manager cdc-acm"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
+
+			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${VXLAN_MODULES}" "69-docker-vxlan.conf"
+			;;
+		REALTEK_RTD1619B_MANGO)
 
 			IPV6_LIST=${IPV6_COMMON_LIST}
 			SYNOAutoGenerateModulesConfig "${ModuleList}" "${IPV6_LIST}" "70-ipv6-kernel.conf"
@@ -346,7 +366,7 @@ install_systemd_units()
 		       MISC_MODULES_LIST="${MISC_MODULES_X86_64_COMMON_LIST}"
 		       SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
 
-		       USB_MODULES_LIST="${USB_MODULES_COMMON_LIST} ehci-hcd ehci-pci uhci-hcd"
+		       USB_MODULES_LIST="ehci-hcd ehci-pci uhci-hcd"
 		       SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
 
 		       VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
@@ -355,6 +375,28 @@ install_systemd_units()
 		       NETWORK_MODULES="be2net"
 		       SYNOAutoGenerateModulesConfig "${ModuleList}" "${NETWORK_MODULES}" "70-network-kernel.conf"
 		       ;;
+		RAPTORLAKES)
+			IPV6_LIST=${IPV6_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${IPV6_LIST}" "70-ipv6-kernel.conf"
+
+			CRYPTO_MODULES_LIST=${CRYPTO_MODULES_X86_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CRYPTO_MODULES_LIST}" "70-crypto-kernel.conf"
+
+			CPUFREQ_MODULES_LIST=${CPUFREQ_MODULES_X86_64_COMMON_LIST}
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${CPUFREQ_MODULES_LIST}" "70-cpufreq-kernel.conf"
+
+			MISC_MODULES_LIST="${MISC_MODULES_X86_64_COMMON_LIST}"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${MISC_MODULES_LIST}" "70-misc-kernel.conf"
+
+			USB_MODULES_LIST="${USB_MODULES_COMMON_LIST} ehci-hcd ehci-pci uhci-hcd"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${USB_MODULES_LIST}" "70-usb-kernel.conf"
+
+			VXLAN_MODULES="ip_tunnel udp_tunnel ip6_udp_tunnel vxlan"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${VXLAN_MODULES}" "69-docker-vxlan.conf"
+
+			NETWORK_MODULES="be2net"
+			SYNOAutoGenerateModulesConfig "${ModuleList}" "${NETWORK_MODULES}" "70-network-kernel.conf"
+			;;
 		*)
 			;;
 	esac

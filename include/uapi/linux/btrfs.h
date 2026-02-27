@@ -552,6 +552,9 @@ struct btrfs_balance_progress {
 #ifdef MY_ABC_HERE
 #define BTRFS_BALANCE_DRY_RUN          (1ULL << 15)
 #endif /* SYNO_BTRFS_BALANCE_DRY_RUN */
+#ifdef MY_ABC_HERE
+#define BTRFS_BALANCE_DONT_WAIT_DROP_ROOT		(1ULL << 16)
+#endif /* MY_ABC_HERE */
 
 /*
  * flags definitions for per-type balance args

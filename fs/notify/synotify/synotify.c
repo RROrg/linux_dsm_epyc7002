@@ -147,6 +147,7 @@ static int synotify_fetch_path(struct fsnotify_event *fsnotify_event, struct fsn
 		goto ERR;
 	}
 	event->full_path_len = strlen(event->full_path);
+	smp_wmb();  // make sure that no instruction reordering here
 	event->path_ready = true;
 
 ERR:
@@ -260,8 +261,6 @@ static int synotify_handle_event(struct fsnotify_group *group, u32 mask,
 	if (file_path && data_type == FSNOTIFY_EVENT_SYNO_MOVE)
 		event->file_path = file_path->name;
 	fsn_event = &event->fse;
-
-	event->event_version = group->synotify_data.event_version;
 
 	// v2 event
 	event->pid = task_tgid_nr_ns(current, &init_pid_ns);

@@ -244,7 +244,11 @@ cifs_ses_add_channel(struct cifs_ses *ses, struct cifs_server_iface *iface)
 	 * stored. This might break when dealing with non-ascii
 	 * strings.
 	 */
+#ifdef MY_ABC_HERE
+	vol.local_nls = load_nls("utf8");
+#else /* MY_ABC_HERE */
 	vol.local_nls = load_nls_default();
+#endif /* MY_ABC_HERE */
 
 	/* Use RDMA if possible */
 	vol.rdma = iface->rdma_capable;

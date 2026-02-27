@@ -72,7 +72,7 @@ config SYNO_VIRTIO_SCSI_DEVICE
 config SYNO_KVMX64_PCI_SLOT_BOOT
 	int "Reserve virtio pci slot for synoboot"
 	default 10
-	depends on SYNO_VIRTIO_SCSI_DEVICE
+	depends on (SYNO_KVMX64 || SYNO_NEXTKVMX64 || SYNO_KVMX64SOFS || SYNO_KVMX64V2 || SYNO_VIRTIO_SCSI_DEVICE)
 
 config SYNO_ECC_NOTIFICATION
 	bool "Add ECC notification support"
@@ -201,6 +201,11 @@ config SYNO_CFS_CPU_LOAD_IMBALANCE
 
 config SYNO_BLOCK_SOFTIRQ_ON_STACK
 	bool "fix imbalance caused by redundant wakeup migration"
+	default y
+
+config SYNO_DEFAULT_EXTEND_IPCNMI
+	bool "default extend ipcmni"
+	depends on SYSVIPC_SYSCTL
 	default y
 
 endmenu #Kernel Core Enhancements

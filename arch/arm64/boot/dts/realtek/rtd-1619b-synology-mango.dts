@@ -15,6 +15,123 @@
 		device_type = "memory";
 		reg = <0x00040000 0x3ffc0000>; /* 1 GiB */
 	};
+
+	leds {
+		led_0 {
+			gpios = <&gpio 0x41 0x1>;
+		};
+
+		led_1 {
+			gpios = <&gpio 0x45 0x1>;
+		};
+	};
+
+	soc@0 {
+		rbus: rbus@98000000 {
+			npu: npu-wrapper@85000 {
+				reg = <0x85000 0x2000>;
+				compatible = "realtek,npu-wrapper";
+				power-domains = <&pwr_npu>;
+				interrupts = <GIC_SPI 102 IRQ_TYPE_LEVEL_HIGH>;
+				clocks = <&cc RTD1619B_CRT_CLK_NPU>,
+					<&cc RTD1619B_CRT_PLL_HIFI>;
+				clock-names = "npu", "pll_hifi";
+				resets = <&pwr_npu>;
+				contiguousSize = <0x0 0x1000000>;
+				realtek,sb2 = <&sb2>;
+				status = "okay";
+			};
+
+			ve1: ve1@40000 {
+				power-domains = <&pwr_ve1>;
+				resets = <&pwr_ve1>;
+				reset-names = "reset";
+				/delete-property/ clocks;
+				/delete-property/ assigned-clocks;
+				/delete-property/ assigned-clock-parents;
+			};
+		};
+	};
+
+	vcpu: vcpu0 {
+		compatible = "realtek,rtd1319-vcpu";
+		power-domains = <&pwr_ve2>;
+		/delete-property/ clocks;
+		/delete-property/ resets;
+		/delete-property/ reset-names;
+	};
+
+	vcpu_ve3: vcpu1 {
+		compatible = "realtek,rtd1319-vcpu";
+		power-domains = <&pwr_ve3>;
+		/delete-property/ clocks;
+	};
+};
+
+&iso {
+	/delete-node/ power-domain;
+
+	dco: dco {
+		compatible = "realtek,dco";
+	};
+
+	pwr_ve1: power-ve1 {
+		compatible = "realtek,rtd1319-ve1-power";
+		#power-domain-cells = <0>;
+		#reset-cells = <0>;
+		clocks = <&cc RTD1619B_CRT_CLK_VE1>;
+		resets = <&cc RTD1619B_CRT_RSTN_VE1>,
+			 <&cc RTD1619B_CRT_RSTN_VE1_BIST>;
+		reset-names = "reset", "bist";
+
+		assigned-clocks = <&cc RTD1619B_CRT_CLK_VE1>;
+		assigned-clock-parents = <&cc RTD1619B_CRT_PLL_VE1>;
+	};
+
+	pwr_ve2: power-ve2 {
+		compatible = "realtek,rtd1395-ve2-power";
+		#power-domain-cells = <0>;
+		#reset-cells = <0>;
+		clocks = <&cc RTD1619B_CRT_CLK_VE2>;
+		resets = <&cc RTD1619B_CRT_RSTN_VE2>,
+			 <&cc RTD1619B_CRT_RSTN_VE2_BIST>;
+		reset-names = "reset", "bist";
+	};
+
+	pwr_ve3: power-ve3 {
+		compatible = "realtek,rtd1619-ve3-power";
+		#power-domain-cells = <0>;
+		#reset-cells = <0>;
+		clocks = <&cc RTD1619B_CRT_CLK_VE3>;
+	};
+
+	pwr_gpu: power-gpu {
+		compatible = "realtek,rtd1395-gpu-power";
+		#power-domain-cells = <0>;
+	};
+
+	pwr_hifi0: power-hifi0 {
+		compatible = "realtek,rtd1619b-hifi0-power";
+		#power-domain-cells = <0>;
+	};
+
+	pwr_hifi1: power-hifi1 {
+		compatible = "realtek,rtd1619b-hifi1-power";
+		#power-domain-cells = <0>;
+	};
+
+	pwr_npu: power-npu {
+		compatible = "realtek,rtd1619b-npu-power";
+		#power-domain-cells = <0>;
+		#reset-cells = <0>;
+		clocks = <&cc RTD1619B_CRT_CLK_NPU>,
+			 <&cc RTD1619B_CRT_CLK_HIFI>,
+			 <&cc RTD1619B_CRT_CLK_EN_NPU>,
+			 <&cc RTD1619B_CRT_CLK_EN_NPUPP>;
+		resets = <&cc RTD1619B_CRT_RSTN_SOFT_NPU>,
+			 <&cc RTD1619B_CRT_RSTN_NPU_BIST>;
+		reset-names = "auto", "bist";
+	};
 };
 
 &pcie1 {

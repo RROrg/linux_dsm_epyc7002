@@ -151,6 +151,9 @@ __be32		nfsd_statfs(struct svc_rqst *, struct svc_fh *,
 
 __be32		nfsd_permission(struct svc_rqst *, struct svc_export *,
 				struct dentry *, int);
+#ifdef MY_ABC_HERE
+void		nfsd_quota_query(struct path *, struct kstatfs *);
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 /*
