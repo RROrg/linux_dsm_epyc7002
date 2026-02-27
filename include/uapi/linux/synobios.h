@@ -292,15 +292,19 @@
 #define HW_RS2423p     "RS2423+"       //"RS2423+"
 #define HW_RS2423rpp   "RS2423rp+"     //"RS2423rp+"
 #define HW_DS1823xsp   "DS1823xs+"     //"DS1823xs+"
-#define HW_RS1623xsp   "RS1623xs+"     //"RS1623xs+"
+#define HW_RS1624xsp   "RS1624xs+"     //"RS1624xs+"
 #define HW_DS423p      "DS423+"        //"DS423+"
 #define HW_DS124       "DS124"         //"DS124"
+#define HW_MANGO       "Mango"         //"mango"
 #define HW_DS224p      "DS224+"        //DS224+
 #define HW_RS4024xsp   "RS4024xs+"     //"RS4024xs+"
 #define HW_FS6600DN    "FS6600DN"      //"FS6600DN"
-#define HW_DS1623p     "DS1623+"       //"DS1623+"
-#define HW_DS1823p     "DS1823+"       //"DS1823+"
+#define HW_DS1624p     "DS1624+"       //"DS1624+"
+#define HW_DS1824p     "DS1824+"       //"DS1824+"
 #define HW_SC2500      "SC2500"        //"SC2500"
+#define HW_RS1224p     "RS1224+"       //"RS1224+"
+#define HW_RS1224rpp     "RS1224rp+"       //"RS1224rp+"
+#define HW_RS4025xsp   "RS4025xs+"     //"RS4025xs+"
 #define HW_UNKNOWN     "DSUnknown"
 
 #define EBOX_INFO_UNIQUE_RX410  "RX410"
@@ -325,6 +329,9 @@
 #define EBOX_INFO_UNIQUE_DX1222 "DX1222"
 #define EBOX_INFO_UNIQUE_RX1223RP "RX1223rp"
 #define EBOX_INFO_UNIQUE_RX1224RP "RX1224rp"
+#define EBOX_INFO_UNIQUE_DX524 "DX524"
+#define EBOX_INFO_UNIQUE_RX424 "RX424"
+#define EBOX_INFO_UNIQUE_FX2424DN "FX2424DN"
 
 #define SYNO_UNIQUE(x)     (x>>2)
 #define IS_SYNOLOGY_RX4(x) (SYNO_UNIQUE(x) == 0x15 || SYNO_UNIQUE(x) == 0xd) // 0x54 ~ 0x57
@@ -345,11 +352,15 @@
 #define IS_SYNOLOGY_DX1222(x) (x == 0x17)
 #define IS_SYNOLOGY_DX1215II(x) (x == 0x1C)
 #define IS_SYNOLOGY_RX1223RP(x) (x == 0x01)
-#define SYNOLOGY_RX1224RP_UNIQUE 0x02
-#define IS_SYNOLOGY_RX1224RP(x) (x == SYNOLOGY_RX1224RP_UNIQUE)
+#define SYNOLOGY_RX1224RP_ID 0x03
+#define IS_SYNOLOGY_RX1224RP(x) (x == SYNOLOGY_RX1224RP_ID)
 #define SYNO_HEX 0x53796E6F //Syno
 #define LOGY_HEX 0x6C6F6779 //logy
 #define IS_SYNOLOGY_M2DXX(x) (0)
+#define SYNOLOGY_USB_ACM_EUNIT_PM_ID    0x02
+#define IS_SYNOLOGY_USB_ACM_EUNIT(x) (x == SYNOLOGY_USB_ACM_EUNIT_PM_ID)
+
+#define SYNO_EUNIT_NAME_HEAD "Syno"
 
 #define SYNO_EBOX_UNIQUE_MAX_LEN 16
 
@@ -379,7 +390,9 @@ static const struct syno_ebox_unique_id syno_ebox_unique_mapping[] = {
 	{0x17, 0x1f, EBOX_INFO_UNIQUE_DX1222, EBOX_INFO_UNIQUE_DX1222},		// DX1222, 	0x17
 	{0x1C, 0x1f, EBOX_INFO_UNIQUE_DX1215II, EBOX_INFO_UNIQUE_DX1215II},	// DX1215II, 0x1C
 	{0x01, 0x1f, EBOX_INFO_UNIQUE_RX1223RP, EBOX_INFO_UNIQUE_RX1223RP},	// RX1223RP, 0x01
-	
+	{0x02, 0x1f, EBOX_INFO_UNIQUE_DX524, EBOX_INFO_UNIQUE_DX524},	// DX524, 0x02
+	{0x03, 0x1f, EBOX_INFO_UNIQUE_RX1224RP, EBOX_INFO_UNIQUE_RX1224RP},	// RX1224RP, 0x03
+
 	{ }, /* terminate list */
 };
 
@@ -544,6 +557,8 @@ typedef enum {
 #define EBOX_INFO_DEEP_SLEEP    "deepsleep_support"
 #define EBOX_INFO_IRQ_OFF       "irq_off"
 #define EBOX_INFO_PHY_KEY       "phy" /* for mv14xx */
+#define EBOX_INFO_USB_PATH      "usb_path"
+#define EBOX_INFO_LAYER_KEY     "layer"
 
 /* Use 'K' as magic number */
 #define SYNOBIOS_IOC_MAGIC  'K'

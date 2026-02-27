@@ -1,3 +1,6 @@
+#ifndef MY_ABC_HERE
+#define MY_ABC_HERE
+#endif
 #include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/libata.h>
@@ -5,6 +8,9 @@
 #include <linux/i2c.h>
 #include <linux/synolib.h>
 #include <linux/synobios.h>
+#ifdef MY_DEF_HERE
+#include "libata.h"
+#endif /* MY_DEF_HERE */
 
 #define HDDBP_TCA9555_PORT0_PRESENT 0x0
 #define HDDBP_TCA9555_PORT1_PRESENT 0x1
@@ -23,6 +29,11 @@
 #define HDDBP_MICROP_PORT1_ENABLE 0x1E
 #define HDDBP_MICROP_PORT2_ENABLE 0x1F
 
+#define HDDBP_MICROP_PORT0_MANUAL_ENABLE 0x2D
+#define HDDBP_MICROP_PORT1_MANUAL_ENABLE 0x2E
+#define HDDBP_MICROP_PORT2_MANUAL_ENABLE 0x2F
+#define HDDBP_MICROP_MANUAL_MODE 0x11
+
 static struct mutex smbus_hdd_powerctl_mutex_spin;
 static DEFINE_MUTEX(smbus_hdd_powerctl_mutex_spin);
 extern char gSynoSmbusHddType[16];
@@ -31,6 +42,10 @@ extern int gSynoSmbusSwitchCount;
 extern int gSynoSmbusSwitchAdapters[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchAddrs[SMBUS_SWITCH_MAX_COUNT+1];
 extern int gSynoSmbusSwitchVals[SMBUS_SWITCH_MAX_COUNT+1];
+extern int gSynoHostPresentAdapter;
+extern int gSynoHostPresentAddr;
+extern int gSynoHostPresentReg;
+extern int gSynoHostPresentVal;
 
 bool gblIsTca9555Init = false;
 bool gbIsTca9555Enabled = false;
@@ -363,17 +378,18 @@ END:
 
 int syno_microp_hdd_present_read(int adapter, int address, int index)
 {
-    int iRet = -1;
-    union i2c_smbus_data data;
-    struct i2c_adapter *pAdapter = NULL;
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
 	unsigned int iI2c_REG = 0;
 	unsigned int iBitToAccess = 0;
 
-    pAdapter = i2c_get_adapter(adapter);
-    if (NULL == pAdapter) {
-        printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
-        goto END;
-    }
+	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
+	pAdapter = i2c_get_adapter(adapter);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
+		goto END;
+	}
 
 	//disk  1 ~  8 is on port0
 	//      9 ~ 16 is on port1
@@ -390,24 +406,159 @@ int syno_microp_hdd_present_read(int adapter, int address, int index)
 	}
 
 	// read present data from i2c
-    iRet = i2c_smbus_xfer(pAdapter, address, 0,
-                I2C_SMBUS_READ, iI2c_REG,
-                I2C_SMBUS_BYTE_DATA, &data);
-    if (iRet < 0) {
-        printk(KERN_ERR "i2c_smbus_xfer error: failed to read i2c reg:0x%x\n", iI2c_REG);
-        goto END;
-    }
+	memset(&data, 0, sizeof(data));
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_READ, iI2c_REG,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (iRet < 0) {
+		printk(KERN_ERR "i2c_smbus_xfer error: failed to read i2c reg:0x%x\n", iI2c_REG);
+		goto END;
+	}
 
-    iRet = (data.byte >> iBitToAccess) & 1;
+	iRet = (data.byte >> iBitToAccess) & 1;
 END:
-    if (pAdapter) {
-        i2c_put_adapter(pAdapter);
-    }
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
 	/*
 	 * By default present pin is low active, which means 0 is present.
 	 * Also return not present when error occur.
 	 */
-    return !iRet;
+	return !iRet;
+}
+
+int syno_microp_hdd_enable_write_all_once(int adapter, int address)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+
+	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
+	pAdapter = i2c_get_adapter(adapter);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
+		goto END;
+	}
+
+	//bit set = enable, clear = disable
+	memset(&data, 0, sizeof(data));
+	data.byte = 0xFF;
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT0_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write %x fail\n", HDDBP_MICROP_PORT0_ENABLE);
+		goto END;
+	}
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT1_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write %x fail\n", HDDBP_MICROP_PORT1_ENABLE);
+		goto END;
+	}
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT2_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write %x fail\n", HDDBP_MICROP_PORT2_ENABLE);
+		goto END;
+	}
+	memset(&data, 0, sizeof(data));
+	data.byte = 1;
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_MANUAL_MODE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk("uP bp set manual mode failed\n");
+		goto END;
+	}
+	iRet = 0;
+
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
+
+	return iRet;
+}
+
+int syno_microp_hdd_enable_write(int adapter, int address, int index, int val)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+	unsigned int uiI2cManualReg = 0;
+	unsigned int iBitToAccess = 0;
+
+	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
+	pAdapter = i2c_get_adapter(adapter);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
+		goto END;
+	}
+
+	//disk  1 ~  8 is on port0
+	//      9 ~ 16 is on port1
+	//     17 ~ 24 is on port2
+	if (8 >= index) {
+		uiI2cManualReg = HDDBP_MICROP_PORT0_MANUAL_ENABLE;
+		iBitToAccess = index - 1;
+	} else if (16 >= index) {
+		uiI2cManualReg = HDDBP_MICROP_PORT1_MANUAL_ENABLE;
+		iBitToAccess = index - 9;
+	} else {
+		uiI2cManualReg = HDDBP_MICROP_PORT2_MANUAL_ENABLE;
+		iBitToAccess = index - 17;
+	}
+
+	// read current enable data from i2c
+	// uP bp polling pin per 4s, so we monitor manual reg rather than enable reg
+	memset(&data, 0, sizeof(data));
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_READ, uiI2cManualReg,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		goto END;
+	}
+
+	//bit set = enable, clear = disable
+	if (1 == val && !((data.byte >> iBitToAccess) & 1)) {
+		data.byte |= 1 << iBitToAccess;
+		iRet = i2c_smbus_xfer(pAdapter, address, 0,
+				I2C_SMBUS_WRITE, uiI2cManualReg,
+				I2C_SMBUS_BYTE_DATA, &data);
+	} else if (0 == val && (((data.byte >> iBitToAccess) & 1))) {
+		data.byte &= ~(1 << iBitToAccess);
+		iRet = i2c_smbus_xfer(pAdapter, address, 0,
+				I2C_SMBUS_WRITE, uiI2cManualReg,
+				I2C_SMBUS_BYTE_DATA, &data);
+	}
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write fail\n");
+		goto END;
+	}
+
+	// Set manual mode
+	memset(&data, 0, sizeof(data));
+	data.byte = 1;
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_MANUAL_MODE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk("uP bp set manual mode failed\n");
+		goto END;
+	}
+
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
+
+	return iRet;
 }
 
 int syno_microp_hdd_enable_read(int adapter, int address, int index)
@@ -418,6 +569,7 @@ int syno_microp_hdd_enable_read(int adapter, int address, int index)
 	unsigned int iI2c_REG = 0;
 	unsigned int iBitToAccess = 0;
 
+	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
 	pAdapter = i2c_get_adapter(adapter);
 	if (NULL == pAdapter) {
 		printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
@@ -439,6 +591,7 @@ int syno_microp_hdd_enable_read(int adapter, int address, int index)
 	}
 
 	//read current enable data from i2c
+	memset(&data, 0, sizeof(data));
 	iRet = i2c_smbus_xfer(pAdapter, address, 0,
 			I2C_SMBUS_READ, iI2c_REG,
 			I2C_SMBUS_BYTE_DATA, &data);
@@ -448,13 +601,87 @@ int syno_microp_hdd_enable_read(int adapter, int address, int index)
 	iRet = (data.byte >> iBitToAccess) & 1;
 
 END:
-
 	if (pAdapter) {
 		i2c_put_adapter(pAdapter);
 	}
+	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
 
 	return iRet;
 }
+
+int syno_microp_hdd_auto_enable_manual_disable(int adapter, int address, int blPowerOn)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+
+	mutex_lock(&smbus_hdd_powerctl_mutex_spin);
+	pAdapter = i2c_get_adapter(adapter);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter\n");
+		goto END;
+	}
+
+	memset(&data, 0, sizeof(data));
+	if (blPowerOn) {
+		// Set auto mode
+		data.byte = 0;
+		iRet = i2c_smbus_xfer(pAdapter, address, 0,
+				I2C_SMBUS_WRITE, HDDBP_MICROP_MANUAL_MODE,
+				I2C_SMBUS_BYTE_DATA, &data);
+		if (0 > iRet) {
+			printk("uP bp set auto mode failed\n");
+		}
+		goto END;
+	}
+
+	data.byte = 0x00;
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT0_MANUAL_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "i2c_smbus_xfer: failed to write i2c addr:0x%02x, reg:0x%02x\n",
+				address, HDDBP_MICROP_PORT0_MANUAL_ENABLE);
+		goto END;
+	}
+
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT1_MANUAL_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "i2c_smbus_xfer: failed to write i2c addr:0x%02x, reg:0x%02x\n",
+				address, HDDBP_MICROP_PORT1_MANUAL_ENABLE);
+		goto END;
+	}
+
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_PORT2_MANUAL_ENABLE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "i2c_smbus_xfer: failed to write i2c addr:0x%02x, reg:0x%02x\n",
+				address, HDDBP_MICROP_PORT2_MANUAL_ENABLE);
+		goto END;
+	}
+
+	// Set manual mode
+	memset(&data, 0, sizeof(data));
+	data.byte = 1;
+	iRet = i2c_smbus_xfer(pAdapter, address, 0,
+			I2C_SMBUS_WRITE, HDDBP_MICROP_MANUAL_MODE,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk("uP bp set manual mode failed\n");
+		goto END;
+	}
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
+
+	return iRet;
+}
+EXPORT_SYMBOL(syno_microp_hdd_auto_enable_manual_disable);
 
 void syno_smbus_switch_config(void)
 {
@@ -503,8 +730,137 @@ END:
 	mutex_unlock(&smbus_hdd_powerctl_mutex_spin);
 }
 
+void syno_host_present_config(void)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+
+	if(0 > gSynoHostPresentAddr) {
+		// some model need not to config
+		goto END;
+	}
+
+	pAdapter = i2c_get_adapter(gSynoHostPresentAdapter);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter from gSynoHostPresentAdapter %d\n",
+				gSynoHostPresentAdapter);
+		goto END;
+	}
+	mdelay(100);
+	memset(&data, 0, sizeof(data));
+	data.byte = gSynoHostPresentVal;
+	iRet = i2c_smbus_xfer(pAdapter, gSynoHostPresentAddr, 0,
+			I2C_SMBUS_WRITE, gSynoHostPresentReg,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write 0x%2x to 0x%2x fail\n", gSynoHostPresentVal, gSynoHostPresentAddr);
+
+		goto END;
+	}
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+}
+
+#ifdef MY_DEF_HERE
+int syno_pci_eunit_i2c_read(int iBus, SYNO_JMB575_I2C_DEV_INFO *pI2C)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+
+	if(0 > iBus || !pI2C) {
+		goto END;
+	}
+
+	pAdapter = i2c_get_adapter(iBus);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter from iBus %d\n",
+				iBus);
+		goto END;
+	}
+	memset(&data, 0, sizeof(data));
+	iRet = i2c_smbus_xfer(pAdapter, pI2C->addr, 0,
+			I2C_SMBUS_READ, pI2C->offset,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C read 0x%2x 0x%2x fail\n", pI2C->addr, pI2C->offset);
+
+		goto END;
+	}
+	iRet = data.byte;
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+
+	return iRet;
+}
+EXPORT_SYMBOL(syno_pci_eunit_i2c_read);
+int syno_pci_eunit_i2c_write(int iBus, SYNO_JMB575_I2C_DEV_INFO *pI2C, int blSet)
+{
+	int iRet = -1;
+	union i2c_smbus_data data;
+	struct i2c_adapter *pAdapter = NULL;
+
+	if(0 > iBus || !pI2C) {
+		goto END;
+	}
+
+	pAdapter = i2c_get_adapter(iBus);
+	if (NULL == pAdapter) {
+		printk(KERN_ERR "I2C initial error: failed to get i2c adapter from iBus %d\n",
+				iBus);
+		goto END;
+	}
+	memset(&data, 0, sizeof(data));
+	iRet = i2c_smbus_xfer(pAdapter, pI2C->addr, 0,
+			I2C_SMBUS_READ, pI2C->offset,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C read 0x%2x@0x%2x fail\n", pI2C->addr, pI2C->offset);
+
+		goto END;
+	}
+
+	if (blSet) {
+		if (data.byte & pI2C->mask) {
+			iRet = 0;
+			goto END;
+		}
+		data.byte |= pI2C->mask;
+	} else {
+		if (!(data.byte & pI2C->mask)) {
+			iRet = 0;
+			goto END;
+		}
+		data.byte &= ~pI2C->mask;
+	}
+	iRet = i2c_smbus_xfer(pAdapter, pI2C->addr, 0,
+			I2C_SMBUS_WRITE, pI2C->offset,
+			I2C_SMBUS_BYTE_DATA, &data);
+	if (0 > iRet) {
+		printk(KERN_ERR "I2C write 0x%2x to 0x%2x@0x%2x fail\n", data.byte, pI2C->addr, pI2C->offset);
+
+		goto END;
+	}
+
+	iRet = 0;
+END:
+	if (pAdapter) {
+		i2c_put_adapter(pAdapter);
+	}
+
+	return iRet;
+}
+EXPORT_SYMBOL(syno_pci_eunit_i2c_write);
+#endif /* MY_DEF_HERE */
+
 void syno_smbus_hdd_powerctl_init(void){
 	syno_smbus_switch_config();
+	syno_host_present_config();
 	if(0 == strncmp(gSynoSmbusHddType, "tca9555", strlen("tca9555"))){
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write=syno_tca9555_hdd_enable_write;
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_read=syno_tca9555_hdd_enable_read;
@@ -516,10 +872,10 @@ void syno_smbus_hdd_powerctl_init(void){
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_present_read=syno_cpld_hdd_present_read;
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write_all_once=NULL;
 	} else if (0 == strncmp(gSynoSmbusHddType, "microp", strlen("microp"))){
-		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write=NULL;
+		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write=syno_microp_hdd_enable_write;
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_read=syno_microp_hdd_enable_read;
 		SynoSmbusHddPowerCtl.syno_smbus_hdd_present_read=syno_microp_hdd_present_read;
-		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write_all_once=NULL;
+		SynoSmbusHddPowerCtl.syno_smbus_hdd_enable_write_all_once=syno_microp_hdd_enable_write_all_once;
 	}
 	SynoSmbusHddPowerCtl.bl_init = 1;
 }

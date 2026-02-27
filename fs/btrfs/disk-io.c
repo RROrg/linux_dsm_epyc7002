@@ -140,8 +140,8 @@ struct async_submit_bio {
 	struct btrfs_work work;
 	blk_status_t status;
 #ifdef MY_ABC_HERE
-	bool throttle;
 	struct btrfs_fs_info *fs_info;
+	bool throttle;
 #endif /* MY_ABC_HERE */
 };
 
@@ -515,13 +515,24 @@ static int btree_read_extent_buffer_pages(struct extent_buffer *eb,
 			break;
 	}
 
-	if (failed && !ret && failed_mirror)
-		btrfs_repair_eb_io_failure(eb, failed_mirror);
 #ifdef MY_ABC_HERE
-	else if (failed) {
-		clear_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags);
-	}
+        if (unlikely(failed)) {
+                if (!ret && failed_mirror)
+                        btrfs_repair_eb_io_failure(eb, failed_mirror);
+                else
+                        clear_bit(EXTENT_BUFFER_SHOULD_REPAIR, &eb->bflags);
+        }
+#else
+        if (failed && !ret && failed_mirror)
+                btrfs_repair_eb_io_failure(eb, failed_mirror);
+#endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+        if (unlikely(test_bit(EXTENT_BUFFER_CORRUPT, &eb->bflags) && !ret))
+                btrfs_repair_eb_io_failure(eb, 1);
+#endif /* MY_ABC_HERE */
+
+#ifdef MY_ABC_HERE
 	if (-EIO == ret && test_bit(BTRFS_FS_OPEN, &fs_info->flags)
 			&& !sb_rdonly(fs_info->sb)
 			&& !test_bit(BTRFS_FS_STATE_TRANS_ABORTED, &fs_info->fs_state)
@@ -772,8 +783,15 @@ int btrfs_validate_metadata_buffer(struct btrfs_io_bio *io_bio, u64 phy_offset,
 		ret = -EIO;
 	}
 
+#ifdef MY_ABC_HERE
+	if (found_level > 0 && btrfs_check_node(eb)) {
+		set_bit(EXTENT_BUFFER_CORRUPT, &eb->bflags);
+		ret = -EIO;
+	}
+#else
 	if (found_level > 0 && btrfs_check_node(eb))
 		ret = -EIO;
+#endif /* MY_ABC_HERE */
 
 	if (!ret)
 		set_extent_buffer_uptodate(eb);
@@ -918,12 +936,26 @@ static void end_workqueue_bio(struct bio *bio)
 		else
 			wq = fs_info->endio_write_workers;
 	} else {
+#ifdef MY_ABC_HERE
+		if (end_io_wq->metadata == BTRFS_WQ_ENDIO_RAID56) {
+			wq = fs_info->endio_raid56_workers;
+		} else if (end_io_wq->metadata) {
+			if (unlikely(fs_info->can_fix_meta_key == DOING_FIX_META_KEY)) {
+				wq = fs_info->endio_meta_fix_workers;
+			} else {
+				wq = fs_info->endio_meta_workers;
+			}
+		} else {
+			wq = fs_info->endio_workers;
+		}
+#else
 		if (end_io_wq->metadata == BTRFS_WQ_ENDIO_RAID56)
 			wq = fs_info->endio_raid56_workers;
 		else if (end_io_wq->metadata)
 			wq = fs_info->endio_meta_workers;
 		else
 			wq = fs_info->endio_workers;
+#endif /* MY_ABC_HERE */
 	}
 
 	btrfs_init_work(&end_io_wq->work, end_workqueue_fn, NULL, NULL);
@@ -1047,7 +1079,7 @@ blk_status_t btrfs_wq_submit_bio
 #ifdef MY_ABC_HERE
 	async->fs_info = fs_info;
 	async->throttle = throttle;
-	if (async->throttle)
+	if (async->fs_info && async->throttle)
 		atomic_inc(&fs_info->syno_async_submit_nr);
 #endif /* MY_ABC_HERE */
 
@@ -2289,12 +2321,13 @@ static void btrfs_syno_orphan_cleanup(struct btrfs_fs_info *fs_info)
 
 	/* we need to run find orphan roots before snapshot cleanup */
 	if (!fs_info->syno_orphan_cleanup.root_tree_cleanup) {
-		fs_info->syno_orphan_cleanup.root_tree_cleanup = true;
 		err = btrfs_find_orphan_roots(fs_info);
 		if (err) {
 			btrfs_err(fs_info, "Failed to btrfs find orphan roots, err:%d", err);
 			goto out;
 		}
+
+		fs_info->syno_orphan_cleanup.root_tree_cleanup = true;
 
 		down_read(&fs_info->cleanup_work_sem);
 		err = btrfs_orphan_cleanup(fs_info->tree_root);
@@ -2373,10 +2406,17 @@ static int cleaner_kthread(void *arg)
 			goto sleep;
 
 #ifdef MY_ABC_HERE
+		if (!mutex_trylock(&fs_info->relocate_mutex))
+			goto sleep;
+		if (!mutex_trylock(&fs_info->cleaner_mutex)) {
+			mutex_unlock(&fs_info->relocate_mutex);
+			goto sleep;
+		}
 		btrfs_syno_orphan_cleanup(fs_info);
-#endif /* MY_ABC_HERE */
+#else /* MY_ABC_HERE */
 		if (!mutex_trylock(&fs_info->cleaner_mutex))
 			goto sleep;
+#endif /* MY_ABC_HERE */
 
 		/*
 		 * Avoid the problem that we change the status of the fs
@@ -2384,6 +2424,9 @@ static int cleaner_kthread(void *arg)
 		 */
 		if (btrfs_need_cleaner_sleep(fs_info)) {
 			mutex_unlock(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+			mutex_unlock(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 			goto sleep;
 		}
 
@@ -2396,6 +2439,9 @@ static int cleaner_kthread(void *arg)
 		again = btrfs_clean_one_deleted_snapshot(root);
 #endif /* MY_ABC_HERE */
 		mutex_unlock(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+		mutex_unlock(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 
 		/*
 		 * The defragger has dealt with the R/O remount and umount,
@@ -2737,6 +2783,9 @@ static void btrfs_stop_all_workers(struct btrfs_fs_info *fs_info)
 	 * queues can do metadata I/O operations.
 	 */
 	btrfs_destroy_workqueue(fs_info->endio_meta_workers);
+#ifdef MY_ABC_HERE
+	btrfs_destroy_workqueue(fs_info->endio_meta_fix_workers);
+#endif /* MY_ABC_HERE */
 	btrfs_destroy_workqueue(fs_info->endio_meta_write_workers);
 
 }
@@ -2957,6 +3006,11 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 	fs_info->endio_meta_workers =
 		btrfs_alloc_workqueue(fs_info, "endio-meta", flags,
 				      max_active, 4);
+#ifdef MY_ABC_HERE
+	fs_info->endio_meta_fix_workers =
+		btrfs_alloc_workqueue(fs_info, "endio_meta_fix", flags,
+				      max_active, 4);
+#endif /* MY_ABC_HERE */
 	fs_info->endio_meta_write_workers =
 		btrfs_alloc_workqueue(fs_info, "endio-meta-write", flags,
 				      max_active, 2);
@@ -2997,7 +3051,7 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 #ifdef MY_ABC_HERE
 	/* for reduce cow ordered extent contention, we limit max active with 4 */
 	fs_info->syno_cow_endio_workers =
-		btrfs_alloc_workqueue(fs_info, "syno_cow", flags, min_t(unsigned long, 4, max_active), 2);
+		btrfs_alloc_workqueue(fs_info, "syno_cow", flags, max_active, 2);
 	fs_info->syno_nocow_endio_workers =
 		btrfs_alloc_workqueue(fs_info, "syno_nocow", flags, max_active, 2);
 	fs_info->syno_high_priority_endio_workers =
@@ -3015,6 +3069,9 @@ static int btrfs_init_workqueues(struct btrfs_fs_info *fs_info,
 	if (!(fs_info->workers && fs_info->delalloc_workers &&
 	      fs_info->flush_workers &&
 	      fs_info->endio_workers && fs_info->endio_meta_workers &&
+#ifdef MY_ABC_HERE
+	      fs_info->endio_meta_fix_workers &&
+#endif /* MY_ABC_HERE */
 	      fs_info->endio_meta_write_workers &&
 	      fs_info->endio_write_workers && fs_info->endio_raid56_workers &&
 	      fs_info->endio_freespace_worker && fs_info->rmw_workers &&
@@ -3796,6 +3853,9 @@ void btrfs_init_fs_info(struct btrfs_fs_info *fs_info)
 	mutex_init(&fs_info->chunk_mutex);
 	mutex_init(&fs_info->transaction_kthread_mutex);
 	mutex_init(&fs_info->cleaner_mutex);
+#ifdef MY_ABC_HERE
+	mutex_init(&fs_info->relocate_mutex);
+#endif /* MY_ABC_HERE */
 	mutex_init(&fs_info->ro_block_group_mutex);
 	init_rwsem(&fs_info->commit_root_sem);
 	init_rwsem(&fs_info->cleanup_work_sem);
@@ -4552,6 +4612,9 @@ int __cold open_ctree(struct super_block *sb, struct btrfs_fs_devices *fs_device
 	}
 #endif /* MY_ABC_HERE */
 
+#ifdef MY_ABC_HERE
+	fs_info->can_fix_meta_key = CAN_FIX_META_KEY;
+#endif /* MY_ABC_HERE */
 	ret = btrfs_init_workqueues(fs_info, fs_devices);
 	if (ret) {
 		err = ret;
@@ -4996,6 +5059,13 @@ int __cold open_ctree(struct super_block *sb, struct btrfs_fs_devices *fs_device
 	}
 
 	set_bit(BTRFS_FS_OPEN, &fs_info->flags);
+
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	/* Kick the cleaner thread so it'll start deleting snapshots. */
+	if (test_bit(BTRFS_FS_UNFINISHED_DROPS, &fs_info->flags))
+		wake_up_process(fs_info->cleaner_kthread);
+#endif /* MY_ABC_HERE */
 
 clear_oneshot:
 	btrfs_clear_oneshot_options(fs_info);
@@ -5692,6 +5762,15 @@ void __cold close_ctree(struct btrfs_fs_info *fs_info)
 	 * still try to wake up the cleaner.
 	 */
 	kthread_park(fs_info->cleaner_kthread);
+
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
+	/*
+	 * If we had UNFINISHED_DROPS we could still be processing them, so
+	 * clear that bit and wake up relocation so it can stop.
+	 */
+	btrfs_wake_unfinished_drop(fs_info);
+#endif /* MY_ABC_HERE */
 
 	/* wait for the qgroup rescan worker to stop */
 	btrfs_qgroup_wait_for_completion(fs_info, false);

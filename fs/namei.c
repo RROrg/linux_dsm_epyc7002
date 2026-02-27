@@ -3082,6 +3082,57 @@ static int lookup_one_len_common(const char *name, struct dentry *base,
 }
 
 #ifdef MY_ABC_HERE
+/* copy from d_lookup */
+static struct dentry *d_lookup_caseless(const struct dentry *parent, const struct qstr *name, const int caseless)
+{
+	struct dentry *dentry;
+	unsigned seq;
+
+	do {
+		seq = read_seqbegin(&rename_lock);
+		dentry = __d_lookup(parent, name, caseless);
+		if (dentry)
+			break;
+	} while (read_seqretry(&rename_lock, seq));
+	return dentry;
+}
+
+/* copy from lookup_dcache */
+static struct dentry *lookup_dcache_caseless(const struct qstr *name,
+				    struct dentry *dir,
+				    unsigned int flags)
+{
+	struct dentry *dentry = d_lookup_caseless(dir, name, flags & LOOKUP_CASELESS_COMPARE);
+	if (dentry) {
+		int error = d_revalidate(dentry, flags);
+		if (unlikely(error <= 0)) {
+			if (!error)
+				d_invalidate(dentry);
+			dput(dentry);
+			return ERR_PTR(error);
+		}
+	}
+	return dentry;
+}
+
+/* copy from lookup_one_len */
+struct dentry *lookup_one_len_caseless(const char *name, struct dentry *base, int len, unsigned int flags)
+{
+	struct dentry *dentry;
+	struct qstr this;
+	int err;
+
+	WARN_ON_ONCE(!inode_is_locked(base->d_inode));
+
+	err = lookup_one_len_common(name, base, len, &this);
+	if (err)
+		return ERR_PTR(err);
+
+	dentry = lookup_dcache_caseless(&this, base, flags);
+	return dentry ? dentry : __lookup_slow(&this, base, flags);
+}
+EXPORT_SYMBOL(lookup_one_len_caseless);
+
 int syno_user_path_at(int dfd, const char __user *user_name, unsigned flags,
 		 struct path *path, char **real_filename, int *real_filename_len)
 {

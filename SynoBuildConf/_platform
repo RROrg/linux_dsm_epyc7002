@@ -65,6 +65,8 @@ platform_customize_image()
         : # do nothing
     elif [ "$BUILD_TARGET" = "REALTEK_RTD1619B" ]; then
         platform_customize_rtd1619b_image
+    elif [ "$BUILD_TARGET" = "REALTEK_RTD1619B_MANGO" ]; then
+        platform_customize_rtd1619b_mango_image
     else
         : # customized by platform later
     fi

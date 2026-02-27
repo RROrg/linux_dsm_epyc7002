@@ -356,6 +356,9 @@ struct nvme_ctrl {
 	unsigned long discard_page_busy;
 
 	struct nvme_fault_inject fault_inject;
+#ifdef MY_ABC_HERE
+	unsigned char do_standby_syncing;
+#endif /* MY_ABC_HERE */
 };
 
 enum nvme_iopolicy {

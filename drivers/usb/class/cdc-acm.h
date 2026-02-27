@@ -83,6 +83,10 @@ struct acm_rb {
 	struct acm		*instance;
 };
 
+#ifdef MY_DEF_HERE
+#define SYNO_EUNIT_QUEUE_SIZE 128
+#endif /* MY_DEF_HERE */
+
 struct acm {
 	struct usb_device *dev;				/* the corresponding usb device */
 	struct usb_interface *control;			/* control interface */
@@ -134,8 +138,19 @@ struct acm {
 #ifdef MY_DEF_HERE
 	rwlock_t status_lock;                 /* prevent reading and updating expstatus at same time */
 	char **cached_expstatus;              /* for key-value table of each eunit status */
-	char **latest_expstatus;              /* saves new fetch status in this table, then updates to expstatus */
 	struct list_head syno_device_list;    /* for disk name in an eunit controlled by this acm microP */
+	struct delayed_work cache_update_work;
+	struct delayed_work cmd_issue_work;
+	char *acm_buffer;
+	int initial_disk_not_ready_check;
+	unsigned int waken_disks;
+	unsigned long last_waking_time;
+	struct list_head syno_acm_q; /* Queue for commands to be issued */
+	spinlock_t  syno_acm_q_lock; /* Lock for queue operation */
+	unsigned long last_poll_jiffies;
+	int cmd_idx_head;
+	int cmd_idx_tail;
+	struct completion *syno_acm_ack_to_cmpl[SYNO_EUNIT_QUEUE_SIZE];
 #endif /* MY_DEF_HERE */
 };
 

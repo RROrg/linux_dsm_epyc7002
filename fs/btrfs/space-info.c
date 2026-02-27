@@ -1666,7 +1666,11 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 	ASSERT(orig_bytes);
 	ASSERT(!current->journal_info || flush != BTRFS_RESERVE_FLUSH_ALL);
 
-	if (flush == BTRFS_RESERVE_FLUSH_DATA)
+	if (flush == BTRFS_RESERVE_FLUSH_DATA
+#ifdef MY_ABC_HERE
+		|| flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
+#endif /* MY_ABC_HERE */
+		)
 		async_work = &fs_info->async_data_reclaim_work;
 	else
 		async_work = &fs_info->async_reclaim_work;
@@ -1685,6 +1689,11 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 			!list_empty(&space_info->priority_tickets);
 	else
 		pending_tickets = !list_empty(&space_info->priority_tickets);
+
+#ifdef MY_ABC_HERE
+	if (flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH)
+		pending_tickets = false;
+#endif /* MY_ABC_HERE */
 
 	/*
 	 * Carry on if we have enough space (short-circuit) OR call
@@ -1705,7 +1714,11 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 	 * If we are a priority flusher then we just need to add our ticket to
 	 * the list and we will do our own flushing further down.
 	 */
-	if (ret && flush != BTRFS_RESERVE_NO_FLUSH) {
+	if (ret && flush != BTRFS_RESERVE_NO_FLUSH
+#ifdef MY_ABC_HERE
+		&& flush != BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
+#endif /* MY_ABC_HERE */
+		) {
 		ticket.bytes = orig_bytes;
 		ticket.error = 0;
 		space_info->reclaim_size += ticket.bytes;
@@ -1767,7 +1780,11 @@ static int __reserve_bytes(struct btrfs_fs_info *fs_info,
 		}
 	}
 	spin_unlock(&space_info->lock);
-	if (!ret || flush == BTRFS_RESERVE_NO_FLUSH)
+	if (!ret || flush == BTRFS_RESERVE_NO_FLUSH
+#ifdef MY_ABC_HERE
+		|| flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH
+#endif /* MY_ABC_HERE */
+		)
 		return ret;
 
 	return handle_reserve_ticket(fs_info, space_info, &ticket, flush);
@@ -1831,6 +1848,9 @@ int btrfs_reserve_data_bytes(struct btrfs_fs_info *fs_info, u64 bytes,
 	int ret;
 
 	ASSERT(flush == BTRFS_RESERVE_FLUSH_DATA ||
+#ifdef MY_ABC_HERE
+	       flush == BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH ||
+#endif /* MY_ABC_HERE */
 	       flush == BTRFS_RESERVE_FLUSH_FREE_SPACE_INODE);
 	ASSERT(!current->journal_info || flush != BTRFS_RESERVE_FLUSH_DATA);
 

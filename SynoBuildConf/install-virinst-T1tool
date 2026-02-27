@@ -1,11 +1,16 @@
 #!/bin/bash
 
-cpufreq_modules="freq_table cpufreq_stats cpufreq thermal_sys processor mperf acpi-cpufreq cpufreq_ondemand cpufreq_performance cpufreq_powersave cpufreq_conservative"
-
 # shellcheck disable=SC2154
-for module_name in $cpufreq_modules; do
-	module=$(find . -name "${module_name}".ko)
-	[ -e "${module}" ] && install -Dm644 "${module}" "${TmpInstDir}/lib/modules/${module_name}.ko"
-done
+if [ -e "${KernelDir}/drivers/cpufreq/acpi-cpufreq.ko" ]; then
+	install -Dm644 "${KernelDir}/drivers/cpufreq/acpi-cpufreq.ko" "${TmpInstDir}/lib/modules/acpi-cpufreq.ko"
+fi
+
+if [ -e "${KernelDir}/drivers/cpufreq/cpufreq_performance.ko" ]; then
+	install -Dm644 "${KernelDir}/drivers/cpufreq/cpufreq_performance.ko" "${TmpInstDir}/lib/modules/cpufreq_performance.ko"
+fi
+
+if [ -e "${KernelDir}/drivers/cpufreq/cpufreq_powersave.ko" ]; then
+	install -Dm644 "${KernelDir}/drivers/cpufreq/cpufreq_powersave.ko" "${TmpInstDir}/lib/modules/cpufreq_powersave.ko"
+fi
 
 exit 0

@@ -153,6 +153,77 @@ int btrfs_check_data_free_space(struct btrfs_inode *inode,
 	return ret;
 }
 
+#ifdef MY_ABC_HERE
+int btrfs_alloc_data_chunk_ondemand_with_no_commit(struct btrfs_inode *inode, u64 bytes)
+{
+	int ret;
+	struct btrfs_root *root = inode->root;
+	struct btrfs_fs_info *fs_info = root->fs_info;
+	struct btrfs_space_info *data_sinfo = fs_info->data_sinfo;
+	enum btrfs_reserve_flush_enum flush = BTRFS_RESERVE_FLUSH_SYNO_NO_FLUSH;
+	bool chunk_allocated = false;
+	struct btrfs_trans_handle *trans = NULL;
+
+	/* Make sure bytes are sectorsize aligned */
+	bytes = ALIGN(bytes, fs_info->sectorsize);
+
+again:
+	ret = btrfs_reserve_data_bytes(fs_info, bytes, flush);
+	if (!ret)
+		goto out;
+
+	if (ret && ret == -ENOSPC && !chunk_allocated) {
+		if (!data_sinfo->full) {
+			trans = btrfs_join_transaction(root);
+			if (IS_ERR(trans)) {
+				ret = PTR_ERR(trans);
+				trans = NULL;
+				goto out;
+			}
+
+			spin_lock(&data_sinfo->lock);
+			data_sinfo->force_alloc = CHUNK_ALLOC_FORCE;
+			spin_unlock(&data_sinfo->lock);
+			ret = btrfs_chunk_alloc(trans,
+				btrfs_get_alloc_profile(fs_info, data_sinfo->flags),
+				CHUNK_ALLOC_NO_FORCE);
+			btrfs_end_transaction(trans);
+			trans = NULL;
+			chunk_allocated = true;
+			if (ret >= 0)
+				goto again;
+		}
+	}
+
+out:
+	return ret;
+}
+
+int btrfs_check_data_free_space_with_no_commit(struct btrfs_inode *inode,
+			struct extent_changeset **reserved, u64 start, u64 len)
+{
+	struct btrfs_fs_info *fs_info = inode->root->fs_info;
+	int ret;
+
+	/* align the range */
+	len = round_up(start + len, fs_info->sectorsize) -
+	      round_down(start, fs_info->sectorsize);
+	start = round_down(start, fs_info->sectorsize);
+
+	ret = btrfs_alloc_data_chunk_ondemand_with_no_commit(inode, len);
+	if (ret < 0)
+		return ret;
+
+	/* Use new btrfs_qgroup_reserve_data to reserve precious data space. */
+	ret = btrfs_qgroup_reserve_data(inode, reserved, start, len);
+	if (ret < 0)
+		btrfs_free_reserved_data_space_noquota(fs_info, len);
+	else
+		ret = 0;
+	return ret;
+}
+#endif /* MY_ABC_HERE */
+
 /*
  * Called if we need to clear a data reservation for this inode
  * Normally in a error case.

@@ -44,9 +44,6 @@
 
 #include "usb.h"
 #include <linux/usb/hcd.h>
-#ifdef MY_ABC_HERE
-#include <linux/usb/uas.h>
-#endif /* MY_ABC_HERE */
 #include "scsiglue.h"
 #include "debug.h"
 #include "transport.h"
@@ -601,29 +598,19 @@ static struct device_attribute *sysfs_device_attr_list[] = {
 
 #ifdef MY_ABC_HERE
 static void syno_usb_info_enum(struct scsi_device *sdev) {
-	struct us_data *usdata = NULL;
-	struct uas_dev_info *uasdevinfo = NULL;
-	struct usb_device *udev = NULL;
+	struct us_data *us = NULL;
 
-	if (NULL == sdev || NULL == sdev->host) {
+	if (NULL == sdev) {
 		return;
 	}
 
-	if (strncmp(sdev->host->hostt->name, "usb-storage", 11) == 0) {
-		usdata = host_to_us(sdev->host);
-		if (NULL == usdata || NULL == usdata->pusb_intf){
-			return;
-		}
-		udev = usdata->pusb_dev;
-	} else if (strncmp(sdev->host->hostt->name, "uas", 3) == 0) {
-		uasdevinfo = (struct uas_dev_info *)sdev->host->hostdata;
-		if (NULL == uasdevinfo || NULL == uasdevinfo->intf){
-			return;
-		}
-		udev = uasdevinfo->udev;
+	us = host_to_us(sdev->host);
+
+	if (NULL == us || NULL == us->pusb_intf) {
+		return;
 	}
 
-	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%susb_path=%s\n", sdev->syno_block_info, dev_name(&udev->dev));
+	snprintf(sdev->syno_block_info, BLOCK_INFO_SIZE, "%susb_path=%s\n", sdev->syno_block_info, dev_name(&us->pusb_dev->dev));
 }
 #endif /* MY_ABC_HERE */
 

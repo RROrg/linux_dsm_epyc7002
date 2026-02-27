@@ -2029,6 +2029,9 @@ static void btrfs_resize_thread_pool(struct btrfs_fs_info *fs_info,
 	btrfs_workqueue_set_max(fs_info->caching_workers, new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_workers, new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_meta_workers, new_pool_size);
+#ifdef MY_ABC_HERE
+	btrfs_workqueue_set_max(fs_info->endio_meta_fix_workers, new_pool_size);
+#endif /* MY_ABC_HERE */
 	btrfs_workqueue_set_max(fs_info->endio_meta_write_workers,
 				new_pool_size);
 	btrfs_workqueue_set_max(fs_info->endio_write_workers, new_pool_size);

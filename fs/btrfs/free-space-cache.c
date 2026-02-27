@@ -28,7 +28,10 @@
 
 #define BITS_PER_BITMAP		(PAGE_SIZE * 8UL)
 #define MAX_CACHE_BYTES_PER_GIG	SZ_64K
+#ifdef MY_ABC_HERE
+#else /* MY_ABC_HERE */
 #define FORCE_EXTENT_THRESHOLD	SZ_1M
+#endif /* MY_ABC_HERE */
 
 struct btrfs_trim_range {
 	u64 start;
@@ -2289,6 +2292,10 @@ static bool use_bitmap(struct btrfs_free_space_ctl *ctl,
 	struct btrfs_block_group *block_group = ctl->private;
 	struct btrfs_fs_info *fs_info = block_group->fs_info;
 	bool forced = false;
+#ifdef MY_ABC_HERE
+	u64 block_group_size = block_group->length;
+	u64 force_extent_thresh = div_u64(block_group_size, ctl->extents_thresh);
+#endif /* MY_ABC_HERE */
 
 #ifdef CONFIG_BTRFS_DEBUG
 	if (btrfs_should_fragment_free_space(block_group))
@@ -2296,7 +2303,11 @@ static bool use_bitmap(struct btrfs_free_space_ctl *ctl,
 #endif
 
 	/* This is a way to reclaim large regions from the bitmaps. */
+#ifdef MY_ABC_HERE
+	if (!forced && info->bytes >= force_extent_thresh)
+#else /* MY_ABC_HERE */
 	if (!forced && info->bytes >= FORCE_EXTENT_THRESHOLD)
+#endif /* MY_ABC_HERE */
 		return false;
 
 	/*

@@ -45,9 +45,6 @@ struct nfsd_net {
 	bool grace_ended;
 	time64_t boot_time;
 
-	/* internal mount of the "nfsd" pseudofilesystem: */
-	struct vfsmount *nfsd_mnt;
-
 	struct dentry *nfsd_client_dir;
 #ifdef MY_ABC_HERE
 	struct dentry *nfsd_syno_client_dir;
@@ -179,6 +176,9 @@ struct nfsd_net {
 	struct shrinker		nfsd_reply_cache_shrinker;
 	/* utsname taken from the process that starts the server */
 	char			nfsd_name[UNX_MAXNODENAME+1];
+
+	/* Allow umount to wait for nfsd state cleanup */
+	struct completion nfsd_shutdown_complete;
 };
 
 /* Simple check to find out if a given net was properly initialized */

@@ -2787,6 +2787,9 @@ nfsd4_encode_fattr(struct xdr_stream *xdr, struct svc_fh *fhp,
 		err = vfs_statfs(&path, &statfs);
 		if (err)
 			goto out_nfserr;
+#ifdef MY_ABC_HERE
+		nfsd_quota_query(&path, &statfs);
+#endif /* MY_ABC_HERE */
 	}
 	if ((bmval0 & (FATTR4_WORD0_FILEHANDLE | FATTR4_WORD0_FSID)) && !fhp) {
 		tempfh = kmalloc(sizeof(struct svc_fh), GFP_KERNEL);

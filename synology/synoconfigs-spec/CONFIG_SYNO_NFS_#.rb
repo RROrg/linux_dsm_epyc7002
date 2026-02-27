@@ -64,6 +64,7 @@ describe 'CONFIG_SYNO_NFSD?_*' do
         .select { |cfg| cfg =~ /^CONFIG_SYNO_NFS/ }
         .reject { |cfg| cfg =~ /_PACKET_SIZE$/ }
         .reject { |cfg| cfg == 'CONFIG_SYNO_NFSD_NUMA_SVC_POOL_PERNODE' }
+        .reject { |cfg| cfg == 'CONFIG_SYNO_NFSD_POOL_HINT' }
         .each do |cfg|
             it "#{cfg}=y" do
                 platforms.verify(cfg, builtin?)

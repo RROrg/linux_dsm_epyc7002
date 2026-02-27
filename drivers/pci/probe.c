@@ -1822,6 +1822,10 @@ static void early_dump_pci_device(struct pci_dev *pdev)
 		       value, 256, false);
 }
 
+#ifdef MY_DEF_HERE
+extern unsigned int syno_pci_dev_to_layer(struct pci_dev *);
+#endif /* MY_DEF_HERE */
+
 /**
  * pci_setup_device - Fill in class and map information of a device
  * @dev: the device structure to fill
@@ -2007,6 +2011,10 @@ int pci_setup_device(struct pci_dev *dev)
 #ifdef MY_ABC_HERE
 	syno_pcie_nvme_check(dev);
 #endif /* MY_ABC_HERE */
+#ifdef MY_DEF_HERE
+	INIT_LIST_HEAD(&dev->syno_device_list);
+	syno_pci_dev_to_layer(dev);
+#endif /* MY_DEF_HERE */
 	/* We found a fine healthy device, go go go... */
 	return 0;
 }

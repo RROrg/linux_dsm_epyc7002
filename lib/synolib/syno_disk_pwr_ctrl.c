@@ -275,7 +275,7 @@ void SYNO_HDD_POWER_ON(int index)
 		case PWRCTRL_TYPE_SMBUS:
 #ifdef MY_ABC_HERE
 			/* Special case: DS1621+ */
-			if (syno_is_hw_version(HW_DS1621p) || syno_is_hw_version(HW_DS1623p)) {
+			if (syno_is_hw_version(HW_DS1621p)) {
 				syno_hdd_poweron_smbus_all_once();
 				break;
 			}
