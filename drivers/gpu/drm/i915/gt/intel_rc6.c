@@ -110,7 +110,7 @@ static void gen11_rc6_enable(struct intel_rc6 *rc6)
 		GEN9_MEDIA_PG_ENABLE |
 		GEN11_MEDIA_SAMPLER_PG_ENABLE;
 
-	if (INTEL_GEN(gt->i915) >= 12) {
+	if (INTEL_GEN(gt->i915) >= 12 && !IS_DG1(gt->i915)) {
 		for (i = 0; i < I915_MAX_VCS; i++)
 			if (HAS_ENGINE(gt, _VCS(i)))
 				pg_enable |= (VDN_HCP_POWERGATE_ENABLE(i) |
