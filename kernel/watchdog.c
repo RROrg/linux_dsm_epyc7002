@@ -331,7 +331,7 @@ static void watchdog_interrupt_count(void)
 	__this_cpu_inc(hrtimer_interrupts);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /* update hrtimer for each watchdog enabled CPU */
 void watchdog_hrtimer_inc(void)
 {
@@ -341,7 +341,7 @@ void watchdog_hrtimer_inc(void)
 	}
 }
 EXPORT_SYMBOL(watchdog_hrtimer_inc);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static DEFINE_PER_CPU(struct completion, softlockup_completion);
 static DEFINE_PER_CPU(struct cpu_stop_work, softlockup_stop_work);

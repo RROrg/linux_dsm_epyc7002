@@ -104,9 +104,9 @@ static int max_zones __read_mostly;
 /* Array of zone pointers. Serialized by cpu hotplug lock */
 static struct platform_device **zone_devices;
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static DEFINE_MUTEX(pdev_list_mutex);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static ssize_t show_label(struct device *dev,
 				struct device_attribute *devattr, char *buf)
@@ -449,13 +449,13 @@ static struct temp_data *init_temp_data(unsigned int cpu, int pkg_flag)
 	tdata->is_pkg_data = pkg_flag;
 	tdata->cpu = cpu;
 	tdata->cpu_core_id = TO_CORE_ID(cpu);
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/*
 	 * if the cpu temp can't read, syno_cpu_temperature() still return this value,
 	 * so we must set a valid value(default 20 degree C) when init
 	 */
 	tdata->temp = 20 * 1000;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	tdata->attr_size = MAX_CORE_ATTRS;
 	mutex_init(&tdata->update_lock);
 	return tdata;
@@ -775,7 +775,7 @@ static void __exit coretemp_exit(void)
 }
 module_exit(coretemp_exit)
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/synobios.h>
 /* update core temp
  * p.s. copy from "show_temp(..)"
@@ -906,7 +906,7 @@ RET:
 	return ret;
 }
 EXPORT_SYMBOL(syno_cpu_tjmax);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 MODULE_AUTHOR("Rudolf Marek <r.marek@assembler.cz>");
 MODULE_DESCRIPTION("Intel Core temperature monitor");

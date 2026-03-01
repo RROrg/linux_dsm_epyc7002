@@ -35,11 +35,11 @@
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/suspend.h>
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/synobios.h>
 #include <linux/synolib.h>
 #include <linux/syno_fdt.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #include "i2c-designware-core.h"
 
@@ -219,11 +219,11 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	struct dw_i2c_dev *dev;
 	struct i2c_timings *t;
 	int irq, ret;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	struct device I2CDev;
 	struct device_node *pI2CNode = NULL;
 	int index = 0;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 
 	irq = platform_get_irq(pdev, 0);
@@ -255,7 +255,7 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	else
 		i2c_parse_fw_timings(&pdev->dev, t, false);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* FIXME: Don't use these model customize code
 	 *        They should be customized in dts or acpi
 	 */
@@ -276,9 +276,9 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 			}
 		}
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	i2c_dw_adjust_bus_speed(dev);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (pdev->dev.of_node)
 		dw_i2c_of_configure(pdev);
@@ -319,10 +319,10 @@ static int dw_i2c_plat_probe(struct platform_device *pdev)
 	adap->owner = THIS_MODULE;
 	adap->class = dmi_check_system(dw_i2c_hwmon_class_dmi) ?
 					I2C_CLASS_HWMON : I2C_CLASS_DEPRECATED;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	/* override class to use this driver directly */
 	adap->class = I2C_CLASS_HWMON | I2C_CLASS_SPD;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	ACPI_COMPANION_SET(&adap->dev, ACPI_COMPANION(&pdev->dev));
 	adap->dev.of_node = pdev->dev.of_node;
 	adap->nr = -1;

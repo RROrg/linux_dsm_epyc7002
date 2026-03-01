@@ -84,7 +84,7 @@ extern int syno_acm_get_usb_port(const char **usb_path, int eunit_slot);
 extern struct syno_control_operations *syno_control_operation_get(const int slot_type, const int slot_index);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/random.h>
 #include <linux/synolib.h>
 #include <linux/synosata.h>
@@ -103,9 +103,9 @@ static int giNeedWakeAll = 0;
 #ifdef MY_DEF_HERE
 static int syno_ata_eunit_disk_delay_check(const struct ata_device *dev, const int spinup);
 #endif /* MY_DEF_HERE */
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern bool g_support_syno_dpm;
 extern int g_syno_dpm_debug_level;
 extern bool syno_dpm_check_support(const char *uuid);
@@ -119,7 +119,7 @@ extern int syno_dpm_req_disble_by_slot(const char *uuid, unsigned int slot,
 		const char *caller_name);
 extern int syno_dpm_req_deep_sleep_by_slot(const char *uuid, unsigned int slot,
 		bool blocking, const int timeout, const char *caller_name);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #define ATA_SCSI_RBUF_SIZE	576
 
@@ -1961,7 +1961,7 @@ static int syno_libata_port_power_ctl(struct ata_port *ap, u8 pwrOp)
 
 #if defined(MY_ABC_HERE)
 	if(-1 != ap->syno_internal_slot_index && SYNO_SUPPORT_HDD_DYNAMIC_ENABLE_POWER(ap->syno_internal_slot_index + 1)) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (syno_dpm_check_support(ap->link.dpm_uuid)) {
 			if (blPowerOn) {
 				if (0 != syno_dpm_req_pwr_by_slot(
@@ -1983,7 +1983,7 @@ static int syno_libata_port_power_ctl(struct ata_port *ap, u8 pwrOp)
 				}
 			}
 		} else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		{
 			/* Internal disks case: only support deep sleep ap, we can do pm control */
 			SYNO_CTRL_HDD_POWERON(ap->syno_internal_slot_index + 1, blPowerOn);
@@ -2139,7 +2139,7 @@ look_up_scsi_dev_from_ap(struct ata_port *ap)
 	return NULL;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static void syno_ata_dpm_retry_pwr_request(struct ata_port *ap)
 {
 	int func_ret = -1;
@@ -2161,7 +2161,7 @@ static void syno_ata_dpm_retry_pwr_request(struct ata_port *ap)
 		}
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /**
  * NOTE: shouldn't call spin_lock(ap) before you call this function
@@ -2236,13 +2236,13 @@ syno_libata_set_deep_sleep(struct ata_port *ap, const u8 blSet)
 	pAp_master->iIsDeepCtlLock = 1;
 	spin_unlock_irqrestore(pAp_master->lock, flags);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (syno_dpm_check_support(ap->link.dpm_uuid) &&
 		ap->nr_pmp_links == 0 && !blSet) {
 		// Wait for quota here to prevent disk power off releases the quota.
 		syno_ata_dpm_retry_pwr_request(ap);
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	DBGMESG("disk %d do deep sleep control blSet %d\n", ap->print_id, blSet);
 	/* set/unset ATA_PFLAG_SYNO_IRQ_OFF flag */
@@ -4416,7 +4416,7 @@ static void ata_scsi_qc_complete(struct ata_queued_cmd *qc)
 	if (need_sense && !ap->ops->error_handler)
 		ata_dump_status(ap->print_id, &qc->result_tf);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (!(cdb[0] == ATA_16 && cdb[14] == ATA_CMD_CHK_POWER)) {
 		/* update time of last command */
 		qc->dev->ulLastCmd = jiffies;
@@ -4439,7 +4439,7 @@ static void ata_scsi_qc_complete(struct ata_queued_cmd *qc)
 		syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
 #endif /* MY_DEF_HERE */
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	ata_qc_done(qc);
 }
@@ -4535,7 +4535,7 @@ defer:
 		return SCSI_MLQUEUE_HOST_BUSY;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void ata_qc_complete_read(struct ata_queued_cmd *qc)
 {
 	if (qc->err_mask) {
@@ -4548,7 +4548,7 @@ void ata_qc_complete_read(struct ata_queued_cmd *qc)
 	DBGMESG("port %d clear CHKPOWER_FIRST_WAIT\n", qc->ap->print_id);
 	clear_bit(CHKPOWER_FIRST_WAIT, &(qc->dev->ulSpinupState));
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (syno_dpm_check_support(qc->dev->link->dpm_uuid)) {
 		if (0 != syno_dpm_rel_pwr_by_slot(
 			qc->dev->link->dpm_uuid, qc->dev->link->dpm_slot, __func__)) {
@@ -4556,7 +4556,7 @@ void ata_qc_complete_read(struct ata_queued_cmd *qc)
 				"failed to tell dpm to release the quota\n");
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	if(NULL == qc->cursg) {
 		printk(KERN_ERR "MEMORY LEAK!! qc->cursg is NULL, the psg we allocated becomes orphan \n");
@@ -4622,14 +4622,14 @@ static int SynoIssueWakeUpCmd(struct ata_device *dev, struct scsi_cmnd *cmd)
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (g_support_syno_dpm) {
 		if (g_syno_dpm_debug_level > 0) {
 			ata_link_info(dev->link, "Spining up\n");
 		}
 		goto ISSUE_CMD;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 	if (ap->nr_pmp_links) {
 		if (0 < giSynoSpinupGroupDebug) {
@@ -4659,16 +4659,16 @@ static int SynoIssueWakeUpCmd(struct ata_device *dev, struct scsi_cmnd *cmd)
 	}
 	spin_unlock(&SYNOLastWakeLock);
 	DBGMESG("port %d update gulLastWake %lu and issue read\n", ap->print_id, gulLastWake);
-#if defined(MY_DEF_HERE) || defined(MY_DEF_HERE)
+#if defined(MY_DEF_HERE) || defined(MY_ABC_HERE)
 ISSUE_CMD:
-#endif /* MY_DEF_HERE || MY_DEF_HERE */
+#endif /* MY_DEF_HERE || MY_ABC_HERE */
 	dev->ulLastCmd = jiffies;
 	ata_qc_issue(qc);
 
 	return SCSI_MLQUEUE_HOST_BUSY;
 
 ERR_MEM:
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (syno_dpm_check_support(qc->dev->link->dpm_uuid)) {
 		if (0 != syno_dpm_rel_pwr_by_slot(
 			qc->dev->link->dpm_uuid, qc->dev->link->dpm_slot, __func__)) {
@@ -4676,17 +4676,17 @@ ERR_MEM:
 				"failed to tell dpm to release the quota\n");
 		}
 	} else {
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 	syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
 #endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	dev->ulLastCmd = jiffies;
 	return SCSI_MLQUEUE_HOST_BUSY;
 DEFER:
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (syno_dpm_check_support(qc->dev->link->dpm_uuid)) {
 		if (0 != syno_dpm_rel_pwr_by_slot(
 			qc->dev->link->dpm_uuid, qc->dev->link->dpm_slot, __func__)) {
@@ -4694,13 +4694,13 @@ DEFER:
 				"failed to tell dpm to release the quota\n");
 		}
 	} else {
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #ifdef MY_DEF_HERE
 	syno_ata_eunit_disk_delay_check(qc->dev, SPINDOWN);
 #endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	ata_qc_free(qc);
 	if (rc == ATA_DEFER_LINK)
 		return SCSI_MLQUEUE_DEVICE_BUSY;
@@ -4755,7 +4755,7 @@ static int syno_eunit_ata_scsi_translate(struct ata_device *dev, struct scsi_cmn
 
 #ifdef MY_ABC_HERE
 	if (dev->is_ssd) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (dev->iCheckPwr) {
 			if (syno_dpm_check_support(dev->link->dpm_uuid)) {
 				if (0 != syno_dpm_rel_pwr_by_slot(
@@ -4765,7 +4765,7 @@ static int syno_eunit_ata_scsi_translate(struct ata_device *dev, struct scsi_cmn
 				}
 			}
 		}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		goto PASS;
 	}
 #endif /* MY_ABC_HERE */
@@ -4779,14 +4779,14 @@ static int syno_eunit_ata_scsi_translate(struct ata_device *dev, struct scsi_cmn
 		/* we need insert read as the first cmd to wakeup disk */
 		if (dev->iCheckPwr || test_bit(CHKPOWER_FIRST_CMD, &(dev->ulSpinupState))) {
 			/* check if this port need wait other disks wakeup */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			if (syno_dpm_check_support(dev->link->dpm_uuid)) {
 				if (0 != syno_dpm_req_quota_only_by_slot(
 						dev->link->dpm_uuid, dev->link->dpm_slot, __func__)) {
 					goto WAIT;
 				}
 			} else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			{
 				if (0 < syno_ata_eunit_disk_delay_check(dev, SPINUP_CHECK)) {
 					DBGMESG("port %d too close to last wakeup, wait again (%lu) (%lu) (%lu)\n",
@@ -4886,7 +4886,7 @@ static int syno_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd
 
 #ifdef MY_ABC_HERE
 	if (dev->is_ssd) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (dev->iCheckPwr) {
 			if (syno_dpm_check_support(dev->link->dpm_uuid)) {
 				if (0 != syno_dpm_rel_pwr_by_slot(
@@ -4896,7 +4896,7 @@ static int syno_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd
 				}
 			}
 		}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		goto PASS;
 	}
 #endif /* MY_ABC_HERE */
@@ -4925,14 +4925,14 @@ static int syno_ata_scsi_translate(struct ata_device *dev, struct scsi_cmnd *cmd
 	} else {
 		/* we need insert read as the first cmd to wakeup disk */
 		if (dev->iCheckPwr || test_bit(CHKPOWER_FIRST_CMD, &(dev->ulSpinupState))) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 			if (syno_dpm_check_support(dev->link->dpm_uuid)) {
 				if (0 != syno_dpm_req_quota_only_by_slot(
 						dev->link->dpm_uuid, dev->link->dpm_slot, __func__)) {
 					iNeedWait = 1;
  				}
 			} else
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			{
 				iNeedWait = syno_ata_disk_delay_check(ap);
  			}
@@ -4966,7 +4966,7 @@ ISSUE_READ:
 WAIT:
 	return SCSI_MLQUEUE_HOST_BUSY;
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 struct ata_scsi_args {
 	struct ata_device	*dev;
@@ -7456,13 +7456,13 @@ int __ata_scsi_queuecmd(struct scsi_cmnd *scmd, struct ata_device *dev)
 #endif /* MY_ABC_HERE */
 
 	if (xlat_func)
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	{
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if ((0 == gSynoHddPowerupSeq && 1 == guiWakeupDisksNum) && !g_support_syno_dpm) {
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		if (0 == gSynoHddPowerupSeq && 1 == guiWakeupDisksNum) {
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			/* no spin up delay, use original function */
 			rc = ata_scsi_translate(dev, scmd, xlat_func);
 		} else {
@@ -7470,9 +7470,9 @@ int __ata_scsi_queuecmd(struct scsi_cmnd *scmd, struct ata_device *dev)
 			rc = syno_ata_scsi_translate(dev, scmd, xlat_func);
 		}
 	}
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		rc = ata_scsi_translate(dev, scmd, xlat_func);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	else
 		ata_scsi_simulate(dev, scmd);
 
@@ -7787,12 +7787,12 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
 				ata_dev_printk(dev, KERN_WARNING, "Find SSD disks. [%s]\n", modelbuf);
 			}
 #endif /* MY_ABC_HERE */
-#if defined(MY_ABC_HERE) && defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
 			if (NULL != ap->scsi_host->hostt->syno_disk_not_ready_count_increase) {
 				ap->scsi_host->hostt->syno_disk_not_ready_count_increase();
 			}
-#endif /* MY_ABC_HERE && MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* MY_ABC_HERE && MY_ABC_HERE */
+#ifdef MY_ABC_HERE
 			if (syno_dpm_check_support(link->dpm_uuid)) {
 				if (0 != syno_dpm_rel_pwr_by_slot(
 						link->dpm_uuid, link->dpm_slot, "ata driver")) {
@@ -7800,7 +7800,7 @@ void ata_scsi_scan_host(struct ata_port *ap, int sync)
 						"failed to tell DPM to release power\n");
 				}
 			}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			sdev = __scsi_add_device(ap->scsi_host, channel, id, 0,
 						 NULL);
 			if (!IS_ERR(sdev)) {

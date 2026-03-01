@@ -56,16 +56,16 @@ extern int gSynoHostPresentReg;
 extern int gSynoHostPresentVal;
 #endif /*MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int gSynoHddPowerupSeq;
 extern int giSynoSpinupGroup[SYNO_SPINUP_GROUP_MAX];
 extern int giSynoSpinupGroupNum;
 extern int giSynoSpinupGroupDelay;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern bool g_support_syno_dpm;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 void __init syno_init_internal_hdd_number(void)
@@ -190,7 +190,7 @@ void __init syno_init_smbus_hdd_pwrctl(void)
 }
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void __init syno_init_spinup_group(void)
 {
 	int group_num = 0, retReadDT = 0, spinupGroupMemberNum = 0, spinupGroupDelay = 0;
@@ -219,9 +219,9 @@ void __init syno_init_spinup_group(void)
 		printk("SYNO Spinup Group Delay: %d\n", giSynoSpinupGroupDelay);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 void __init syno_init_support_syno_dpm(void)
 {
 	struct device_node *dpm_node = NULL;
@@ -233,7 +233,7 @@ void __init syno_init_support_syno_dpm(void)
 		of_node_put(dpm_node);
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*
  * of_fdt_limit_memory - limit the number of regions in the /memory node
@@ -1447,12 +1447,12 @@ void __init unflatten_device_tree(void)
 #ifdef MY_ABC_HERE
 	syno_init_smbus_hdd_pwrctl();
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	syno_init_spinup_group();
-#endif /* MY_DEF_HERE */
-#ifdef MY_DEF_HERE
+#endif /* MY_ABC_HERE */
+#ifdef MY_ABC_HERE
 	syno_init_support_syno_dpm();
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 }
 
 /**

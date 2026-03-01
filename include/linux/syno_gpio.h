@@ -152,10 +152,10 @@ extern int SYNO_GPIO_READ(int pin);
 extern void SYNO_GPIO_WRITE(int pin, int pValue);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern void DBG_SpinupGroupListGpio(void);
 extern int SynoHaveRPDetectPin(void);
 extern int SynoAllRedundantPowerDetected(void);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #endif /* SYNO_GPIO_TYPE_H */

@@ -69,12 +69,12 @@ static int syno_hddmon_data_init(SynoHddMonData_t *pData)
 	/* default wait time 7s */
 	pData->iHddEnWait = SYNO_HDDMON_EN_WAIT_SEC;
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* override wait time if setup spinup group */
 	if (0 < giSynoSpinupGroupDelay) {
 		pData->iHddEnWait = giSynoSpinupGroupDelay;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	iRet = 0;
 END:

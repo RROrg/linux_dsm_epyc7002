@@ -1480,11 +1480,11 @@ static int iommu_get_def_domain_type(struct device *dev)
 	if (ops->def_domain_type)
 		type = ops->def_domain_type(dev);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (type) {
 		dev_info(dev, "Device specific iommu domain: %s\n", iommu_domain_type_str(type));
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	return (type == 0) ? iommu_def_domain_type : type;
 }
@@ -1680,10 +1680,10 @@ static int probe_get_default_domain_type(struct device *dev, void *data)
 				 dev_name(gtype->dev),
 				 iommu_domain_type_str(gtype->type));
 			gtype->type = 0;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		} else {
 			dev_info(dev, "Device specific iommu domain: %s\n", iommu_domain_type_str(type));
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		}
 
 		if (!gtype->dev) {

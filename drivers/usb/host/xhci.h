@@ -1029,9 +1029,9 @@ struct xhci_virt_device {
 	u16				current_mel;
 	/* Used for the debugfs interfaces. */
 	void				*debugfs_private;
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	bool                            disconnected;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 };
 
 /*

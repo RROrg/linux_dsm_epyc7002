@@ -596,9 +596,9 @@ struct mddev {
 #ifdef MY_ABC_HERE
 	int	syno_flush_plug_threshold;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int	syno_md_thread_fixed_node;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	int	syno_sb_not_clean;
 #endif /* MY_ABC_HERE */
@@ -760,9 +760,9 @@ struct md_personality
 	void *(*takeover) (struct mddev *mddev);
 	/* Changes the consistency policy of an active array. */
 	int (*change_consistency_policy)(struct mddev *mddev, const char *buf);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	void (*adjust_md_threads_node) (struct mddev *mddev);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	/* align_chunk_addr_virt_to_dev is used to transfer a range of
 	 * virtual addresses of array to the range of addresses of devices.

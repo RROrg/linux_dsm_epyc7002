@@ -529,10 +529,10 @@ struct scsi_host_template {
 	int (*syno_disk_power_loss_when_reboot)(struct scsi_device *);
 #endif /* MY_ABC_HERE */
 
-#if defined(MY_ABC_HERE) && defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
 	void (*syno_disk_not_ready_count_increase)(void);
 	void (*syno_disk_not_ready_count_decrease)(void);
-#endif /* MY_ABC_HERE && MY_DEF_HERE */
+#endif /* MY_ABC_HERE && MY_ABC_HERE */
 };
 
 /*

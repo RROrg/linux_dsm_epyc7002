@@ -72,10 +72,10 @@ int proc_do_static_key(struct ctl_table *table, int write, void *buffer,
 extern int syno_proc_do_string_vector(struct ctl_table *, int,
 		                void *, size_t *, loff_t *);
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern int syno_proc_do_int_vector(struct ctl_table *, int,
 	void __user *, size_t *, loff_t *);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 /*
  * Register a set of sysctl names by calling register_sysctl_table
  * with an initialised array of struct ctl_table's.  An entry with 

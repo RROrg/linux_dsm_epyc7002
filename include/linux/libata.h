@@ -68,10 +68,10 @@
 #define VPRINTK(fmt, args...)
 #endif	/* ATA_DEBUG */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 /* WD suggest 30s */
 #define ISSUEREADTIMEOUT (30UL*HZ)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 extern int gSynoAtaDebug;
@@ -831,7 +831,7 @@ struct ata_device {
 	void			*zpodd;
 #endif
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	/* be careful the ATA_DEVICE_CLEAR_OFFSET when porting this */
 	unsigned long ulLastCmd;
 	unsigned long ulSpinupState;
@@ -840,7 +840,7 @@ struct ata_device {
 	/* bit definitions */
 	#define CHKPOWER_FIRST_CMD 0x0
 	#define CHKPOWER_FIRST_WAIT 0x1
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	struct device		tdev;
 	/* n_sector is CLEAR_BEGIN, read comment above CLEAR_BEGIN */
@@ -1066,10 +1066,10 @@ struct ata_link {
 	SYNOBIOS_EVENT_PARM     diskHardResetFailEventParm;
 	SYNOBIOS_EVENT_PARM     diskSataErrEventParm;
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	char dpm_uuid[SYNO_DPM_UUID_LEN_MAX];
 	unsigned int dpm_slot;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 };
 #define ATA_LINK_CLEAR_BEGIN		offsetof(struct ata_link, active_tag)
 #define ATA_LINK_CLEAR_END		offsetof(struct ata_link, device[0])
@@ -1221,9 +1221,9 @@ struct ata_port {
     u8					uSynoPMPErrorPort;
 	struct work_struct	SendDiskPowerShortBreakEventTask; /* for disk power short-brake event */
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	void (*syno_ahci_handle_port_interrupt)(struct ata_port *, void __iomem *, u32);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 /* The following initializer overrides a method to NULL whether one of
@@ -1778,14 +1778,15 @@ extern int syno_libata_disk_power_loss_when_reboot(struct scsi_device *sdev);
 #define SYNO_DISK_PWR_LOSS_WHEN_REBOOT
 #endif /* MY_ABC_HERE */
 
-#if defined(MY_ABC_HERE) && defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
 extern void syno_disk_not_ready_count_increase(void);
 extern void syno_disk_not_ready_count_decrease(void);
-#define MY_ABC_HERE \
+#define SYNO_DISK_NOT_READY_CHECK \
 	.syno_disk_not_ready_count_increase = syno_disk_not_ready_count_increase, \
 	.syno_disk_not_ready_count_decrease = syno_disk_not_ready_count_decrease,
-#else /* MY_ABC_HERE && MY_DEF_HERE */
-#endif /* MY_ABC_HERE && MY_DEF_HERE */
+#else /* MY_ABC_HERE && MY_ABC_HERE */
+#define SYNO_DISK_NOT_READY_CHECK
+#endif /* MY_ABC_HERE && MY_ABC_HERE */
 
 /*
  * All sht initializers (BASE, PIO, BMDMA, NCQ) must be instantiated
@@ -1811,7 +1812,7 @@ extern void syno_disk_not_ready_count_decrease(void);
 	SYNO_DISK_NAME_MACRO \
 	MY_ABC_HERE \
 	SYNO_DISK_PWR_LOSS_WHEN_REBOOT \
-	MY_ABC_HERE \
+	SYNO_DISK_NOT_READY_CHECK \
 	.unlock_native_capacity	= ata_scsi_unlock_native_capacity
 
 #define ATA_BASE_SHT(drv_name)					\
@@ -2582,10 +2583,10 @@ extern void syno_ata_present_print(struct ata_port *ap, const char *eventlog);
 #define IS_SYNO_PMP_575_CMD(tf) (ATA_CMD_PMP_SYNO_I2C == tf.command || ATA_CMD_PMP_SYNO_LED_GPIO == tf.command || ATA_CMD_PMP_GET_BOARD_INFO_JMB575 == tf.command)
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define IS_SYNO_SPINUP_CMD(qc) (NULL == qc->scsicmd && !ata_tag_internal(qc->tag) && \
 			ATA_CMD_IDLEIMMEDIATE == qc->tf.command)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 /*
  * Syno inline functions
@@ -2601,11 +2602,11 @@ static inline int syno_qc_filter(struct ata_queued_cmd *qc){
 	}
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (IS_SYNO_SPINUP_CMD(qc)) {
 		return 1;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	return 0;
 }

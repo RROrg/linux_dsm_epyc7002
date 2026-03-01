@@ -56,21 +56,21 @@ char gSynoSASHBAAddr[CONFIG_SYNO_SAS_MAX_HBA_SLOT][13] = {{0}};
 EXPORT_SYMBOL(gSynoSASHBAAddr);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 extern char gszPciAddrList[PCI_ADDR_NUM_MAX][PCI_ADDR_LEN_MAX];
 extern int gPciAddrNum;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_DEF_HERE
 extern char gSynoCastratedXhcAddr[CONFIG_SYNO_USB_NUM_CASTRATED_XHC][32];
 extern unsigned int gSynoCastratedXhcPortBitmap[CONFIG_SYNO_USB_NUM_CASTRATED_XHC];
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int g_syno_dpm_debug_level;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int giSynoSpinupGroupDebug;
 static int __init early_syno_spinup_group_debug(char *p)
 {
@@ -79,7 +79,7 @@ static int __init early_syno_spinup_group_debug(char *p)
 	return 1;
 }
 __setup("syno_spinup_group_debug=", early_syno_spinup_group_debug);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 static int __init early_hw_version(char *p)
@@ -283,7 +283,7 @@ static int __init early_sas_hba_idx(char *p)
 __setup("sas_hba_idx_addr=", early_sas_hba_idx);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int __init early_opt_pci_slot(char *p)
 {
 	int index = 0;
@@ -314,7 +314,7 @@ FMT_ERR:
 	return 0;
 }
 __setup("opt_pci_slot=", early_opt_pci_slot);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static int __init early_smbus_hdd_powerctl(char *p)
@@ -378,7 +378,7 @@ static int __init early_ahci_switch(char *p)
 __setup("ahci=", early_ahci_switch);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static int __init early_syno_dpm_level(char *p)
 {
 	g_syno_dpm_debug_level = simple_strtol(p, NULL, 10);
@@ -386,4 +386,4 @@ static int __init early_syno_dpm_level(char *p)
 	return 1;
 }
 __setup("syno_dpm_level=", early_syno_dpm_level);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */

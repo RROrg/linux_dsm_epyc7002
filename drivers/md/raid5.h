@@ -801,9 +801,9 @@ struct r5conf {
 #ifdef MY_ABC_HERE
 	int syno_active_stripe_threshold;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int syno_handle_stripes_cpu;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	atomic_t          syno_heal_active_stripes;
 	int               syno_heal_max_nr_stripes;

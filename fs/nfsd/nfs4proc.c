@@ -512,7 +512,7 @@ nfsd4_getfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 	return nfs_ok;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static void get_pool_hint(struct svc_rqst *rqstp, const struct path *exp_path)
 {
 	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
@@ -540,7 +540,7 @@ static void get_pool_hint(struct svc_rqst *rqstp, const struct path *exp_path)
 out:
 	kfree(kbuf);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static __be32
 nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
@@ -548,21 +548,21 @@ nfsd4_putfh(struct svc_rqst *rqstp, struct nfsd4_compound_state *cstate,
 {
 	struct nfsd4_putfh *putfh = &u->putfh;
 	__be32 ret;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	struct svc_xprt *rq_xprt = rqstp->rq_xprt;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	fh_put(&cstate->current_fh);
 	cstate->current_fh.fh_handle.fh_size = putfh->pf_fhlen;
 	memcpy(&cstate->current_fh.fh_handle.fh_base, putfh->pf_fhval,
 	       putfh->pf_fhlen);
 	ret = fh_verify(rqstp, &cstate->current_fh, 0, NFSD_MAY_BYPASS_GSS);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (!ret && unlikely(rq_xprt && rq_xprt->xpt_pool_index == -1 &&
 			rq_xprt->xpt_server->has_pool_hint)) {
 		get_pool_hint(rqstp, &cstate->current_fh.fh_export->ex_path);
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef CONFIG_NFSD_V4_2_INTER_SSC
 	if (ret == nfserr_stale && putfh->no_verify) {
 		SET_FH_FLAG(&cstate->current_fh, NFSD4_FH_FOREIGN);

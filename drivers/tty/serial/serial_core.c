@@ -2414,7 +2414,7 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 	if (port->type != PORT_UNKNOWN) {
 		unsigned long flags;
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #else
 		uart_report_port(drv, port);
 #endif
@@ -2445,7 +2445,7 @@ uart_configure_port(struct uart_driver *drv, struct uart_state *state,
 		 */
 		if (!uart_console(port))
 			uart_change_pm(state, UART_PM_STATE_OFF);
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		uart_report_port(drv, port);
 #endif
 	}
@@ -2856,7 +2856,7 @@ static ssize_t console_store(struct device *dev,
 	return ret < 0 ? ret : count;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define UART_MSR              0x6
 static ssize_t msr_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
@@ -2869,7 +2869,7 @@ static ssize_t msr_show(struct device *dev,
 	msr = uport->serial_in(uport, UART_MSR);
 	return snprintf(buf, PAGE_SIZE, "%x\n", msr);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
@@ -2920,9 +2920,9 @@ static DEVICE_ATTR_RO(io_type);
 static DEVICE_ATTR_RO(iomem_base);
 static DEVICE_ATTR_RO(iomem_reg_shift);
 static DEVICE_ATTR_RW(console);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static DEVICE_ATTR_RO(msr);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 static DEVICE_ATTR_RO(syno_pcipath);
 #endif /* MY_ABC_HERE */
@@ -2942,9 +2942,9 @@ static struct attribute *tty_dev_attrs[] = {
 	&dev_attr_iomem_base.attr,
 	&dev_attr_iomem_reg_shift.attr,
 	&dev_attr_console.attr,
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	&dev_attr_msr.attr,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	&dev_attr_syno_pcipath.attr,
 #endif /* MY_ABC_HERE */

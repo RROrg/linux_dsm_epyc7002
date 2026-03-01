@@ -37,10 +37,10 @@
 #include <linux/uaccess.h>
 #include <linux/pm_runtime.h>
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #include <linux/synolib.h>
 #include <linux/pci.h>
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #include "libata.h"
 #include "libata-transport.h"
@@ -50,11 +50,11 @@
 #else /* MY_ABC_HERE */
 #define ATA_PORT_ATTRS		3
 #endif /* MY_ABC_HERE */
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define ATA_LINK_ATTRS		5
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 #define ATA_LINK_ATTRS		3
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 #define ATA_DEV_ATTRS		9
 
 struct scsi_transport_template;
@@ -364,7 +364,7 @@ ata_link_linkspeed_attr(hw_sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd_limit, fls);
 ata_link_linkspeed_attr(sata_spd, noop);
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int syno_pciepath_dts_pattern_get(struct pci_dev *pdev, char *szPciePath, const int size);
 static void syno_pciepath_enum(struct device *dev, char *buf) {
 	struct pci_dev *pdev = NULL;
@@ -430,7 +430,7 @@ static ssize_t ata_link_dpm_slot_attr_store(struct device *dev,
 }
 
 DEVICE_ATTR(syno_dpm_slot_attr, 0644, ata_link_dpm_slot_attr_show, ata_link_dpm_slot_attr_store);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static DECLARE_TRANSPORT_CLASS(ata_link_class,
 		"ata_link", NULL, NULL, NULL);
@@ -783,10 +783,10 @@ static int ata_tdev_add(struct ata_device *ata_dev)
 
 #define SETUP_LINK_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(link_attrs, field, S_IRUGO, 1)
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 #define SETUP_LINK_ATTRIBUTE_WRITEABLE(field)					\
 	SETUP_TEMPLATE(link_attrs, field, S_IRUGO|S_IWUSR, 1)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #define SETUP_PORT_ATTRIBUTE(field)					\
 	SETUP_TEMPLATE(port_attrs, field, S_IRUGO, 1)
@@ -841,10 +841,10 @@ struct scsi_transport_template *ata_attach_transport(void)
 	SETUP_LINK_ATTRIBUTE(hw_sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd_limit);
 	SETUP_LINK_ATTRIBUTE(sata_spd);
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	SETUP_LINK_ATTRIBUTE(syno_ata_link_info);
 	SETUP_LINK_ATTRIBUTE_WRITEABLE(syno_dpm_slot_attr);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 	BUG_ON(count > ATA_LINK_ATTRS);
 	i->link_attrs[count] = NULL;
 

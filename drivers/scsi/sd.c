@@ -3858,10 +3858,10 @@ static void sd_unlock_native_capacity(struct gendisk *disk)
 		sdev->host->hostt->unlock_native_capacity(sdev);
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define IS_SYNO_OOBUSB_ID_VENDOR(VENDOR) (0xF400 == (VENDOR))
 #define IS_SYNO_OOBUSB_ID_PRODUCT(PRODUCT) (0xF425 == (PRODUCT))
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 /**
@@ -3915,7 +3915,7 @@ static SYNO_DISK_TYPE syno_disk_type_get(struct scsi_device *sdp)
 #endif /* MY_ABC_HERE */
 
 	if (SYNO_PORT_TYPE_USB == sdp->host->hostt->syno_port_type) {
-#if defined(MY_ABC_HERE) || defined(MY_ABC_HERE)
+#if defined(MY_ABC_HERE) || defined(MY_DEF_HERE)
 		struct us_data *us = host_to_us(sdp->host);
 		struct usb_device *usbdev = us->pusb_dev;
 		//Since the UAS doesn't has the us_data structure , the us will be NULL , avoid the NULL pointer accessing
@@ -3925,7 +3925,7 @@ static SYNO_DISK_TYPE syno_disk_type_get(struct scsi_device *sdp)
 		if (NULL == usbdev) {
 			return SYNO_DISK_USB;
 		}
-#endif /* MY_ABC_HERE || MY_ABC_HERE */
+#endif /* MY_ABC_HERE || MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 		if (IS_SYNO_USBBOOT_ID_VENDOR(le16_to_cpu(usbdev->descriptor.idVendor)) &&
 			IS_SYNO_USBBOOT_ID_PRODUCT(le16_to_cpu(usbdev->descriptor.idProduct))) {
@@ -3934,12 +3934,12 @@ static SYNO_DISK_TYPE syno_disk_type_get(struct scsi_device *sdp)
 			}
 		}
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (IS_SYNO_OOBUSB_ID_VENDOR(le16_to_cpu(usbdev->descriptor.idVendor)) &&
 				IS_SYNO_OOBUSB_ID_PRODUCT(le16_to_cpu(usbdev->descriptor.idProduct))) {
 			return SYNO_DISK_OOB;
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 		return SYNO_DISK_USB;
 	}
@@ -4040,7 +4040,7 @@ static int syno_sd_format_disk_name(struct scsi_device *sdp, struct scsi_disk *s
 			ret = 0;
 			goto out_put;
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		/* XXX
 		   Special Case 2: OOB use fixed device name.
 		*/
@@ -4048,7 +4048,7 @@ static int syno_sd_format_disk_name(struct scsi_device *sdp, struct scsi_disk *s
 			sprintf(gd->disk_name, CONFIG_SYNO_OOB_LOG_DEVICE_NAME);
 			ret = 0;
 			goto out_put;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		case SYNO_DISK_USB:
 			syno_disk_type_ida = &usb_index_ida;
 			syno_disk_type_prefix = CONFIG_SYNO_USB_DEVICE_PREFIX;
@@ -4459,11 +4459,11 @@ static int sd_probe(struct device *dev)
 			sd_printk(KERN_NOTICE, sdkp, "supports TCG Opal\n");
 	}
 
-#if defined(MY_ABC_HERE) && defined(MY_DEF_HERE)
+#if defined(MY_ABC_HERE) && defined(MY_ABC_HERE)
 	if (NULL != sdp->host->hostt->syno_disk_not_ready_count_decrease) {
 		sdp->host->hostt->syno_disk_not_ready_count_decrease();
 	}
-#endif /* MY_ABC_HERE && MY_DEF_HERE */
+#endif /* MY_ABC_HERE && MY_ABC_HERE */
 
 	sd_printk(KERN_NOTICE, sdkp, "Attached SCSI %sdisk\n",
 		  sdp->removable ? "removable " : "");

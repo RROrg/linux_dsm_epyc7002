@@ -20,13 +20,13 @@ extern int syno_usb_eunit_deep_sleep_indicator(const char *usb_port, const int c
 extern struct syno_control_operations * syno_control_operation_get(const int slot_type, const int slot_index);
 #endif /* MY_DEF_HERE */
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern bool g_support_syno_dpm;
 extern int syno_dpm_req_pwr_with_fixed_delayed_by_uuid(
 	const char *uuid, const char *caller_name);
 extern int syno_dpm_req_deep_sleep_by_uuid(
 	const char *uuid, const int timeout, const char *caller_name);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 const struct ata_port_operations sata_pmp_port_ops = {
 	.inherits		= &sata_port_ops,
@@ -2123,7 +2123,7 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (g_support_syno_dpm) {
 		int func_ret = -1;
 		char uuid[SYNO_DPM_UUID_LEN_MAX] = {0};
@@ -2161,7 +2161,7 @@ static int syno_libata_pm_power_ctl_core(struct ata_port *ap, u8 pwrOp)
 		iRet = 0;
 		goto END;
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	if (syno_pm_is_jmb575(vendor, devid) && (SYNO_PWR_OP_DEEPSLEEP == pwrOp || SYNO_PWR_OP_WAKE == pwrOp || SYNO_PWR_OP_POWER_ON == pwrOp)) {
 

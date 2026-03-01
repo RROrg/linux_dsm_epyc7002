@@ -85,9 +85,9 @@ enum {
 	NFSD_SYNO_LATENCY_HISTOGRAM,
 	NFSD_SYNO_TOTAL_ERROR,
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	NFSD_Pool_Hint,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	NFSD_MaxReserved
 };
 
@@ -128,9 +128,9 @@ static ssize_t set_syno_nfsd_client_expire_time(struct file *file, char *buf,
 static ssize_t reset_syno_total_connection(struct file *file, char *buf, size_t size);
 static ssize_t syno_max_connection(struct file *file, char *buf, size_t size);
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static ssize_t write_pool_hint(struct file *file, char *buf, size_t size);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_Fh] = write_filehandle,
@@ -165,9 +165,9 @@ static ssize_t (*const write_op[])(struct file *, char *, size_t) = {
 	[NFSD_SYNO_TOTAL_CONNECTION_RESET] = reset_syno_total_connection,
 	[NFSD_SYNO_MAX_CONNECTION] = syno_max_connection,
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	[NFSD_Pool_Hint] = write_pool_hint,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 static ssize_t nfsctl_transaction_write(struct file *file, const char __user *buf, size_t size, loff_t *pos)
@@ -1672,7 +1672,7 @@ static ssize_t write_v4_end_grace(struct file *file, char *buf, size_t size)
 
 #endif
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static int __write_pool_hint(struct svc_serv *nfsd_serv, char *buf, size_t size)
 {
 	struct svc_pool_hint *pool_hint = NULL;
@@ -1770,7 +1770,7 @@ out:
 	mutex_unlock(&nfsd_mutex);
 	return (ret < 0)? ret : rv;
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*----------------------------------------------------------------------------*/
 /*
@@ -2027,9 +2027,9 @@ static int nfsd_fill_super(struct super_block *sb, struct fs_context *fc)
 		[NFSD_SYNO_LATENCY_HISTOGRAM] = {"syno_latency_histogram", &syno_latency_histogram_ops, S_IRUGO},
 		[NFSD_SYNO_TOTAL_ERROR] = {"syno_total_error", &syno_total_error_ops, S_IRUGO},
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		[NFSD_Pool_Hint] = {"pool_hint", &transaction_ops, S_IWUSR|S_IRUSR},
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		/* last one */ {""}
 	};
 

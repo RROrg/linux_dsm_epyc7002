@@ -136,10 +136,10 @@ static void watchdog_overflow_callback(struct perf_event *event,
 	 * then this is a good indication the cpu is stuck
 	 */
 	if (is_hardlockup()) {
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		/* save hardlockup_panic to avoid enable during printing calltrace */
 		unsigned int panic_backup = hardlockup_panic;
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 		int this_cpu = smp_processor_id();
 
 		/* only print hardlockups once */
@@ -163,11 +163,11 @@ static void watchdog_overflow_callback(struct perf_event *event,
 				!test_and_set_bit(0, &hardlockup_allcpu_dumped))
 			trigger_allbutself_cpu_backtrace();
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 		if (panic_backup)
-#else /* MY_DEF_HERE */
+#else /* MY_ABC_HERE */
 		if (hardlockup_panic)
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 			nmi_panic(regs, "Hard LOCKUP");
 
 		__this_cpu_write(hard_watchdog_warn, true);

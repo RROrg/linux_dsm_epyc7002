@@ -1650,7 +1650,7 @@ static void handle_vendor_event(struct xhci_hcd *xhci,
 		handle_cmd_completion(xhci, &event->event_cmd);
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 static void xhci_giveback_error_urb(struct xhci_hcd *xhci,
 				int slot_id)
 {
@@ -1674,7 +1674,7 @@ static void xhci_giveback_error_urb(struct xhci_hcd *xhci,
 		}
 	}
 }
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 static void handle_device_notification(struct xhci_hcd *xhci,
 		union xhci_trb *event)
@@ -1849,7 +1849,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 		}
 	}
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 	if (!(portsc & PORT_CONNECT) &&
 			(portsc & PORT_WRC)) {
 		slot_id = xhci_find_slot_id_by_port(hcd, xhci,
@@ -1860,7 +1860,7 @@ static void handle_port_status(struct xhci_hcd *xhci,
 			xhci_giveback_error_urb(xhci, slot_id);
 		}
 	}
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 	if ((portsc & PORT_PLC) &&
 	    DEV_SUPERSPEED_ANY(portsc) &&

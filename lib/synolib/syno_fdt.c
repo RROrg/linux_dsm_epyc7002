@@ -11,7 +11,7 @@
 
 extern int syno_compare_dts_pciepath(const struct pci_dev *pdev, const struct device_node *pDeviceNode);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 int syno_pmbus_property_get(unsigned int *pmbus_property, const char *property_name, int index)
 {
     int iRet = -1;
@@ -29,7 +29,7 @@ END:
 	return iRet;
 }
 EXPORT_SYMBOL(syno_pmbus_property_get);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 struct device_node* syno_of_i2c_bus_match(struct device *dev, int* index)
 {

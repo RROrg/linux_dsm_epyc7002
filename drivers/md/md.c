@@ -887,9 +887,9 @@ void mddev_init(struct mddev *mddev)
 	mddev->resync_min = 0;
 	mddev->resync_max = MaxSector;
 	mddev->level = LEVEL_NONE;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	mddev->syno_md_thread_fixed_node = -1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	syno_hint_tree_init(&mddev->syno_rh_tree);
 	mutex_init(&mddev->syno_rh_mutex);
@@ -6093,7 +6093,7 @@ __ATTR(syno_flush_plug_threshold, 0644, syno_flush_plug_threshold_show,
        syno_flush_plug_threshold_store);
 #endif /* MY_ABC_HERE */
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static ssize_t
 syno_md_threads_fixed_node_show(struct mddev *mddev, char *page)
 {
@@ -6134,7 +6134,7 @@ static struct md_sysfs_entry md_syno_md_threads_fixed_node =
 __ATTR(syno_md_threads_fixed_node, 0644,
        syno_md_threads_fixed_node_show,
        syno_md_threads_fixed_node_store);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 #ifdef MY_ABC_HERE
 static ssize_t
@@ -6417,9 +6417,9 @@ static struct attribute *md_default_attrs[] = {
 #ifdef MY_ABC_HERE
 	&md_syno_flush_plug_threshold.attr,
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	&md_syno_md_threads_fixed_node.attr,
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 #ifdef MY_ABC_HERE
 	&md_heal_record_cnt.attr,
 	&md_heal_record_cnt_max.attr,
@@ -8991,9 +8991,9 @@ const struct block_device_operations md_fops =
 static int md_thread(void *arg)
 {
 	struct md_thread *thread = arg;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int node = -1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	/*
 	 * md_thread is a 'system-thread', it's priority should be very
@@ -9024,7 +9024,7 @@ static int md_thread(void *arg)
 			 || kthread_should_stop() || kthread_should_park(),
 			 thread->timeout);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		if (node != thread->mddev->syno_md_thread_fixed_node) {
 			node = thread->mddev->syno_md_thread_fixed_node;
 			if (-1 == node)
@@ -9034,7 +9034,7 @@ static int md_thread(void *arg)
 				set_cpus_allowed_ptr(current,
 				                     cpumask_of_node(node));
 		}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 		clear_bit(THREAD_WAKEUP, &thread->flags);
 		if (kthread_should_park())

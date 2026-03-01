@@ -131,7 +131,7 @@ int SynoAllRedundantPowerDetected(void)
 	return 0;
 }
 
-#ifdef MY_DEF_HERE
+#ifdef MY_ABC_HERE
 extern int giSynoSpinupGroupDebug;
 void DBG_SpinupGroupListGpio(void)
 {
@@ -150,7 +150,7 @@ void DBG_SpinupGroupListGpio(void)
 	}
 }
 EXPORT_SYMBOL(DBG_SpinupGroupListGpio);
-#endif /* MY_DEF_HERE */
+#endif /* MY_ABC_HERE */
 
 #ifdef MY_ABC_HERE
 /**

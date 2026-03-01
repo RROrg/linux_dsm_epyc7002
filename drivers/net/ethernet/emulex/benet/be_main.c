@@ -24,9 +24,9 @@
 #include <net/busy_poll.h>
 #include <net/vxlan.h>
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #include <linux/syno.h>
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 MODULE_DESCRIPTION(DRV_DESC);
 MODULE_AUTHOR("Emulex Corporation");
@@ -43,12 +43,12 @@ static ushort rx_frag_size = 2048;
 module_param(rx_frag_size, ushort, 0444);
 MODULE_PARM_DESC(rx_frag_size, "Size of a fragment that holds rcvd data.");
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 static unsigned int syno_hide_vf = 1;
 module_param(syno_hide_vf, uint, S_IRUGO);
 MODULE_PARM_DESC(syno_hide_vf, "Don't create interface when probing VF."
 				" Enabled by default");
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /* Per-module error detection/recovery workq shared across all functions.
  * Each function schedules its own work request on this shared workq.
@@ -5508,13 +5508,13 @@ static void be_log_sfp_info(struct be_adapter *adapter)
 	adapter->flags &= ~BE_FLAGS_PHY_MISCONFIGURED;
 }
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 
 static char *uevent_envp[2] = {"SYNO_SFP=unsupported", NULL};
 /* linux-ver/kernel/sysctrl.c */
 extern void SynoSfpUnsupportNotifySet(const char* ethName, SYNO_SFP_UNSUPPORTED_NOTIFY_TYPE val);
 
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static void be_worker(struct work_struct *work)
 {
@@ -5557,16 +5557,16 @@ static void be_worker(struct work_struct *work)
 	if (!skyhawk_chip(adapter))
 		be_eqd_update(adapter, false);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (adapter->flags & BE_FLAGS_PHY_MISCONFIGURED) {
 		be_log_sfp_info(adapter);
 		SynoSfpUnsupportNotifySet(adapter->netdev->name, SFP_NOTIFY_NOT_SUPPORT_WARN);
 		kobject_uevent_env(&adapter->netdev->dev.kobj, KOBJ_CHANGE, uevent_envp);
 	}
-#else /* MY_ABC_HERE */
+#else /* MY_DEF_HERE */
 	if (adapter->flags & BE_FLAGS_PHY_MISCONFIGURED)
 		be_log_sfp_info(adapter);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 reschedule:
 	adapter->work_counter++;
@@ -5857,9 +5857,9 @@ static int be_probe(struct pci_dev *pdev, const struct pci_device_id *pdev_id)
 	struct be_adapter *adapter;
 	struct net_device *netdev;
 	int status = 0;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool blHideVF = false;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	status = pci_enable_device(pdev);
 	if (status)
@@ -5900,7 +5900,7 @@ static int be_probe(struct pci_dev *pdev, const struct pci_device_id *pdev_id)
 	if (status)
 		goto free_netdev;
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (syno_hide_vf) {
 		if (be_virtfn(adapter)) {
 			/* don't want vf appear in host */
@@ -5908,7 +5908,7 @@ static int be_probe(struct pci_dev *pdev, const struct pci_device_id *pdev_id)
 			goto unmap_bars;
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	status = be_drv_init(adapter);
 	if (status)
@@ -5957,13 +5957,13 @@ rel_reg:
 disable_dev:
 	pci_disable_device(pdev);
 do_none:
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (!blHideVF) {
 		dev_err(&pdev->dev, "%s initialization failed\n", nic_name(pdev));
     }
-#else /* !MY_ABC_HERE */
+#else /* !MY_DEF_HERE */
 	dev_err(&pdev->dev, "%s initialization failed\n", nic_name(pdev));
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	return status;
 }
 

@@ -747,7 +747,7 @@ static struct console univ8250_console = {
 	.data		= &serial8250_reg,
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 struct console kt_console = {
 	.name		= "ttyS",
 	.write		= univ8250_console_write,
@@ -765,7 +765,7 @@ void kt_console_init(void)
 	register_console(&kt_console);
 	univ8250_console_setup(&kt_console, NULL);
 }
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 static int __init univ8250_console_init(void)
 {
@@ -1509,9 +1509,9 @@ int serial8250_register_8250_port(struct uart_8250_port *up)
 		uart->rs485_start_tx	= up->rs485_start_tx;
 		uart->rs485_stop_tx	= up->rs485_stop_tx;
 		uart->dma		= up->dma;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		uart->blXmitrCheck = true;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 		/* Take tx_loadsz from fifosize if it wasn't set separately */
 		if (uart->port.fifosize && !uart->tx_loadsz)

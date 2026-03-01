@@ -33,9 +33,9 @@ struct svc_pool_stats {
 	atomic_long_t	threads_woken;
 	atomic_long_t	threads_timedout;
 	unsigned long	congested;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	atomic_long_t	loading;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 /*
@@ -80,7 +80,7 @@ struct svc_serv_ops {
 	struct module	*svo_module;
 };
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define NFSD_POOL_HINT_MAX	4
 #define NFSD_POOL_MASK_MAX	4
 
@@ -88,7 +88,7 @@ struct svc_pool_hint {
 	char name[16];				/* volume name, including terminating null char */
 	unsigned int pool[NFSD_POOL_MASK_MAX];	/* pool bitmask */
 };
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * RPC service.
@@ -131,10 +131,10 @@ struct svc_serv {
 						 * entries in the svc_cb_list */
 	bool			sv_bc_enabled;	/* service uses backchannel */
 #endif /* CONFIG_SUNRPC_BACKCHANNEL */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	bool has_pool_hint;
 	struct svc_pool_hint pool_hint[NFSD_POOL_HINT_MAX];
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 /*

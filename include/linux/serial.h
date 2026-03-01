@@ -15,12 +15,12 @@
 #include <asm/page.h>
 #include <uapi/linux/serial.h>
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 #define SYNO_OOB_TTY                  2
 #define SYNO_TX_CHECK_COUNT           1000
 #define SYNO_TX_CHECK_THRESHOLD       800
 #define SYNO_CTS_CHECK_COUNT          10
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 /*
  * Counters of the input lines (CTS, DSR, RI, CD) interrupts

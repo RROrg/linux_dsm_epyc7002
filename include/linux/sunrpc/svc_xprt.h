@@ -97,9 +97,9 @@ struct svc_xprt {
 #ifdef MY_ABC_HERE
 	ktime_t			xpt_eqtime;	/* enqueue time */
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	int			xpt_pool_index;	/* the index of svc_serv->pool_hint array */
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 };
 
 static inline void unregister_xpt_user(struct svc_xprt *xpt, struct svc_xpt_user *u)

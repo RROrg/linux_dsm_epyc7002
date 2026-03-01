@@ -188,9 +188,9 @@ void svc_xprt_init(struct net *net, struct svc_xprt_class *xcl,
 	set_bit(XPT_BUSY, &xprt->xpt_flags);
 	xprt->xpt_net = get_net(net);
 	strcpy(xprt->xpt_remotebuf, "uninitialized");
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	xprt->xpt_pool_index = -1;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 }
 EXPORT_SYMBOL_GPL(svc_xprt_init);
 
@@ -416,10 +416,10 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	struct svc_pool *pool;
 	struct svc_rqst	*rqstp = NULL;
 	int cpu;
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	struct svc_serv *svc_serv = xprt->xpt_server;
 	struct svc_pool_hint *pool_hint = NULL;
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	if (!svc_xprt_ready(xprt))
 		return;
@@ -438,7 +438,7 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 	cpu = get_cpu();
 	pool = svc_pool_for_cpu(xprt->xpt_server, cpu);
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	if (xprt->xpt_pool_index >= 0)
 		pool_hint = &svc_serv->pool_hint[xprt->xpt_pool_index];
 
@@ -459,7 +459,7 @@ void svc_xprt_do_enqueue(struct svc_xprt *xprt)
 			}
 		}
 	}
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 
 	atomic_long_inc(&pool->sp_stats.packets);
 
@@ -770,9 +770,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 	smp_mb__before_atomic();
 	clear_bit(SP_CONGESTED, &pool->sp_flags);
 	clear_bit(RQ_BUSY, &rqstp->rq_flags);
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	atomic_long_dec(&pool->sp_stats.loading);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	smp_mb__after_atomic();
 
 	if (likely(rqst_should_sleep(rqstp)))
@@ -782,9 +782,9 @@ static struct svc_xprt *svc_get_next_xprt(struct svc_rqst *rqstp, long timeout)
 
 	try_to_freeze();
 
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 	atomic_long_inc(&pool->sp_stats.loading);
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 	set_bit(RQ_BUSY, &rqstp->rq_flags);
 	smp_mb__after_atomic();
 	rqstp->rq_xprt = svc_xprt_dequeue(pool);
@@ -1479,9 +1479,9 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 #ifdef MY_ABC_HERE
 			" congested-count"
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 			" loading"
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		"\n");
 		return 0;
 	}
@@ -1490,9 +1490,9 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 #ifdef MY_ABC_HERE
 		" %lu"
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		" %lu"
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		"\n",
 		pool->sp_id,
 		(unsigned long)atomic_long_read(&pool->sp_stats.packets),
@@ -1502,9 +1502,9 @@ static int svc_pool_stats_show(struct seq_file *m, void *p)
 #ifdef MY_ABC_HERE
 		, pool->sp_stats.congested
 #endif /* MY_ABC_HERE */
-#ifdef MY_ABC_HERE
+#ifdef MY_DEF_HERE
 		, (unsigned long)atomic_long_read(&pool->sp_stats.loading)
-#endif /* MY_ABC_HERE */
+#endif /* MY_DEF_HERE */
 		);
 
 	return 0;

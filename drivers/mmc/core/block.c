@@ -832,9 +832,11 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 		ret = mmc_blk_ioctl_multi_cmd(md,
 					(struct mmc_ioc_multi_cmd __user *)arg,
 					NULL);
+#if defined(MY_DEF_HERE)
+
 		mmc_blk_put(md);
 		return ret;
-#if defined(MY_DEF_HERE)
+
 #if defined(CONFIG_MMC_REALTEK_RTD13XX)
 	case MMCERASE:
 		ret = mmc_blk_check_blkdev(bdev);
@@ -866,9 +868,10 @@ static int mmc_blk_ioctl(struct block_device *bdev, fmode_t mode,
 			return -EFAULT;
 
 		euda_gpp_setting(paras.size, paras.type, paras.gpp_num, paras.euda_start_addr, paras.euda_size);
+
+#endif /* MY_DEF_HERE */
 		mmc_blk_put(md);
 		return ret;
-#endif /* CONFIG_MMC_REALTEK_RTD13XX */
 #endif /* MY_DEF_HERE */
 	default:
 		return -EINVAL;
